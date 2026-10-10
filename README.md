@@ -24,7 +24,7 @@ smalldocs api build --dir docs     # the API reference, from docstrings, types a
 smalldocs publish gh-pages docs    # push the site to the branch gh-pages
 ```
 
-The documentation is in [`docs/`](docs/). smalldocs builds it.
+The documentation is at [rahuldave.com/smalldocs](https://rahuldave.com/smalldocs/). smalldocs builds it from [`docs/`](docs/).
 
 ## What smalldocs reads
 

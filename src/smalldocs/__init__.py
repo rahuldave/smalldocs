@@ -1,3 +1,3 @@
 "Quarto-like websites from a _quarto.yml project, in pure Python."
 
-__version__ = "0.1.0"
+__version__ = "0.1.1"
