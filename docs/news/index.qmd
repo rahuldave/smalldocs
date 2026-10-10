@@ -1,0 +1,9 @@
+---
+title: News
+description: What changed in smalldocs, newest first.
+listing:
+  contents: "*.qmd"
+  sort: "date desc"
+  categories: true
+  feed: true
+---

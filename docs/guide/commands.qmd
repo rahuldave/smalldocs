@@ -1,0 +1,66 @@
+---
+title: The commands
+description: Every command of smalldocs and its options.
+order: 9
+---
+
+Each command takes the project's folder, the one with `_quarto.yml`. It is the folder you are in
+when you give none.
+
+## render
+
+```bash
+smalldocs render [DIR] [--quiet] [--strict]
+```
+
+Build the site. `--quiet` prints only warnings and errors. `--strict` exits with 1 when there is a
+warning, such as a broken link or a key that smalldocs ignores.
+
+## preview
+
+```bash
+smalldocs preview [DIR] [--port 4200] [--host 127.0.0.1] [--no-browser]
+```
+
+Build the site, serve it, and open a browser. On each change to a file of the project, build it
+again; the browser reloads. A failed build prints its error and keeps the last good site. It
+listens on this machine only, unless you give `--host`.
+
+## check
+
+```bash
+smalldocs check [DIR]
+```
+
+Build the site into a scratch folder, and list what to look at before you move from Quarto: keys
+that smalldocs ignores, broken links, and Markdown that only Pandoc reads. Exit with 1 if there is
+anything.
+
+## api
+
+```bash
+smalldocs api build|check|list [--dir DIR]
+smalldocs api module NAME [--dir DIR]
+```
+
+Make the reference pages, check the docments, list the symbols, or print one module as Markdown. See
+[The API reference](api.qmd).
+
+## publish
+
+```bash
+smalldocs publish gh-pages [DIR] [--branch gh-pages] [--remote origin] [--no-render] [-m MESSAGE]
+```
+
+Build the site and push it to the branch, through a temporary worktree. Your working tree and your
+branch do not change, and your git hooks do not run on the site's commit. It refuses to publish onto
+your current branch, the remote's default branch, `main` or `master`, which hold your sources.
+`--no-render` publishes the output folder as it is.
+
+## Exit codes
+
+| Code | Means |
+|---|---|
+| 0 | Done |
+| 1 | Done, with something to fix: `--strict` with warnings, or `check` and `api check` with findings |
+| 2 | Stopped: no `_quarto.yml`, a bad option, a failed script, or a port in use |

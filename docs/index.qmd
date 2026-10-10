@@ -1,0 +1,40 @@
+---
+title: smalldocs
+subtitle: Quarto-like websites, in pure Python
+listing:
+  contents: guide
+  type: grid
+  grid-columns: 3
+  fields: [title, description]
+  sort: order
+  sort-ui: false
+  filter-ui: false
+---
+
+smalldocs builds a website from a [Quarto](https://quarto.org) project. It reads the same
+`_quarto.yml` and the same Markdown, and it writes the same kind of site into `_site`: pages with a
+navbar, a sidebar and a table of contents, reference pages made from your code, and listings of posts.
+The site takes any [Bootswatch](https://bootswatch.com) theme.
+
+smalldocs is one small Python package. It needs no Pandoc, no Deno, no Sass and no TeX. Install it
+from PyPI:
+
+```bash
+pip install smalldocs
+```
+
+Then build a site, or preview it while you write:
+
+```bash
+smalldocs render docs      # writes docs/_site
+smalldocs preview docs     # serves it at http://127.0.0.1:4200 and reloads on every change
+```
+
+## What it does, and what it does not
+
+smalldocs makes websites only. It makes no PDF, Word, slides or books, and it runs no code: a
+notebook shows the outputs it was saved with. A project that uses only what websites need builds
+with Quarto or with smalldocs, and the two sites look alike. [From Quarto](guide/from-quarto.qmd)
+lists the differences, and `smalldocs check` finds them in your project.
+
+## The guide

@@ -1,0 +1,105 @@
+---
+title: Get started
+description: Install smalldocs, make a site, preview it, and publish it.
+order: 1
+---
+
+## Install
+
+smalldocs needs Python 3.11 or later. Add it to a project as a tool for development:
+
+```bash
+uv add --dev smalldocs     # or: pip install smalldocs
+```
+
+If your site documents your package's API, install smalldocs in the same environment as the
+package, so that it can import the package.
+
+## Make a site
+
+A site is a folder with a `_quarto.yml` file and some pages. A page is a `.qmd`, `.md` or `.ipynb`
+file. This is the smallest site:
+
+::: {.panel-tabset}
+## _quarto.yml
+
+```yaml
+project:
+  type: website
+
+website:
+  title: "My project"
+  navbar:
+    left:
+      - href: index.qmd
+        text: Home
+      - about.qmd
+
+format:
+  html:
+    theme: cosmo
+    toc: true
+```
+
+## index.qmd
+
+```markdown
+---
+title: My project
+---
+
+My project does one thing well. Read [about it](about.qmd).
+```
+
+## about.qmd
+
+```markdown
+---
+title: About
+---
+
+## Who made it
+
+We did.
+```
+:::
+
+## Build it
+
+```bash
+smalldocs render            # the folder you are in
+smalldocs render docs       # or another folder
+```
+
+smalldocs writes the site into `_site`, or into the folder that `project.output-dir` names. Each
+build empties that folder first. Open `_site/index.html`, or serve the folder.
+
+## Preview it
+
+```bash
+smalldocs preview docs
+```
+
+`preview` builds the site, serves it at `http://127.0.0.1:4200`, and opens your browser. When you
+save a file, it builds the site again and the browser reloads. Give `--port` for another port.
+
+::: {.callout-tip}
+## Generated pages do not loop
+
+A `pre-render` script, or the API reference, writes pages during a build. `preview` notes the files
+after each build, so those writes do not start another build.
+:::
+
+## Publish it
+
+To put the site on GitHub Pages:
+
+```bash
+smalldocs publish gh-pages docs
+```
+
+This builds the site, commits it to the `gh-pages` branch in a temporary worktree, and pushes the
+branch to `origin`. It does not change your working tree or your current branch. In the settings of
+the repository on GitHub, set Pages to deploy from the `gh-pages` branch.
+
+You can also build the site in a GitHub Action and upload `_site`; smalldocs is one `pip install`.

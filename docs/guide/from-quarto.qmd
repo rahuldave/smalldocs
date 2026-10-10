@@ -1,0 +1,47 @@
+---
+title: From Quarto
+description: What differs from Quarto, and how to check a project before you move it.
+order: 8
+---
+
+smalldocs builds the website part of Quarto. A project that uses only that part builds with either
+tool, and gives the same pages, the same anchors and the same links. Check a project first:
+
+```bash
+smalldocs check docs
+```
+
+`check` builds the site into a scratch folder and lists every key it ignores, every broken link, and
+every piece of Pandoc's Markdown that it does not read, with the file and the line. It exits with 1
+when it finds anything.
+
+## What smalldocs does not do
+
+| Quarto | smalldocs |
+|---|---|
+| PDF, Word, slides, books, manuscripts | Websites only. A `book` builds as a website |
+| Runs `{python}`, `{r}` and `{ojs}` cells | Shows the code and runs nothing. A notebook shows its saved outputs |
+| Compiles `.scss` themes | Takes any Bootswatch theme and your CSS. See [Themes](themes.qmd) |
+| Lua filters | Runs none. The `linkify.lua` filter is built in |
+| Grid tables, citations, cross-references (`@fig-x`) | Not read. Write a pipe table, and a link to the id |
+| Every Pandoc extension | CommonMark, tables, footnotes, definition lists, task lists, attributes, fenced divs, callouts, tabsets, maths, raw HTML, shortcodes |
+| Algolia search, comments, analytics | A search box over `search.json`; add the rest with `include-in-header` |
+
+## What is the same
+
+- `_quarto.yml`, `_metadata.yml` and front matter, merged in the same order.
+- Heading ids, made by Pandoc's rules, so links and anchors written for Quarto keep working.
+- Links to `.qmd`, `.md` and `.ipynb` files become links to `.html`; a link that starts with `/` starts at
+  the project's root.
+- The markup of the page: the same classes and ids, such as `#quarto-sidebar`, `#TOC`, `.callout-note`,
+  `.panel-tabset` and `.quarto-grid-item`. CSS written for a Quarto site mostly applies.
+- `pre-render` and `post-render`, with the same environment variables.
+
+## Moving a project
+
+1. Run `smalldocs check` and fix what it lists.
+2. Run `smalldocs preview`, and look at each page beside the Quarto site.
+3. Change the recipe that builds the site from `quarto render` to `smalldocs render`, and
+   `quarto publish gh-pages` to `smalldocs publish gh-pages`.
+4. If the project has its own `apidocs.py`, consider `smalldocs.api` in its place. See
+   [The API reference](api.qmd).

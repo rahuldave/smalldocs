@@ -1,0 +1,16 @@
+---
+title: smalldocs 0.1
+subtitle: The first release
+date: 2026-10-10
+author: Rahul Dave
+categories: [release]
+image: ../images/mark.svg
+---
+
+The first release of smalldocs builds websites from `_quarto.yml` projects: pages with a navbar, a
+sidebar and a table of contents; notebooks with their saved outputs; reference pages from the code;
+listings with categories and a feed; any Bootswatch theme, in light and dark. It previews with a
+reload on each change, and publishes to GitHub Pages.
+
+It was made to build the docs of a few projects without Quarto, and builds them with the same pages,
+anchors and links.

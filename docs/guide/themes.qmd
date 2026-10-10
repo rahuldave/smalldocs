@@ -1,0 +1,61 @@
+---
+title: Themes
+description: Any Bootswatch theme, light and dark together, and your own CSS.
+order: 7
+---
+
+smalldocs ships the 25 themes of [Bootswatch](https://bootswatch.com) 5.3, each as the plain CSS that
+Bootswatch builds. Name one in `format.html.theme`:
+
+```yaml
+format:
+  html:
+    theme: flatly
+```
+
+The themes: cerulean, cosmo (the default), cyborg, darkly, flatly, journal, litera, lumen, lux,
+materia, minty, morph, pulse, quartz, sandstone, simplex, sketchy, slate, solar, spacelab,
+superhero, united, vapor, yeti and zephyr. `bootstrap` gives Bootstrap with no theme.
+
+## Light and dark
+
+Give both, and the navbar or the sidebar gets a toggle. The reader's choice is kept in the browser.
+This site does it:
+
+```yaml
+format:
+  html:
+    theme:
+      light: cosmo
+      dark: darkly
+```
+
+## How the page follows the theme
+
+Quarto compiles each theme's Sass with its own, so it needs a Sass compiler. smalldocs does not. A
+Bootstrap 5.3 theme sets its colours, fonts and borders as CSS variables, such as `--bs-primary`,
+`--bs-body-bg` and `--bs-border-color`. smalldocs' own stylesheet, which lays out the navbar, the
+sidebar, the table of contents, callouts and listings, uses only those variables. So every part of
+the page takes the theme's colours, in light and in dark.
+
+## Your own CSS
+
+```yaml
+format:
+  html:
+    theme: cosmo
+    css: styles.css
+```
+
+`styles.css` loads after the theme and after smalldocs' stylesheet. Set Bootstrap's variables to
+change the theme, or smalldocs' own:
+
+```css
+:root {
+  --bs-primary: #7a3e9d;     /* Bootstrap's colours */
+  --sd-body-width: 900px;    /* the width of the text */
+  --sd-sidebar-width: 280px; /* the width of the sidebar */
+}
+```
+
+A `.scss` file in `theme` is not compiled; smalldocs says so when it builds.

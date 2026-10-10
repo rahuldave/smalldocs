@@ -1,0 +1,195 @@
+---
+title: Writing pages
+description: The Markdown that smalldocs reads, each feature with its source and its result.
+order: 3
+---
+
+smalldocs reads CommonMark with the parts of Pandoc's Markdown that websites use. Each section below
+shows the source and then the result.
+
+## Text
+
+Quotes curl and dashes join, as Pandoc's `smart` does: "quoted" -- an en dash, --- an em dash,
+and an ellipsis... Footnotes are numbered[^1]. ~~Strike~~ text, and `code`.
+
+[^1]: A footnote goes to the end of the page.
+
+Term
+: A definition list gives each term its definition.
+
+- [x] A task list
+- [ ] with boxes
+
+## Headings and attributes
+
+A heading's id is made as Pandoc makes it, so links written for Quarto still work. Give your own id
+and classes in braces:
+
+```markdown
+## Install it {#install .important}
+```
+
+A link, a picture, a span or inline code takes attributes too: `[text](url){.btn .btn-primary}`,
+`![alt](pic.png){width=50%}`, `[red]{.text-danger}`. Here is a button: [A button](get-started.qmd){.btn .btn-primary .btn-sm}
+and a [span with a class]{.text-danger}.
+
+## Divs
+
+A fence of colons makes a div. A fence with attributes opens one; a bare fence closes the innermost,
+so divs nest with fences of one length:
+
+```markdown
+::: {.border .p-3}
+Outer.
+
+::: {.text-center}
+Inner, centred.
+:::
+:::
+```
+
+::: {.border .p-3}
+Outer.
+
+::: {.text-center}
+Inner, centred.
+:::
+:::
+
+## Callouts
+
+```markdown
+::: {.callout-note}
+A note, with the default title.
+:::
+
+::: {.callout-tip}
+## A tip with its own title
+The first heading in a callout becomes its title.
+:::
+
+::: {.callout-warning title="Folded" collapse="true"}
+This warning opens when you click its title.
+:::
+```
+
+::: {.callout-note}
+A note, with the default title.
+:::
+
+::: {.callout-tip}
+## A tip with its own title
+The first heading in a callout becomes its title.
+:::
+
+::: {.callout-warning title="Folded" collapse="true"}
+This warning opens when you click its title.
+:::
+
+::: {.callout-important}
+Important, and below it a caution.
+:::
+
+::: {.callout-caution appearance="simple"}
+A caution with `appearance="simple"`.
+:::
+
+## Tabs
+
+The headings in a `panel-tabset` div become tabs:
+
+::: {.panel-tabset}
+## Python
+
+```python
+def greet(name: str) -> str:
+    "Say hello."
+    return f"Hello, {name}!"
+```
+
+## Shell
+
+```bash
+for name in Ann Bo; do echo "Hello, $name!"; done
+```
+
+## Prose
+
+Tabs hold any Markdown.
+:::
+
+## Code
+
+Code is highlighted with Pygments, in the classes Quarto uses, so the colours match. A copy button
+shows on hover. A `filename` goes above the code:
+
+```{.python filename="hello.py"}
+import sys
+
+def main() -> int:
+    for arg in sys.argv[1:]:
+        print(arg.upper())  # one line each
+    return 0
+```
+
+A cell such as ```` ```{python} ```` is shown as code. smalldocs runs no code, so it shows no output;
+it drops the `#|` lines and honours `echo: false`.
+
+## Raw HTML
+
+HTML in the Markdown passes through, and so does a block marked `{=html}`:
+
+```{=html}
+<p class="text-success">This paragraph came from a raw HTML block.</p>
+```
+
+## Figures
+
+A picture alone in its paragraph, with alt text, becomes a figure, and the alt text its caption:
+
+![The smalldocs mark, drawn as an SVG.](../images/mark.svg){width=120px}
+
+## Tables
+
+| Feature | Quarto | smalldocs |
+|---|---|---|
+| Pipe tables | yes | yes |
+| Grid tables | yes | no: write a pipe table |
+| `\|` in a cell | yes | yes |
+
+## Maths
+
+Inline maths goes between dollars, $e^{i\pi} + 1 = 0$, and display maths between double dollars:
+
+$$
+\int_0^1 x^2 \, dx = \frac{1}{3}
+$$
+
+A dollar followed by a space or a digit is money, not maths: it costs $5 and $10. With
+`from: markdown-tex_math_dollars` in `format.html`, dollars are always dollars. KaTeX draws the maths,
+and is loaded only on pages that have some.
+
+## Diagrams
+
+A `mermaid` block is drawn by mermaid.js, loaded only on pages that have one:
+
+```{mermaid}
+flowchart LR
+  A[_quarto.yml] --> B(smalldocs render)
+  C[pages] --> B
+  B --> D[_site]
+```
+
+## Shortcodes
+
+smalldocs replaces these shortcodes, outside code blocks:
+
+| Shortcode | Becomes |
+|---|---|
+| `{{</* include _part.qmd */>}}` | The file, without its front matter |
+| `{{</* meta title */>}}` | An option of the page: {{< meta title >}} |
+| `{{</* var version */>}}` | A value from `_variables.yml` |
+| `{{</* env HOME */>}}` | An environment variable |
+
+To show a shortcode as it is, put `/*` and `*/` inside its braces, as the left column of this table
+does in its source.
