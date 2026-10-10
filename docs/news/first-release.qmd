@@ -7,10 +7,16 @@ categories: [release]
 image: ../images/mark.svg
 ---
 
-The first release of smalldocs builds websites from `_quarto.yml` projects: pages with a navbar, a
-sidebar and a table of contents; notebooks with their saved outputs; reference pages from the code;
-listings with categories and a feed; any Bootswatch theme, in light and dark. It previews with a
-reload on each change, and publishes to GitHub Pages.
+The first release of smalldocs builds websites from Quarto projects. It makes these parts of a site:
 
-It was made to build the docs of a few projects without Quarto, and builds them with the same pages,
-anchors and links.
+- pages with a navbar, a sidebar and a table of contents
+- notebooks, with the outputs that were saved in them
+- reference pages, made from the code of a package
+- listings, with categories and a feed
+- any Bootswatch theme, in a light version and a dark version
+
+The command `smalldocs preview` builds the site again after each change. The command
+`smalldocs publish gh-pages` puts the site on GitHub Pages.
+
+smalldocs was made to build the documentation of a few projects without Quarto. It builds those sites
+with the same pages, anchors and links as Quarto.

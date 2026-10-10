@@ -4,13 +4,22 @@ description: The Markdown that smalldocs reads, each feature with its source and
 order: 3
 ---
 
-smalldocs reads CommonMark with the parts of Pandoc's Markdown that websites use. Each section below
-shows the source and then the result.
+smalldocs reads CommonMark, the common form of Markdown. It also reads the parts of Pandoc's Markdown
+that websites use. Pandoc is the program that Quarto uses to read Markdown. Each section below shows the
+source of a feature, and then the result.
 
 ## Text
 
-Quotes curl and dashes join, as Pandoc's `smart` does: "quoted" -- an en dash, --- an em dash,
-and an ellipsis... Footnotes are numbered[^1]. ~~Strike~~ text, and `code`.
+smalldocs changes some characters in text, as the `smart` extension of Pandoc does:
+
+| You write | The page shows |
+|---|---|
+| `"quoted"` | "quoted" |
+| `--` | -- |
+| `---` | --- |
+| `...` | ... |
+
+Footnotes get numbers[^1]. Text can be ~~struck out~~, and `code` keeps its own characters.
 
 [^1]: A footnote goes to the end of the page.
 
@@ -22,28 +31,29 @@ Term
 
 ## Headings and attributes
 
-A heading's id is made as Pandoc makes it, so links written for Quarto still work. Give your own id
-and classes in braces:
+smalldocs makes the id of a heading as Pandoc makes it. So a link that was written for Quarto still
+works. To give your own id and classes, put them in braces:
 
 ```markdown
 ## Install it {#install .important}
 ```
 
-A link, a picture, a span or inline code takes attributes too: `[text](url){.btn .btn-primary}`,
-`![alt](pic.png){width=50%}`, `[red]{.text-danger}`. Here is a button: [A button](get-started.qmd){.btn .btn-primary .btn-sm}
+A link, a picture, a span and inline code take attributes too. Write `[text](url){.btn .btn-primary}`,
+`![alt](pic.png){width=50%}` or `[red]{.text-danger}`. Here is [a button](get-started.qmd){.btn .btn-primary .btn-sm}
 and a [span with a class]{.text-danger}.
 
 ## Divs
 
-A fence of colons makes a div. A fence with attributes opens one; a bare fence closes the innermost,
-so divs nest with fences of one length:
+A div is a block of the page with its own attributes. A line of three or more colons starts or ends a
+div. A line with attributes starts a div, and a line of colons only ends the innermost div. So divs can
+nest, with lines of the same length:
 
 ```markdown
 ::: {.border .p-3}
 Outer.
 
 ::: {.text-center}
-Inner, centred.
+Inner, in the centre.
 :::
 :::
 ```
@@ -52,11 +62,13 @@ Inner, centred.
 Outer.
 
 ::: {.text-center}
-Inner, centred.
+Inner, in the centre.
 :::
 :::
 
 ## Callouts
+
+A callout is a box that sets off a note, a tip or a warning:
 
 ```markdown
 ::: {.callout-note}
@@ -87,7 +99,7 @@ This warning opens when you click its title.
 :::
 
 ::: {.callout-important}
-Important, and below it a caution.
+An important callout. A caution callout comes next.
 :::
 
 ::: {.callout-caution appearance="simple"}
@@ -96,7 +108,7 @@ A caution with `appearance="simple"`.
 
 ## Tabs
 
-The headings in a `panel-tabset` div become tabs:
+A tabset is a group of tabs. In a div with the class `panel-tabset`, each heading becomes a tab:
 
 ::: {.panel-tabset}
 ## Python
@@ -115,13 +127,13 @@ for name in Ann Bo; do echo "Hello, $name!"; done
 
 ## Prose
 
-Tabs hold any Markdown.
+A tab can hold any Markdown.
 :::
 
 ## Code
 
-Code is highlighted with Pygments, in the classes Quarto uses, so the colours match. A copy button
-shows on hover. A `filename` goes above the code:
+smalldocs colours code with Pygments. It uses the same classes as Quarto, so the colours are the same.
+A copy button shows when the pointer is on the code. A `filename` goes above the code:
 
 ```{.python filename="hello.py"}
 import sys
@@ -132,12 +144,13 @@ def main() -> int:
     return 0
 ```
 
-A cell such as ```` ```{python} ```` is shown as code. smalldocs runs no code, so it shows no output;
-it drops the `#|` lines and honours `echo: false`.
+A code block whose fence ends with `{python}` is a cell, which Quarto runs. smalldocs shows the cell as
+code. It does not run the code, so the page shows no output. It removes the `#|` lines, and it obeys
+`echo: false`.
 
 ## Raw HTML
 
-HTML in the Markdown passes through, and so does a block marked `{=html}`:
+HTML in the Markdown goes into the page unchanged. A block marked `{=html}` also goes in unchanged:
 
 ```{=html}
 <p class="text-success">This paragraph came from a raw HTML block.</p>
@@ -145,7 +158,8 @@ HTML in the Markdown passes through, and so does a block marked `{=html}`:
 
 ## Figures
 
-A picture alone in its paragraph, with alt text, becomes a figure, and the alt text its caption:
+A picture alone in its paragraph becomes a figure, if it has alt text. The alt text becomes the
+caption:
 
 ![The smalldocs mark, drawn as an SVG.](../images/mark.svg){width=120px}
 
@@ -159,19 +173,20 @@ A picture alone in its paragraph, with alt text, becomes a figure, and the alt t
 
 ## Maths
 
-Inline maths goes between dollars, $e^{i\pi} + 1 = 0$, and display maths between double dollars:
+Inline maths goes between dollars, as in $e^{i\pi} + 1 = 0$. Display maths goes between double dollars:
 
 $$
 \int_0^1 x^2 \, dx = \frac{1}{3}
 $$
 
-A dollar followed by a space or a digit is money, not maths: it costs $5 and $10. With
-`from: markdown-tex_math_dollars` in `format.html`, dollars are always dollars. KaTeX draws the maths,
-and is loaded only on pages that have some.
+A dollar before a space or a digit is money, so the text "it costs $5 and $10" stays as it is. If
+`format.html` has `from: markdown-tex_math_dollars`, a dollar is always a dollar. KaTeX draws the maths.
+smalldocs loads KaTeX only on pages that have maths.
 
 ## Diagrams
 
-A `mermaid` block is drawn by mermaid.js, loaded only on pages that have one:
+The JavaScript library mermaid.js draws a `mermaid` block. smalldocs loads it only on pages that have a
+diagram:
 
 ```{mermaid}
 flowchart LR
@@ -182,7 +197,8 @@ flowchart LR
 
 ## Shortcodes
 
-smalldocs replaces these shortcodes, outside code blocks:
+A shortcode is a tag in double braces that smalldocs replaces before it reads the Markdown. smalldocs
+replaces these shortcodes everywhere except in code blocks:
 
 | Shortcode | Becomes |
 |---|---|
@@ -191,5 +207,5 @@ smalldocs replaces these shortcodes, outside code blocks:
 | `{{</* var version */>}}` | A value from `_variables.yml` |
 | `{{</* env HOME */>}}` | An environment variable |
 
-To show a shortcode as it is, put `/*` and `*/` inside its braces, as the left column of this table
-does in its source.
+To show a shortcode as it is, put `/*` and `*/` inside its braces. The left column of the table does
+so in its source.

@@ -1,39 +1,47 @@
 # smalldocs
 
-smalldocs builds a website from a [Quarto](https://quarto.org) project, in pure Python. It reads the same
-`_quarto.yml` and the same Markdown, and writes the same kind of site into `_site`: pages with a navbar, a
-sidebar and a table of contents, notebooks with their saved outputs, reference pages made from your code,
-and listings of posts with categories and a feed. The site takes any [Bootswatch](https://bootswatch.com)
-theme, in light and dark.
+smalldocs builds a website from a [Quarto](https://quarto.org) project, in Python. A Quarto project is a
+folder with a `_quarto.yml` file. smalldocs reads the same `_quarto.yml` and the same Markdown, and it
+writes the site into the folder `_site`. The site has these parts:
 
-It makes websites only: no PDF, Word, slides or books, and it runs no code. In return it is one package
-from PyPI, with no Pandoc, Deno, Sass or TeX.
+- pages with a navbar, a sidebar and a table of contents
+- notebooks, with the outputs that were saved in them
+- reference pages, made from the code of a package
+- listings of posts, with categories and a feed
+
+The site can use any [Bootswatch](https://bootswatch.com) theme, in a light version and a dark version.
+
+smalldocs makes websites only. It does not make PDF files, Word files, slides or books, and it runs no
+code. It is one package from PyPI, and it needs no Pandoc, Deno, Sass or TeX.
 
 ```bash
 pip install smalldocs
 
 smalldocs render docs              # build docs/_site
-smalldocs preview docs             # serve it at http://127.0.0.1:4200, rebuild and reload on each change
-smalldocs check docs               # what smalldocs ignores, broken links, Markdown only Pandoc reads
+smalldocs preview docs             # serve it at http://127.0.0.1:4200, and build it again on each change
+smalldocs check docs               # what smalldocs ignores, broken links, Markdown that only Pandoc reads
 smalldocs api build --dir docs     # the API reference, from docstrings, types and docments
-smalldocs publish gh-pages docs    # push the site to the gh-pages branch
+smalldocs publish gh-pages docs    # push the site to the branch gh-pages
 ```
 
-The documentation is in [`docs/`](docs/), built with smalldocs.
+The documentation is in [`docs/`](docs/). smalldocs builds it.
 
-## What it reads
+## What smalldocs reads
 
-- `_quarto.yml`, `_metadata.yml` and front matter, merged as Quarto merges them: `project`
-  (`output-dir`, `render`, `resources`, `pre-render`, `post-render`), `website` (navbar, sidebar, page
-  navigation, footer, search, site URL, repository links) and `format.html` (theme, CSS, table of contents,
-  numbered sections, includes).
-- Markdown: CommonMark, tables, footnotes, definition lists, task lists, `{#id .class}` attributes,
-  fenced divs, callouts, tabsets, `$` maths (KaTeX), mermaid, raw HTML, and the shortcodes `include`,
-  `meta`, `var` and `env`. Heading ids follow Pandoc's rules, so links written for Quarto keep working.
-- Notebooks, with the outputs they were saved with, and Quarto's `#|` cell options.
-- Listings: `default`, `grid` and `table`, with sorting, filtering, categories, pages and RSS.
+- **The options.** smalldocs reads `_quarto.yml`, `_metadata.yml` and front matter, and merges them as
+  Quarto does. It reads the sections `project`, `website` and `format.html`.
+- **The Markdown.** smalldocs reads CommonMark, tables, footnotes, attributes, divs, callouts, tabsets,
+  maths, diagrams, raw HTML and shortcodes. It makes the ids of headings by the rules of Pandoc. So links
+  that were written for Quarto keep working.
+- **Notebooks.** smalldocs shows the outputs that were saved in a notebook. It obeys the `#|` options of
+  Quarto in each cell.
+- **Listings.** smalldocs makes listings as rows, cards or a table, with sorting, a filter, categories,
+  pages and an RSS feed.
 
 ## Licence
 
-MIT. smalldocs ships Bootstrap, Bootswatch and Bootstrap Icons (MIT) and Fuse.js (Apache-2.0), each with
-its licence in `src/smalldocs/assets/vendor/`.
+smalldocs has the MIT licence. It includes Bootstrap, Bootswatch and Bootstrap Icons, with the MIT
+licence, and Fuse.js, with the Apache-2.0 licence. The licence of each is in `src/smalldocs/assets/vendor/`.
+
+The documentation follows the nossaifd writing guide, https://github.com/rahuldave/nossaifd. See
+`style/README.md`.

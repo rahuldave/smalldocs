@@ -8,6 +8,10 @@ and Typst. It makes websites only: no PDF, Word, slides or books, and it runs no
 The user documentation is the site in `docs/`, built by smalldocs itself. Keep it true when the behaviour
 changes. The README is a short front page.
 
+Write every page of the site, and the README, by the nossaifd writing guide, `style/GUIDE.md`. Use the
+glossary in `style/README.md`, and define jargon where it first appears. Check with `just style`, which also
+reads the Markdown cells of the notebooks; it must pass before a commit.
+
 ## Rules the tool must keep
 
 - **A project that builds with Quarto builds with smalldocs, with the same pages, the same anchors and the
@@ -63,7 +67,7 @@ just build           # the wheel and sdist into dist/
 
 ## Checking a change
 
-1. `just test` and `just lint`, as separate commands; read each result.
+1. `just test`, `just lint` and `just style`, as separate commands; read each result.
 2. `uv run smalldocs api check --dir docs`: every function typed and documented.
 3. For anything in `layout.py`, `markdown.py` or `assets/`: build `docs/` and drive it in headless Chrome
    (Playwright, `channel="chrome"`): tabs, callouts, search, the dark toggle, listings, a phone width.

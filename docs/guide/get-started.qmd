@@ -1,24 +1,27 @@
 ---
 title: Get started
-description: Install smalldocs, make a site, preview it, and publish it.
+description: Install smalldocs, make a site, preview it and publish it.
 order: 1
 ---
 
-## Install
+## Install smalldocs
 
-smalldocs needs Python 3.11 or later. Add it to a project as a tool for development:
+smalldocs needs Python 3.11 or later. Add it to a project as a development tool:
 
 ```bash
 uv add --dev smalldocs     # or: pip install smalldocs
 ```
 
-If your site documents your package's API, install smalldocs in the same environment as the
-package, so that it can import the package.
+If the site documents the API of your package, install smalldocs in the environment of the package.
+smalldocs imports the package to read its code.
 
 ## Make a site
 
-A site is a folder with a `_quarto.yml` file and some pages. A page is a `.qmd`, `.md` or `.ipynb`
-file. This is the smallest site:
+A project is a folder with a `_quarto.yml` file and some pages. A page is a `.qmd`, `.md` or `.ipynb`
+file. Front matter is the YAML block between two `---` lines at the top of a page. It holds the options
+of the page, such as its title.
+
+The smallest site has three files:
 
 ::: {.panel-tabset}
 ## _quarto.yml
@@ -64,42 +67,46 @@ We did.
 ```
 :::
 
-## Build it
+## Build the site
 
 ```bash
 smalldocs render            # the folder you are in
 smalldocs render docs       # or another folder
 ```
 
-smalldocs writes the site into `_site`, or into the folder that `project.output-dir` names. Each
-build empties that folder first. Open `_site/index.html`, or serve the folder.
+smalldocs writes the site into the output folder. The output folder is `_site`, or the folder that the
+option `project.output-dir` names. Each build deletes the old content of the output folder first. Open
+`_site/index.html` in a browser, or serve the folder.
 
-## Preview it
+## Preview the site
 
 ```bash
 smalldocs preview docs
 ```
 
-`preview` builds the site, serves it at `http://127.0.0.1:4200`, and opens your browser. When you
-save a file, it builds the site again and the browser reloads. Give `--port` for another port.
+The command builds the site, serves it at `http://127.0.0.1:4200` and opens your browser. When you save
+a file, smalldocs builds the site again, and the browser loads the new pages. To use another port, give
+`--port`.
 
 ::: {.callout-tip}
-## Generated pages do not loop
+## Generated pages do not start a loop
 
-A `pre-render` script, or the API reference, writes pages during a build. `preview` notes the files
-after each build, so those writes do not start another build.
+A `pre-render` script, or the API reference, writes pages during a build. After each build, `preview`
+notes the time of each file again. So the pages that a build writes do not start another build.
 :::
 
-## Publish it
+## Publish the site
 
-To put the site on GitHub Pages:
+To put the site on GitHub Pages, run:
 
 ```bash
 smalldocs publish gh-pages docs
 ```
 
-This builds the site, commits it to the `gh-pages` branch in a temporary worktree, and pushes the
-branch to `origin`. It does not change your working tree or your current branch. In the settings of
-the repository on GitHub, set Pages to deploy from the `gh-pages` branch.
+The command builds the site and commits it to the branch `gh-pages`. It works in a temporary copy of
+the repository, called a worktree, and then pushes the branch to `origin`. Your files and your current
+branch do not change. In the settings of the repository on GitHub, set Pages to use the branch
+`gh-pages`.
 
-You can also build the site in a GitHub Action and upload `_site`; smalldocs is one `pip install`.
+You can also build the site in a GitHub Action, and upload `_site`. smalldocs needs only one
+`pip install` there.

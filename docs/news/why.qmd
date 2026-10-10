@@ -1,15 +1,16 @@
 ---
-title: Why a small Quarto
+title: Why smalldocs exists
 date: 2026-10-09
 author: Rahul Dave
 categories: [design, release]
 ---
 
-Quarto is a fine tool, and a large one: it brings Pandoc, Deno, Sass, esbuild and Typst, more than
-600 MB, to make PDFs, books, slides and websites, and to run code. Many projects use it for one
-thing, a docs site from Markdown and the code. smalldocs does that one thing in one Python package
-that installs from PyPI.
+Quarto makes PDF files, books, slides and websites, and it runs code. To do so, it installs Pandoc,
+Deno, Sass, esbuild and Typst, which take more than 600 MB. Many projects use Quarto for one thing
+only. They build a documentation site from Markdown and from their code.
 
-The design rests on one fact: a Bootstrap 5.3 theme exposes its colours and fonts as CSS variables.
-So smalldocs needs no Sass to give the page any theme's look. It takes the plain CSS that Bootswatch
-publishes, and lays the page out with a stylesheet that uses only those variables.
+smalldocs does that one thing. It is one Python package, and it installs from PyPI.
+
+smalldocs needs no Sass compiler, because of how Bootstrap 5.3 themes work. A Bootstrap 5.3 theme sets
+its colours and fonts as CSS variables. smalldocs takes the CSS files that Bootswatch publishes. Then it
+lays out the page with a stylesheet that uses only those variables.

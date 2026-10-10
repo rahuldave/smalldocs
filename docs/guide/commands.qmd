@@ -1,11 +1,11 @@
 ---
 title: The commands
-description: Every command of smalldocs and its options.
+description: Each command of smalldocs, with its options.
 order: 9
 ---
 
-Each command takes the project's folder, the one with `_quarto.yml`. It is the folder you are in
-when you give none.
+Each command takes the folder of the project, which holds `_quarto.yml`. If you give no folder, the
+command uses the folder you are in.
 
 ## render
 
@@ -13,8 +13,8 @@ when you give none.
 smalldocs render [DIR] [--quiet] [--strict]
 ```
 
-Build the site. `--quiet` prints only warnings and errors. `--strict` exits with 1 when there is a
-warning, such as a broken link or a key that smalldocs ignores.
+The command builds the site. With `--quiet`, it prints only warnings and errors. With `--strict`, a
+warning makes the exit code 1. A broken link and an option that smalldocs ignores are warnings.
 
 ## preview
 
@@ -22,9 +22,9 @@ warning, such as a broken link or a key that smalldocs ignores.
 smalldocs preview [DIR] [--port 4200] [--host 127.0.0.1] [--no-browser]
 ```
 
-Build the site, serve it, and open a browser. On each change to a file of the project, build it
-again; the browser reloads. A failed build prints its error and keeps the last good site. It
-listens on this machine only, unless you give `--host`.
+The command builds the site, serves it and opens a browser. When a file of the project changes, it
+builds the site again, and the browser loads the new pages. If a build fails, the command prints the
+error and keeps the last good site. It listens on this computer only. To listen on other addresses, give `--host`.
 
 ## check
 
@@ -32,9 +32,14 @@ listens on this machine only, unless you give `--host`.
 smalldocs check [DIR]
 ```
 
-Build the site into a scratch folder, and list what to look at before you move from Quarto: keys
-that smalldocs ignores, broken links, and Markdown that only Pandoc reads. Exit with 1 if there is
-anything.
+The command builds the site into a temporary folder. Then it lists what to fix before you move a project
+from Quarto:
+
+- the options that smalldocs ignores
+- the broken links
+- the Markdown that only Pandoc reads
+
+If it finds anything, the exit code is 1.
 
 ## api
 
@@ -43,8 +48,8 @@ smalldocs api build|check|list [--dir DIR]
 smalldocs api module NAME [--dir DIR]
 ```
 
-Make the reference pages, check the docments, list the symbols, or print one module as Markdown. See
-[The API reference](api.qmd).
+The command makes the reference pages, checks the docments, lists the symbols, or prints one module as
+Markdown. See [The API reference](api.qmd).
 
 ## publish
 
@@ -52,14 +57,21 @@ Make the reference pages, check the docments, list the symbols, or print one mod
 smalldocs publish gh-pages [DIR] [--branch gh-pages] [--remote origin] [--no-render] [-m MESSAGE]
 ```
 
-Build the site and push it to the branch, through a temporary worktree. Your working tree and your
-branch do not change, and your git hooks do not run on the site's commit. It refuses to publish onto
-your current branch, the remote's default branch, `main` or `master`, which hold your sources.
-`--no-render` publishes the output folder as it is.
+The command builds the site and pushes it to the branch. It works in a temporary worktree, so your
+files and your current branch do not change. Your git hooks do not run for the commit of the site.
+
+The command refuses some branches, because they hold your source files:
+
+- your current branch
+- the default branch of the remote
+- `main` and `master`
+- a branch that shares history with your code and holds no site
+
+With `--no-render`, the command publishes the output folder as it is.
 
 ## Exit codes
 
-| Code | Means |
+| Code | Meaning |
 |---|---|
 | 0 | Done |
 | 1 | Done, with something to fix: `--strict` with warnings, or `check` and `api check` with findings |

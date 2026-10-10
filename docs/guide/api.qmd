@@ -4,15 +4,20 @@ description: Reference pages made from your code, and names in backticks that li
 order: 5
 ---
 
-smalldocs writes a reference page for each module of your package. It reads what the code already
-says: the types from the annotations, the description of each parameter from the comment beside it,
-and the summary from the docstring. Nothing is written twice. The [Reference](../api/site.qmd) of this
-site is made this way, from smalldocs' own code.
+smalldocs writes a reference page for each module of your package. A reference page lists the classes
+and the functions of a module, with their parameters. smalldocs reads what the code already says, so
+you write nothing twice:
+
+- The types come from the annotations.
+- The description of each parameter comes from the comment beside it.
+- The summary comes from the docstring.
+
+The [Reference](../api/site.qmd) of this site is made from the code of smalldocs in this way.
 
 ## Write the code
 
-Put one parameter on each line, with its comment beside it, and the return's comment after the
-colon of the `def` line. [fastcore](https://fastcore.fast.ai) calls these comments *docments*.
+Put one parameter on each line, with its comment beside it. Put the comment for the return value after
+the colon of the `def` line. [fastcore](https://fastcore.fast.ai) calls these comments docments.
 
 ```python
 def add(
@@ -23,26 +28,36 @@ def add(
     return a + b
 ```
 
-A dataclass shows its constructor, with the comment beside each field. A pydantic model shows its
-fields, with their descriptions. A `TypedDict` shows its keys, with the comment beside each.
+smalldocs shows other kinds of class in their own way:
 
-## Turn it on
+- A dataclass shows its constructor, with the comment beside each field.
+- A pydantic model shows its fields, with their descriptions.
+- A `TypedDict` shows its keys, with the comment beside each key.
+
+## Turn on the reference
+
+Add a `smalldocs.api` section to `_quarto.yml`:
 
 ```yaml
 smalldocs:
   api:
     packages: [mypkg]                  # the importable packages to document
     out: api                           # the folder of pages, inside the site; `api` by default
-    root: ..                           # the repository's root, from the site's folder; `..`, or `.` when the site's folder holds pyproject.toml
+    root: ..                           # the root of the repository, from the folder of the site
     source: https://github.com/me/mypkg/blob/main   # each entry links to its line here
     check: ["*.py", "tests/**/*.py"]   # more files that `smalldocs api check` holds to the convention
 ```
 
-Then every build writes `api/<module>.qmd`, one page for each public module, and `_symbols.json`,
-the index of names. `out` must be a folder inside the site. smalldocs notes the pages it writes in
-`api/.smalldocs-api`, and deletes a page only when an earlier build wrote it and this one did not, so a
-page of your own in that folder, such as `api/index.qmd`, is safe. List the pages in the sidebar with
-a glob:
+The default `root` is `..`. If the folder of the site holds `pyproject.toml`, the default is `.`.
+
+Each build then writes a page `api/<module>.qmd` for each public module. It also writes
+`_symbols.json`, the index of names. The folder `out` must be inside the site.
+
+smalldocs notes the pages that it writes in the file `api/.smalldocs-api`. It deletes a page only if an
+earlier build wrote the page and the new build did not. So a page of your own in the folder, such as
+`api/index.qmd`, is safe.
+
+To list the pages in the sidebar, use a glob:
 
 ```yaml
 website:
@@ -52,30 +67,39 @@ website:
         contents: api/*
 ```
 
-smalldocs imports your package, so install it in the same environment as the package. If it cannot
-import the package, it also looks in the repository's root and in its `src` folder.
+smalldocs imports your package. So install smalldocs in the environment of the package. If the import
+fails, smalldocs also looks in the root of the repository and in its `src` folder.
 
-## Links from the prose
+## Links from the text
 
-With the API on, a name in backticks that the reference documents becomes a link to its entry,
-anywhere on the site: `Site`, `inventory`, `smalldocs.markdown.render`. A name in a link stays as it is, and a name
-that the reference does not know stays as code.
+When the reference is on, a name in backticks becomes a link to its entry, on every page of the site.
+The name must be in the reference, for example `Site`, `inventory` or `smalldocs.markdown.render`. A name
+inside a link stays as it is. A name that the reference does not know stays as code.
 
-## At the terminal
+## Use the reference at the terminal
 
 ```bash
 smalldocs api build --dir docs        # write the pages and the index
-smalldocs api module site --dir docs  # print one module as plain Markdown, for people and agents
+smalldocs api module site --dir docs  # print one module as Markdown, for people and agents
 smalldocs api list --dir docs         # every module, class, method and function, one line each
 smalldocs api check --dir docs        # what is typed and documented, and every gap; exit 1 if any
 ```
 
-`check` reports each function without a docstring, each parameter without a type or a docment, and
-each return without one. Run it in your tests or before each commit.
+`check` reports each gap in the code:
 
-## Coming from apidocs.py
+- a function without a docstring
+- a parameter without a type or a docment
+- a return value without a type or a docment
 
-A project that made its reference with its own `apidocs.py` and `linkify.lua` keeps working: smalldocs
-runs the `pre-render` script, and linkify is on when `filters` lists `linkify.lua`. To move to
-`smalldocs.api`, add the section above, then drop `pre-render`, `apidocs.py`, the filter and
-`linkify.lua`. The pages that it writes are the same, byte for byte.
+Run `check` in your tests, or before each commit.
+
+## Move from apidocs.py
+
+Some projects made their reference with their own `apidocs.py` script and `linkify.lua` filter. Such a
+project keeps working with smalldocs, because smalldocs does two things:
+
+- It runs the `pre-render` script.
+- It turns on linkify when `filters` lists `linkify.lua`.
+
+To change to `smalldocs.api`, add the section above. Then remove `pre-render`, `apidocs.py`, the filter
+and `linkify.lua`. The pages that smalldocs writes are the same, byte for byte.

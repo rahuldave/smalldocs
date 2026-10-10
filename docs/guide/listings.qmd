@@ -1,65 +1,66 @@
 ---
 title: Listings
-description: Pages that list other pages, as a list, a grid of cards or a table, with categories and a feed.
+description: Pages that list other pages as rows, as cards or as a table, with categories and a feed.
 order: 6
 ---
 
-A page with `listing:` in its front matter lists other pages, as in Quarto. The [News](../news/index.qmd)
-page is a listing, and so is the grid of the guide on the [home page](../index.qmd).
+A listing is a page that lists other pages, as in Quarto. A page with `listing:` in its front matter is
+a listing. The [News](../news/index.qmd) page is a listing. The cards of the guide on the
+[home page](../index.qmd) are a listing too.
 
 ```yaml
 ---
 title: News
 listing:
-  contents: posts          # a folder, or globs, from this page's folder
+  contents: posts          # a folder, or globs, from the folder of this page
   type: default            # default, grid or table
   sort: "date desc"        # or a list: ["date desc", "title"]; false keeps the order found
-  categories: true         # the categories in the margin: true, numbered, unnumbered or cloud
-  feed: true               # an RSS feed beside the page; needs website.site-url
+  categories: true         # the categories at the right: true, numbered, unnumbered or cloud
+  feed: true               # an RSS feed beside the page; it needs website.site-url
 ---
 ```
 
 ## What an item shows
 
-Each item is a page. smalldocs reads its front matter:
+Each item of a listing is a page. smalldocs reads the fields of the item from the page:
 
 | Field | From |
 |---|---|
 | `title`, `subtitle`, `author`, `date`, `categories` | The front matter |
-| `description` | The front matter, or else the first paragraph of the page |
-| `image` | The front matter, or else the first picture in the page |
+| `description` | The front matter, or the first paragraph of the page |
+| `image` | The front matter, or the first picture in the page |
 | `reading-time`, `word-count` | Counted from the page |
 | `filename`, `file-modified` | The file |
 
-Choose and order the fields with `fields: [title, date, description]`.
+To choose the fields and their order, write for example `fields: [title, date, description]`.
 
-## The three types
+## The types of listing
 
 `default`
-: A row for each page: the date and the author on the left, the title and the description in the
-  middle, the picture on the right.
+: A row for each page. The date and the author are on the left. The title and the description are in
+  the middle, and the picture is on the right.
 
 `grid`
-: A card for each page, `grid-columns` across (3 by default), with the picture on top at
-  `image-height`.
+: A card for each page. The option `grid-columns` sets the number of cards in a row. The default is 3.
+  The picture is at the top of each card, at the height of `image-height`.
 
 `table`
-: A row for each page, a column for each field.
+: A row for each page, and a column for each field.
 
 ## Other options
 
 | Option | What it does |
 |---|---|
-| `id` | The listing's id. If the page has an empty div with this id, the listing goes there; else at the end |
-| `max-items` | Show at most this many |
-| `page-size` | Split into pages of this many; 50 by default |
-| `sort-ui`, `filter-ui` | A box to sort and a box to filter; on for `default` and `table` |
-| `max-description-length` | Cut a description at this many characters; 175 by default |
-| `date-format` | Such as `MMMM D, YYYY`, or `iso`, `long`, `medium`, `short` |
-| `include`, `exclude` | Keep or drop items by field: `include: {categories: news}` |
-| `field-display-names` | The heading of a table's column |
+| `id` | The id of the listing. If the page has an empty div with this id, the listing goes there. If not, it goes at the end |
+| `max-items` | Show this number of items at most |
+| `page-size` | Show this number of items on each page of the listing; 50 by default |
+| `sort-ui`, `filter-ui` | A box to sort and a box to filter. They are on for `default` and `table` |
+| `max-description-length` | Cut a description after this number of characters; 175 by default |
+| `date-format` | For example `MMMM D, YYYY`, or `iso`, `long`, `medium` or `short` |
+| `include`, `exclude` | Keep or remove items by field, for example `include: {categories: news}` |
+| `field-display-names` | The heading of a column in a table |
 | `grid-item-align`, `grid-item-border` | The alignment and the border of a card |
 | `table-striped`, `table-hover` | The look of a table |
 
-A category on a post links back to the listing, filtered to that category. A click on a category in a
-listing filters it too.
+A category on a post links to the listing, which then shows only the posts of that category. A click
+on a category in a listing does the same.

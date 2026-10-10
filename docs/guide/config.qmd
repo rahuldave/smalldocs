@@ -1,51 +1,68 @@
 ---
 title: The configuration
-description: The keys of _quarto.yml that smalldocs reads, and the ones it adds.
+description: The options of _quarto.yml that smalldocs reads, and the options that it adds.
 order: 2
 ---
 
-smalldocs reads `_quarto.yml` as Quarto does. Options merge from the outside in: the top level and
-`format.html` of `_quarto.yml`, then a `_metadata.yml` in each folder on the way to the page, then
-the page's own front matter. The nearer value wins.
+smalldocs reads `_quarto.yml` as Quarto does. An option is a key in `_quarto.yml`, in a `_metadata.yml`
+file or in the front matter of a page. smalldocs merges the options in this order, and a later value
+wins:
 
-A key that smalldocs does not read gives a warning when you build. `smalldocs render --strict` turns
-the warnings into a failure.
+1. The top level and `format.html` of `_quarto.yml`.
+2. A `_metadata.yml` file in each folder on the path to the page.
+3. The front matter of the page.
+
+If smalldocs does not read an option, the build gives a warning. With `smalldocs render --strict`, a
+warning makes the build fail.
 
 ## project
 
 | Key | What it does |
 |---|---|
-| `type` | `website`. A `book` is built as a website, with its chapters as the sidebar. Other types stop the build |
-| `output-dir` | Where the site goes; `_site` by default. It is emptied at each build, so smalldocs refuses a folder that is the project or above it, that holds a `.git`, or that has other files in it and no `site_libs` (the mark of an earlier build) |
-| `render` | Globs of the pages to build, one or a list. A glob that starts with `!` leaves pages out. Without it, every `.qmd`, `.md` and `.ipynb` is a page |
-| `resources` | Globs of more files to copy into the site, such as `.nojekyll` or `images/**` |
-| `pre-render`, `post-render` | Commands to run before and after the build, in the project's folder, with Quarto's `QUARTO_PROJECT_*` variables |
+| `type` | `website`. A `book` is built as a website, with its chapters as the sidebar. Another type stops the build |
+| `output-dir` | The output folder; `_site` by default. See the note below the table |
+| `render` | One glob, or a list of globs, of the pages to build. A glob that starts with `!` leaves pages out. Without `render`, every `.qmd`, `.md` and `.ipynb` file is a page |
+| `resources` | One glob, or a list of globs, of more files to copy into the site, such as `.nojekyll` or `images/**` |
+| `pre-render`, `post-render` | Commands to run before and after the build, in the folder of the project, with the `QUARTO_PROJECT_*` variables of Quarto |
 
-Without `render`, smalldocs leaves out files and folders whose names start with `_` or `.`, the output
-folder, virtual environments, and `README.md`, as Quarto does.
+Each build deletes the old content of the output folder. So smalldocs refuses an output folder in these
+cases:
 
-Globs work as in Quarto. A glob with a `/` is read from the project's root, with `*` inside one folder
-and `**` across folders: `guide/*` finds `guide/a.qmd` but not `guide/old/b.qmd`; `guide/**` finds
-both. A glob with no `/`, such as `*.qmd`, finds files in every folder. A folder, such as `guide/`,
-means the pages in it. A link to a page that is not
-built, a draft or one that `render` leaves out, is reported, and its source is never copied into the
-site.
+- The folder is the project, or a folder above the project.
+- The folder holds a `.git` folder.
+- The folder holds files, but no `site_libs` folder. A `site_libs` folder shows that an earlier build
+  of Quarto or smalldocs made the folder.
+
+Without `render`, smalldocs leaves out some files, as Quarto does. It leaves out files and folders whose
+names start with `_` or `.`, the output folder, virtual environments and `README.md`.
+
+## Globs
+
+A glob is a path pattern, such as `guide/*.qmd`. smalldocs reads globs as Quarto does:
+
+- In a glob with a `/`, the `*` stays inside one folder, and `**` crosses folders. So `guide/*` finds
+  `guide/a.qmd`, but not `guide/old/b.qmd`. `guide/**` finds both.
+- A glob with no `/`, such as `*.qmd`, finds files in every folder.
+- A folder name, such as `guide/`, means the pages in the folder.
+
+Sometimes a page links to a page that is not built, for example a draft. smalldocs reports the link,
+and it never copies the source of that page into the site.
 
 ## website
 
 | Key | What it does |
 |---|---|
-| `title`, `description` | The site's name and summary |
-| `site-url` | The address of the site; it makes `sitemap.xml` and feeds possible |
+| `title`, `description` | The name and the summary of the site |
+| `site-url` | The address of the site. smalldocs needs it for `sitemap.xml` and for feeds |
 | `repo-url`, `repo-branch`, `repo-subdir`, `repo-actions` | Links under the table of contents: `edit`, `source`, `issue` |
-| `navbar` | `left`, `right`, `tools`, `title`, `logo`, `background`, `search`. An entry is a page, or `href` and `text`, with an `icon`; `menu` makes a dropdown |
-| `sidebar` | `contents`, `style` (`floating` or `docked`), `title`, `logo`, `search`, `tools`, `collapse-level`. Several sidebars may be given as a list |
-| `page-navigation` | Links to the previous and next pages of the sidebar |
-| `page-footer` | One text, or `left`, `center` and `right`; each is Markdown or a list of entries |
+| `navbar` | `left`, `right`, `tools`, `title`, `logo`, `background`, `search`. An entry is a page, or `href` and `text`, with an `icon`. `menu` makes a dropdown |
+| `sidebar` | `contents`, `style` (`floating` or `docked`), `title`, `logo`, `search`, `tools`, `collapse-level`. A list gives several sidebars |
+| `page-navigation` | Links to the previous page and the next page of the sidebar |
+| `page-footer` | One text, or `left`, `center` and `right`. Each part is Markdown or a list of entries |
 | `search` | `false` turns search off |
-| `favicon`, `open-graph`, `bread-crumbs` | The icon, the Open Graph tags, and the breadcrumbs (`false` hides them) |
+| `favicon`, `open-graph`, `bread-crumbs` | The icon, the Open Graph tags and the breadcrumbs. `false` hides the breadcrumbs |
 
-A sidebar's `contents` takes the same entries as Quarto:
+The `contents` of a sidebar takes the same entries as in Quarto:
 
 ```yaml
 sidebar:
@@ -67,25 +84,26 @@ sidebar:
 
 | Key | What it does |
 |---|---|
-| `theme` | A Bootswatch name, or `light:` and `dark:` for both with a toggle. See [Themes](themes.qmd) |
-| `css` | Your stylesheets, after the theme's |
-| `toc`, `toc-depth`, `toc-title` | The table of contents in the right margin |
-| `number-sections` | Numbers on the headings |
-| `code-copy` | The copy button on code; on by default |
-| `from` | Pandoc's reader with extensions. smalldocs reads `-smart` and `-tex_math_dollars` |
-| `page-layout` | `article` (the default), `full`, or `custom` |
+| `theme` | A Bootswatch name, or `light:` and `dark:` for two themes and a toggle. See [Themes](themes.qmd) |
+| `css` | Your stylesheets, after the stylesheet of the theme |
+| `toc`, `toc-depth`, `toc-title` | The table of contents at the right of the page |
+| `number-sections` | Numbers before the headings |
+| `code-copy` | The copy button on code. It is on by default |
+| `from` | The Pandoc reader, with extensions. smalldocs reads `-smart` and `-tex_math_dollars` |
+| `page-layout` | `article` (the default), `full` or `custom` |
 | `link-external-newwindow` | Open links to other sites in a new tab |
-| `include-in-header`, `include-before-body`, `include-after-body` | Files or `text:` to put into each page |
-| `title`, `subtitle`, `description`, `author`, `date`, `date-format`, `categories`, `image` | The title block, and what listings show |
-| `draft` | `true` leaves the page out |
-| `order` | The place of a page among those that a glob finds |
-| `listing` | A listing of other pages. See [Listings](listings.qmd) |
+| `include-in-header`, `include-before-body`, `include-after-body` | Files, or `text:` entries, to put into each page |
+| `echo`, `output`, `include`, `execute` | Hide the code or the output of every cell. `execute: {echo: false}` works too |
+| `title`, `subtitle`, `description`, `author`, `date`, `date-format`, `categories`, `image` | The title block, and what a listing shows |
+| `draft` | `true` leaves the page out of the site |
+| `order` | The place of a page among the pages that a glob finds |
+| `listing` | A list of other pages. See [Listings](listings.qmd) |
 | `title-block-banner` | A band of the primary colour behind the title |
 
 ## smalldocs
 
-Quarto ignores a top-level key that it does not know, so smalldocs keeps its own settings under
-`smalldocs:`, and the same `_quarto.yml` still builds with Quarto.
+Quarto ignores a top-level key that it does not know. So smalldocs keeps its own options under
+`smalldocs:`, and Quarto can still build the same project.
 
 ```yaml
 smalldocs:
@@ -95,5 +113,5 @@ smalldocs:
     packages: [mypkg]
 ```
 
-Linkify is also on when `filters` lists a file named `linkify.lua`, the filter that projects made for
-Quarto, so such a project needs no change.
+Linkify is also on when `filters` lists a file with the name `linkify.lua`. Projects made for Quarto use
+that filter, so such a project needs no change.

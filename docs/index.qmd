@@ -1,6 +1,6 @@
 ---
 title: smalldocs
-subtitle: Quarto-like websites, in pure Python
+subtitle: Websites from Quarto projects, in Python
 listing:
   contents: guide
   type: grid
@@ -11,30 +11,38 @@ listing:
   filter-ui: false
 ---
 
-smalldocs builds a website from a [Quarto](https://quarto.org) project. It reads the same
-`_quarto.yml` and the same Markdown, and it writes the same kind of site into `_site`: pages with a
-navbar, a sidebar and a table of contents, reference pages made from your code, and listings of posts.
-The site takes any [Bootswatch](https://bootswatch.com) theme.
+smalldocs builds a website from a [Quarto](https://quarto.org) project. Quarto is a tool that turns
+Markdown and notebooks into websites, PDFs and slides. A Quarto project is a folder with a
+`_quarto.yml` file, which holds the options of the site.
 
-smalldocs is one small Python package. It needs no Pandoc, no Deno, no Sass and no TeX. Install it
-from PyPI:
+smalldocs reads the same `_quarto.yml` and the same Markdown. It writes the site into the folder
+`_site`. Each page of the site has a navbar at the top, a sidebar at the left and a table of contents
+at the right. smalldocs also makes reference pages from your Python code, and pages that list other
+pages, such as a blog.
+
+The site can use any theme from [Bootswatch](https://bootswatch.com). A theme is a stylesheet that sets
+the colours and the fonts of the site.
+
+smalldocs is one Python package. It needs no Pandoc, no Deno, no Sass and no TeX. Install it from PyPI:
 
 ```bash
 pip install smalldocs
 ```
 
-Then build a site, or preview it while you write:
+Build a site, or preview it while you write:
 
 ```bash
 smalldocs render docs      # writes docs/_site
 smalldocs preview docs     # serves it at http://127.0.0.1:4200 and reloads on every change
 ```
 
-## What it does, and what it does not
+## What smalldocs does not do
 
-smalldocs makes websites only. It makes no PDF, Word, slides or books, and it runs no code: a
-notebook shows the outputs it was saved with. A project that uses only what websites need builds
-with Quarto or with smalldocs, and the two sites look alike. [From Quarto](guide/from-quarto.qmd)
-lists the differences, and `smalldocs check` finds them in your project.
+smalldocs makes websites only. It does not make PDF files, Word files, slides or books. It does not
+run code. A notebook shows the outputs that were saved in it.
+
+A project that uses only the website features of Quarto builds with Quarto or with smalldocs. The two
+sites look alike. [From Quarto](guide/from-quarto.qmd) lists the differences, and the command
+`smalldocs check` finds them in your project.
 
 ## The guide
