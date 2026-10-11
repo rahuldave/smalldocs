@@ -9,9 +9,11 @@ from pathlib import Path
 
 import pytest
 
+import smalldocs
 from smalldocs import notebook
 from smalldocs.cli import main
 from smalldocs.config import BuildError, ConfigError, load
+from smalldocs.highlight import highlight
 from smalldocs.markdown import pandoc_id, parse_attrs, render, split_front_matter
 from smalldocs.site import Site, build
 
@@ -185,6 +187,30 @@ def test_code_blocks() -> None:
     assert '<b id="raw">raw</b>' in html
     assert '<pre class="mermaid">graph TD; A--&gt;B</pre>' in html
     assert "x.py" in html and "code-with-filename" in html
+
+
+def test_diff_blocks() -> None:
+    "A diff colours its removed, added and hunk lines, keeps its text as written, and other languages keep their classes."
+    diff = "diff --git a/x b/x\n--- a/x\n+++ b/x\n@@ -1,3 +1,3 @@\n ctx  two\n-old\n+new\n\n\n \\ No newline at end of file\n-last"
+    html = md(f"```diff\n{diff}\n```\n")
+    assert '<code class="sourceCode diff">' in html
+    assert '<span class="gd">-old</span>' in html and '<span class="gi">+new</span>' in html and '<span class="gd">-last</span>' in html
+    assert '<span class="gu">@@ -1,3 +1,3 @@</span>' in html and '<span class="gh">diff --git a/x b/x</span>' in html
+    assert '<span class="gd">--- a/x</span>' in html and '<span class="gi">+++ b/x</span>' in html
+    assert "\n ctx  two\n" in html and "\n\n\n \\ No newline" in html and 'class="er"' not in html
+    assert re.sub(r"<[^>]+>", "", highlight(diff, "diff")) == diff and highlight(diff, "patch") == highlight(diff, "diff")
+    css = (Path(smalldocs.__file__).parent / "assets" / "smalldocs.css").read_text()
+    scope = 'code.sourceCode:is([class~="diff" i], [class~="udiff" i], [class~="patch" i])'
+    assert f"{scope} span.gd {{" in css and f"{scope} span.gi {{" in css and f"{scope} {{ display: block; width: max-content" in css
+    assert '<span class="gd">-a</span>' in md("```Diff\n-a\n```\n")
+    # Other languages: Pandoc's classes, as before, and none of a diff's.
+    assert highlight("import os\nx = 1  # c", "python") == (
+        '<span class="im">import</span> os\nx <span class="op">=</span> <span class="dv">1</span>  <span class="co"># c</span>'
+    )
+    assert highlight("- a\n- b", "markdown") == '<span class="kw">-</span> a\n<span class="kw">-</span> b'
+    # A last line with no newline is read as the others are: a comment, or the output of a session.
+    assert highlight("ls  # c", "bash") == 'ls  <span class="co"># c</span>'
+    assert highlight("$ ls\ntotal 0", "console") == "$ ls\ntotal 0"
 
 
 def test_executable_cells_are_shown_not_run() -> None:

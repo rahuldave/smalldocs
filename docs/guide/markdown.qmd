@@ -184,6 +184,25 @@ def main() -> int:
     return 0
 ```
 
+A `diff` block shows a change to files, as `git diff` prints it. As on GitHub, smalldocs shows each
+removed line in red and each added line in green. The `---` and `+++` lines that name the files are red
+and green too. A hunk header, the line that starts with `@@`, is grey on a blue band. A `diff --git` or
+`index` line is grey and bold. The other lines keep their text as written, with the space at their start.
+
+The names `udiff` and `patch` do the same. In a combined diff from a merge, smalldocs colours only the
+lines that start with `+` or `-`. Quarto and Pandoc colour a diff in the colours of strings and
+variables, and not in red and green.
+
+```diff
+--- a/hello.py
++++ b/hello.py
+@@ -3,3 +3,3 @@
+ def main() -> int:
+-    for arg in sys.argv:
++    for arg in sys.argv[1:]:
+         print(arg.upper())  # one line each
+```
+
 A code block whose fence names a language in braces, such as `{python}` or `{r}`, is a cell. A cell is
 code that is meant to run when the page is built, with its output in the page. smalldocs does not run
 code. It shows the cell as code, and the page shows no output. The build gives a warning for each page

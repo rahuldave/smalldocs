@@ -1,0 +1,17 @@
+---
+title: smalldocs 0.1.4
+subtitle: Diffs in red and green, and whole code blocks
+date: 2026-10-11
+author: Rahul Dave
+categories: [release]
+image: ../images/mark.svg
+---
+
+A `diff` block now shows each removed line in red and each added line in green, as on GitHub. A hunk
+header, the line that starts with `@@`, is grey. The text of the block stays as written. See
+[Code](../guide/markdown.qmd#code).
+
+The last line of a code block is now read as the other lines are:
+
+- A block of a shell session, such as `console` or `psql`, no longer loses its last line of output.
+- A comment on the last line of a `bash` block is now coloured as a comment.

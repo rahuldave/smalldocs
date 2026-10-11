@@ -3,8 +3,8 @@
 import html
 
 from pygments import lex
-from pygments.lexers import get_lexer_by_name
-from pygments.token import Comment, Error, Keyword, Name, Number, Operator, String, Token
+from pygments.lexers import DiffLexer, get_lexer_by_name
+from pygments.token import Comment, Error, Generic, Keyword, Name, Number, Operator, String, Token
 from pygments.util import ClassNotFound
 
 # Most specific first: a token takes the class of the first type it is a subtype of.
@@ -44,7 +44,9 @@ CONTROL = {
     "if", "elif", "else", "for", "while", "return", "break", "continue", "try", "except", "finally", "raise",
     "with", "yield", "match", "case", "do", "switch", "await", "then", "fi", "done", "esac",
 }  # fmt: skip
-ALIASES = {"sh": "bash", "shell": "bash", "zsh": "bash", "console": "console", "py": "python", "js": "javascript", "yml": "yaml"}
+# A diff's lines take classes of their own (Pygments' short names), which smalldocs.css colours red and green.
+DIFF_CLASSES = {Generic.Deleted: "gd", Generic.Inserted: "gi", Generic.Subheading: "gu", Generic.Heading: "gh"}
+ALIASES = {"patch": "diff", "sh": "bash", "shell": "bash", "zsh": "bash", "console": "console", "py": "python", "js": "javascript", "yml": "yaml"}
 
 
 def css_class(
@@ -69,8 +71,16 @@ def highlight(
         lexer = get_lexer_by_name(ALIASES.get(lang.lower(), lang.lower()), stripnl=False, ensurenl=False)
     except ClassNotFound:
         return html.escape(code)
+    diff = isinstance(lexer, DiffLexer)
+    # Many lexers read whole lines, and drop or misread a last line with no newline. So the code gets one,
+    # and the output drops it again. A lexer that changes the text keeps the code as written.
+    tokens = [t for t in lex(code + "\n", lexer) if t[1]]
+    if tokens and tokens[-1][1].endswith("\n") and "".join(v for _, v in tokens) == code + "\n":
+        tokens[-1] = (tokens[-1][0], tokens[-1][1][:-1])
+    else:
+        tokens = list(lex(code, lexer))
     out = []
-    for ttype, value in lex(code, lexer):
-        cls = css_class(ttype, value.strip()) if ttype is not Token.Text else ""
+    for ttype, value in tokens:
+        cls = DIFF_CLASSES.get(ttype, "") if diff else css_class(ttype, value.strip()) if ttype is not Token.Text else ""
         out.append(f'<span class="{cls}">{html.escape(value)}</span>' if cls and value.strip() else html.escape(value))
     return "".join(out)

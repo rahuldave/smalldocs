@@ -14,6 +14,8 @@
   --quarto-hl-dv: #AD0000; --quarto-hl-fl: #AD0000; --quarto-hl-bn: #AD0000; --quarto-hl-dt: #AD0000; --quarto-hl-er: #AD0000;
   --quarto-hl-pp: #AD0000; --quarto-hl-at: #657422; --quarto-hl-cn: #8f5902; --quarto-hl-va: #111111; --quarto-hl-sc: #5E5E5E;
   --quarto-hl-text: #003B4F;
+  --sd-diff-del: #82071e; --sd-diff-del-bg: #ffebe9; --sd-diff-ins: #116329; --sd-diff-ins-bg: #dafbe1;
+  --sd-diff-hunk: #57606a; --sd-diff-hunk-bg: #ddf4ff;
 }
 html.quarto-dark {
   --sd-code-bg: rgba(255, 255, 255, .06);
@@ -23,6 +25,8 @@ html.quarto-dark {
   --quarto-hl-dv: #79b8ff; --quarto-hl-fl: #79b8ff; --quarto-hl-bn: #79b8ff; --quarto-hl-dt: #f97583; --quarto-hl-er: #f97583;
   --quarto-hl-pp: #f97583; --quarto-hl-at: #79b8ff; --quarto-hl-cn: #79b8ff; --quarto-hl-va: #ffab70; --quarto-hl-sc: #79b8ff;
   --quarto-hl-text: #e1e4e8;
+  --sd-diff-del: #ffa198; --sd-diff-del-bg: rgba(248, 81, 73, .15); --sd-diff-ins: #7ee787; --sd-diff-ins-bg: rgba(46, 160, 67, .15);
+  --sd-diff-hunk: #8b949e; --sd-diff-hunk-bg: rgba(56, 139, 253, .1);
 }
 
 html { font-size: 17px; scroll-padding-top: 80px; }
@@ -233,6 +237,14 @@ code span.cn { color: var(--quarto-hl-cn); }
 code span.va { color: var(--quarto-hl-va); }
 code span.sc { color: var(--quarto-hl-sc); }
 code span.bu { color: inherit; }
+/* A diff, as GitHub shows one: each removed line red, each added line green, the hunk headers muted. */
+/* The fence's name keeps its case, so the match ignores case. The code is as wide as its longest line, so each band is too. */
+code.sourceCode:is([class~="diff" i], [class~="udiff" i], [class~="patch" i]) { display: block; width: max-content; min-width: 100%; }
+code.sourceCode:is([class~="diff" i], [class~="udiff" i], [class~="patch" i]) span:is(.gd, .gi, .gu) { display: inline-block; min-width: 100%; }
+code.sourceCode:is([class~="diff" i], [class~="udiff" i], [class~="patch" i]) span.gd { color: var(--sd-diff-del); background: var(--sd-diff-del-bg); }
+code.sourceCode:is([class~="diff" i], [class~="udiff" i], [class~="patch" i]) span.gi { color: var(--sd-diff-ins); background: var(--sd-diff-ins-bg); }
+code.sourceCode:is([class~="diff" i], [class~="udiff" i], [class~="patch" i]) span.gu { color: var(--sd-diff-hunk); background: var(--sd-diff-hunk-bg); }
+code.sourceCode:is([class~="diff" i], [class~="udiff" i], [class~="patch" i]) span.gh { color: var(--sd-diff-hunk); font-weight: bold; }
 
 /* ---------------------------------------------------------------- callouts */
 
