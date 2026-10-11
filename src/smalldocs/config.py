@@ -232,7 +232,7 @@ def load(
         if isinstance(html, dict):
             proj.warnings += [f"format.html.{k} is ignored" for k in html if k not in HTML_OPTIONS]
     for name in filter_paths(cfg):
-        if Path(name).name != "linkify.lua":
+        if name.strip() and name != "quarto" and Path(name).name != "linkify.lua":  # `quarto` marks where Quarto's own filters run
             proj.warnings.append(f"filter {name} is not run: smalldocs runs no Lua")
     return proj
 

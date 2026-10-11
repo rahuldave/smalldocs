@@ -134,4 +134,4 @@ smalldocs runs no Lua. Linkify is Python code in smalldocs. It does the same wor
 smalldocs does not read the file `linkify.lua`, and does not run it. The name only tells smalldocs to
 turn on linkify. The entry can be a path, such as `filters/linkify.lua`, or `{path: linkify.lua}`.
 
-smalldocs does not run the other filters in `filters`. It gives a warning for each of them.
+smalldocs does not run the other filters in `filters`. It gives a warning for each of them, but not for the entry `quarto`, which only marks where the filters of Quarto run.

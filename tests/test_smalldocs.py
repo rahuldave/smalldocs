@@ -404,6 +404,8 @@ def test_linkify_lua_turns_on_linkify(tmp_path: Path) -> None:
         assert not load(tmp_path).warnings
         build(tmp_path, quiet=True)
         assert '<a href="api.html#render"><code>render()</code></a>' in (tmp_path / "_site/index.html").read_text()
+    write(tmp_path, {"_quarto.yml": "project:\n  type: website\nfilters: [quarto, '', linkify.lua]\n"})
+    assert not load(tmp_path).warnings, "`quarto` and an empty entry are not filters to warn about"
 
 
 def test_render_list_resources_and_metadata(tmp_path: Path) -> None:
