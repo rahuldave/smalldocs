@@ -17,7 +17,7 @@ from urllib.parse import quote, unquote
 import yaml
 
 from . import layout, listing, shortcodes
-from .config import PAGE_EXTS, BuildError, Project, as_list, dir_metadata, glob_match, load, merge
+from .config import PAGE_EXTS, BuildError, Project, as_list, dir_metadata, filter_paths, glob_match, load, merge
 from .markdown import render, split_front_matter
 from .notebook import to_markdown
 
@@ -289,7 +289,7 @@ class Site:
         "Read the name index that turns a name in backticks into a link: `_symbols.json`, when linkify is on."
         sd = self.project.smalldocs
         api = sd.get("api") or {}
-        filters = [str(f) for f in as_list(self.project.config.get("filters"))]
+        filters = filter_paths(self.project.config)
         on = sd.get("linkify", api.get("linkify", bool(api) or any(Path(f).name == "linkify.lua" for f in filters)))
         index = self.root / str(sd.get("symbols") or "_symbols.json")
         if on and index.exists():

@@ -95,11 +95,20 @@ Run `check` in your tests, or before each commit.
 
 ## Move from apidocs.py
 
-Some projects made their reference with their own `apidocs.py` script and `linkify.lua` filter. Such a
-project keeps working with smalldocs, because smalldocs does two things:
+Some projects made their reference with their own `apidocs.py` script and the Lua filter
+`linkify.lua`. smalldocs builds such a project with no change:
 
-- It runs the `pre-render` script.
-- It turns on linkify when `filters` lists `linkify.lua`.
+- smalldocs runs the `pre-render` script. So `apidocs.py` writes the pages and `_symbols.json` as
+  before.
+- smalldocs sees `linkify.lua` in `filters`, and turns on its own linkify. It does not run the Lua
+  file. See [Linkify](config.qmd#linkify).
 
-To change to `smalldocs.api`, add the section above. Then remove `pre-render`, `apidocs.py`, the filter
-and `linkify.lua`. The pages that smalldocs writes are the same, byte for byte.
+To change to `smalldocs.api`, do these steps:
+
+1. Add the section above to `_quarto.yml`. Linkify is then on, with no filter.
+2. Remove `apidocs.py` from `pre-render`. Keep the other scripts of `pre-render`.
+3. Remove `linkify.lua` from `filters`, and remove `symbols` from the section `smalldocs`.
+4. Delete the files `apidocs.py` and `linkify.lua`.
+5. Delete the old pages in the reference folder, once. smalldocs deletes only the pages that it wrote.
+
+For the `apidocs.py` of babykev, the pages that smalldocs writes are the same, byte for byte.

@@ -393,6 +393,19 @@ def test_config_errors(tmp_path: Path) -> None:
         build(tmp_path, quiet=True)
 
 
+def test_linkify_lua_turns_on_linkify(tmp_path: Path) -> None:
+    "`linkify.lua` in `filters`, as a path or as a `{path: ...}` entry, turns on linkify and gets no warning."
+    for entry in ["filters/linkify.lua", "{path: linkify.lua, type: lua}"]:
+        write(tmp_path, {
+            "_quarto.yml": f"project:\n  type: website\nfilters: [{entry}]\n",
+            "_symbols.json": '{"render": "api.html#render"}',
+            "index.md": "# Hi\n\nCall `render()`.\n",
+        })
+        assert not load(tmp_path).warnings
+        build(tmp_path, quiet=True)
+        assert '<a href="api.html#render"><code>render()</code></a>' in (tmp_path / "_site/index.html").read_text()
+
+
 def test_render_list_resources_and_metadata(tmp_path: Path) -> None:
     "`project.render` picks the pages; `resources` copies files; `_metadata.yml` applies to a folder; scripts run."
     write(

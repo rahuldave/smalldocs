@@ -103,6 +103,13 @@ def as_list(
     return [] if v is None else v if isinstance(v, list) else [v]
 
 
+def filter_paths(
+    cfg: dict,  # The merged config
+) -> list[str]:  # The path of each filter
+    "List the paths in `filters`, which Quarto gives as a string or as a `{path: ...}` entry."
+    return [str(f.get("path", f)) if isinstance(f, dict) else str(f) for f in as_list(cfg.get("filters"))]
+
+
 def glob_regex(
     pattern: str,  # A glob, such as `posts/*.qmd` or `images/**`
 ) -> re.Pattern:  # A regular expression for whole paths
@@ -224,8 +231,7 @@ def load(
         html = fmt.get("html") or {}
         if isinstance(html, dict):
             proj.warnings += [f"format.html.{k} is ignored" for k in html if k not in HTML_OPTIONS]
-    for f in as_list(cfg.get("filters")):
-        name = f if isinstance(f, str) else str(f)
+    for name in filter_paths(cfg):
         if Path(name).name != "linkify.lua":
             proj.warnings.append(f"filter {name} is not run: smalldocs runs no Lua")
     return proj

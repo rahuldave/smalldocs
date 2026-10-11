@@ -113,5 +113,25 @@ smalldocs:
     packages: [mypkg]
 ```
 
-Linkify is also on when `filters` lists a file with the name `linkify.lua`. Projects made for Quarto use
-that filter, so such a project needs no change.
+## Linkify
+
+Linkify turns a name in backticks into a link to the entry of that name in the API reference. For
+example, `` `Site.build` `` and `` `Site.build()` `` link to the entry of `Site.build`. A name in
+backticks inside a link stays as it is.
+
+Linkify reads the names and their links from the file `_symbols.json`, in the folder of the site. When
+`_quarto.yml` has the section `smalldocs.api`, each build writes this file before it builds the pages.
+An `apidocs.py` script writes it too. Set `symbols` only for an index that another script writes.
+
+smalldocs runs no Lua. Linkify is Python code in smalldocs. It does the same work as the Lua filter
+`linkify.lua` did for Quarto. smalldocs decides whether linkify is on in this order:
+
+1. `smalldocs.linkify`, if you set it.
+2. `smalldocs.api.linkify`, if you set it.
+3. Otherwise, linkify is on when `smalldocs.api` has a `packages` list, or when `filters` lists a file
+   with the name `linkify.lua`.
+
+smalldocs does not read the file `linkify.lua`, and does not run it. The name only tells smalldocs to
+turn on linkify. The entry can be a path, such as `filters/linkify.lua`, or `{path: linkify.lua}`.
+
+smalldocs does not run the other filters in `filters`. It gives a warning for each of them.
