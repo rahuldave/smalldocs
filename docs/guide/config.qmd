@@ -1,16 +1,33 @@
 ---
 title: The configuration
-description: The options of _quarto.yml that smalldocs reads, and the options that it adds.
+description: The options in _smalldocs.yml that smalldocs reads, and how it reads a _quarto.yml.
 order: 2
 ---
 
-smalldocs reads `_quarto.yml` as Quarto does. An option is a key in `_quarto.yml`, in a `_metadata.yml`
-file or in the front matter of a page. smalldocs merges the options in this order, and a later value
-wins:
+The config file of a project is `_smalldocs.yml`, in the folder of the project. A project that Quarto
+builds has a `_quarto.yml` file. smalldocs reads that file too. See [A _quarto.yml](#a-_quarto.yml)
+below.
 
-1. The top level and `format.html` of `_quarto.yml`.
+```yaml
+project:
+  type: website
+website:
+  title: My project
+theme: cosmo         # the options of each page are at the top level
+toc: true
+linkify: true        # the options of smalldocs are at the top level too
+api:
+  packages: [mypkg]
+```
+
+An option is a key in `_smalldocs.yml`, in a `_metadata.yml` file or in the front matter of a page.
+smalldocs merges the options in this order, and a later value wins:
+
+1. The top level of `_smalldocs.yml`.
 2. A `_metadata.yml` file in each folder on the path to the page.
 3. The front matter of the page.
+
+`metadata-files` names more files to merge into `_smalldocs.yml`, as in Quarto.
 
 If smalldocs does not read an option, the build gives a warning. With `smalldocs render --strict`, a
 warning makes the build fail.
@@ -80,7 +97,10 @@ sidebar:
     - text: "---"                    # a line
 ```
 
-## format.html, and the front matter of a page
+## The options of a page
+
+Write these options at the top level of `_smalldocs.yml` or of a `_metadata.yml` file. A page can also
+set them in its front matter.
 
 | Key | What it does |
 |---|---|
@@ -100,17 +120,15 @@ sidebar:
 | `listing` | A list of other pages. See [Listings](listings.qmd) |
 | `title-block-banner` | A band of the primary colour behind the title |
 
-## smalldocs
+## The options of smalldocs
 
-Quarto ignores a top-level key that it does not know. So smalldocs keeps its own options under
-`smalldocs:`, and Quarto can still build the same project.
+These options are not in Quarto. They are at the top level of `_smalldocs.yml`.
 
 ```yaml
-smalldocs:
-  linkify: true          # a documented name in backticks links to its entry; on with `api`
-  symbols: _symbols.json # the index of names that linkify reads
-  api:                   # the API reference: see the API page
-    packages: [mypkg]
+linkify: true          # a documented name in backticks links to its entry; on with `api`
+symbols: _symbols.json # the index of names that linkify reads
+api:                   # the API reference: see the API page
+  packages: [mypkg]
 ```
 
 ## Linkify
@@ -120,18 +138,50 @@ example, `` `Site.build` `` and `` `Site.build()` `` link to the entry of `Site.
 backticks inside a link stays as it is.
 
 Linkify reads the names and their links from the file `_symbols.json`, in the folder of the site. When
-`_quarto.yml` has the section `smalldocs.api`, each build writes this file before it builds the pages.
-An `apidocs.py` script writes it too. Set `symbols` only for an index that another script writes.
+the config has `api`, each build writes this file before it builds the pages. An `apidocs.py` script
+writes it too. Set `symbols` only for an index that another script writes.
 
-smalldocs runs no Lua. Linkify is Python code in smalldocs. It does the same work as the Lua filter
-`linkify.lua` did for Quarto. smalldocs decides whether linkify is on in this order:
+smalldocs decides whether linkify is on in this order:
 
-1. `smalldocs.linkify`, if you set it.
-2. `smalldocs.api.linkify`, if you set it.
-3. Otherwise, linkify is on when `smalldocs.api` has a `packages` list, or when `filters` lists a file
-   with the name `linkify.lua`.
+1. `linkify`, if you set it. `linkify: true` turns it on, and `linkify: false` turns it off.
+2. `api.linkify`, if you set it.
+3. Otherwise, linkify is on when `api` has a `packages` list.
 
-smalldocs does not read the file `linkify.lua`, and does not run it. The name only tells smalldocs to
-turn on linkify. The entry can be a path, such as `filters/linkify.lua`, or `{path: linkify.lua}`.
+## A _quarto.yml
 
-smalldocs does not run the other filters in `filters`. It gives a warning for each of them, but not for the entry `quarto`, which only marks where the filters of Quarto run.
+smalldocs looks for `_smalldocs.yml` first. If the folder has no `_smalldocs.yml`, smalldocs reads
+`_quarto.yml`. If the folder has both files, smalldocs reads only `_smalldocs.yml`, and gives a warning.
+
+A `_quarto.yml` has the same `project` and `website` sections. Two parts are in other places:
+
+- The options of a page are under `format.html`.
+- The options of smalldocs are under `smalldocs:`. Quarto ignores a top-level key that it does not
+  know, so Quarto can still build the project.
+
+```yaml
+format:
+  html:
+    theme: cosmo
+    toc: true
+smalldocs:
+  linkify: true
+  api:
+    packages: [mypkg]
+```
+
+To move to `_smalldocs.yml`, rename the file. Move the keys of `format.html` and of `smalldocs:` to the
+top level. Then remove `format` and `filters`. If you write `format`, `smalldocs` or `filters` in
+`_smalldocs.yml`, the build gives a warning and does not read the key.
+
+### Lua filters
+
+smalldocs runs no Lua. Its linkify is Python code. It does the same work as the Lua filter
+`linkify.lua` did for Quarto.
+
+In a `_quarto.yml`, a file with the name `linkify.lua` in `filters` also turns on linkify, as step 3
+of the list above. smalldocs does not read the file `linkify.lua`, and does not run it. The name only
+tells smalldocs to turn on linkify. The entry can be a path, such as `filters/linkify.lua`, or
+`{path: linkify.lua}`.
+
+smalldocs does not run the other filters in `filters`. It gives a warning for each of them, but not for
+the entry `quarto`, which only marks where the filters of Quarto run.

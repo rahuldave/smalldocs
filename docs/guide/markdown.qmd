@@ -190,7 +190,7 @@ diagram:
 
 ```{mermaid}
 flowchart LR
-  A[_quarto.yml] --> B(smalldocs render)
+  A[_smalldocs.yml] --> B(smalldocs render)
   C[pages] --> B
   B --> D[_site]
 ```

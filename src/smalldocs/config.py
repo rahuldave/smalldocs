@@ -1,4 +1,4 @@
-"Read a `_quarto.yml` project: the options smalldocs knows, merged as Quarto merges them, and the ones it ignores."
+"Read a project's `_smalldocs.yml`, or its `_quarto.yml`: the options smalldocs knows, merged as Quarto merges them, and the ones it ignores."
 
 import copy
 import re
@@ -27,6 +27,10 @@ KNOWN: dict = {
     "filters": None,
     "metadata-files": None,
 }  # fmt: skip
+# The files of the config, in the order smalldocs looks for them. The first two are smalldocs's own.
+CONFIG_FILES = ("_smalldocs.yml", "_smalldocs.yaml", "_quarto.yml", "_quarto.yaml")
+# The keys of smalldocs's own options: under `smalldocs:` in `_quarto.yml`, at the top level of `_smalldocs.yml`.
+OWN_KEYS = ("linkify", "symbols", "api")
 HTML_OPTIONS = {
     "theme", "css", "toc", "toc-depth", "toc-title", "toc-location", "toc-expand", "number-sections", "number-depth",
     "code-copy", "code-overflow", "highlight-style", "from", "page-layout", "anchor-sections", "smooth-scroll",
@@ -51,9 +55,15 @@ class BuildError(Exception):
 class Project:
     "A website project: its folder, its merged config, and what smalldocs did not understand in it."
 
-    root: Path  # The folder that holds `_quarto.yml`
+    root: Path  # The folder that holds the config
     config: dict  # The whole config, as read
     warnings: list[str] = field(default_factory=list)  # One line for each key or feature that smalldocs ignores
+    file: str = "_quarto.yml"  # The name of the config file: `_smalldocs.yml` or `_quarto.yml`
+
+    @property
+    def native(self) -> bool:  # Whether the config is `_smalldocs.yml`
+        "Tell whether the config is smalldocs's own file, where its options are at the top level."
+        return self.file.startswith("_smalldocs")
 
     @property
     def project(self) -> dict:  # The `project:` section
@@ -66,8 +76,10 @@ class Project:
         return section(self.config, "website") or section(self.config, "book")
 
     @property
-    def smalldocs(self) -> dict:  # The `smalldocs:` section, which Quarto ignores
-        "The `smalldocs:` section."
+    def smalldocs(self) -> dict:  # smalldocs's own options: `linkify`, `symbols` and `api`
+        "Read smalldocs's own options: the top-level keys of `_smalldocs.yml`, or the `smalldocs:` section of `_quarto.yml`."
+        if self.native:
+            return {k: self.config[k] for k in OWN_KEYS if k in self.config}
         return section(self.config, "smalldocs")
 
     @property
@@ -76,8 +88,11 @@ class Project:
         return (self.root / str(self.project.get("output-dir") or "_site")).resolve()
 
     def html_options(self) -> dict:  # The options that apply to every page, before a page's own
-        "The project-wide page options: top-level keys, then `format.html`."
-        base = {k: v for k, v in self.config.items() if (k not in KNOWN or k == "execute") and k != "book"}
+        "The project-wide page options: top-level keys, then `format.html` in `_quarto.yml`."
+        skip = {*KNOWN, *OWN_KEYS} - {"execute"} if self.native else set(KNOWN) - {"execute"}
+        base = {k: v for k, v in self.config.items() if k not in skip and k != "book"}
+        if self.native:
+            return base
         fmt = self.config.get("format") or {}
         html = fmt.get("html") if isinstance(fmt, dict) else None
         return merge(base, html if isinstance(html, dict) else {})
@@ -92,7 +107,7 @@ def section(
     if v is None:
         return {}
     if not isinstance(v, dict):
-        raise ConfigError(f"_quarto.yml: {key} must be a mapping of keys, not {type(v).__name__}")
+        raise ConfigError(f"the config: {key} must be a mapping of keys, not {type(v).__name__}")
     return v
 
 
@@ -197,15 +212,15 @@ def check_keys(
 
 
 def load(
-    root: Path | str,  # A folder that holds `_quarto.yml`, or the file itself
+    root: Path | str,  # A folder that holds `_smalldocs.yml` or `_quarto.yml`, or the file itself
 ) -> Project:  # The project
-    "Read a project's `_quarto.yml` (and `_quarto.yaml`), and note what smalldocs will ignore."
+    "Read a project's `_smalldocs.yml`, or else its `_quarto.yml`, and note what smalldocs will ignore."
     root = Path(root).resolve()
     if root.is_file():
         root = root.parent
-    files = [root / n for n in ("_quarto.yml", "_quarto.yaml") if (root / n).exists()]
+    files = [root / n for n in CONFIG_FILES if (root / n).exists()]
     if not files:
-        raise ConfigError(f"{root} has no _quarto.yml")
+        raise ConfigError(f"{root} has no _smalldocs.yml or _quarto.yml")
     cfg = read_yaml(files[0]) or {}
     if not isinstance(cfg, dict):
         raise ConfigError(f"{files[0]}: the top level must be a mapping of keys")
@@ -216,7 +231,9 @@ def load(
             if not isinstance(more, dict):
                 raise ConfigError(f"{p}: the top level must be a mapping of keys")
             cfg = merge(more, cfg)
-    proj = Project(root, cfg)
+    proj = Project(root, cfg, file=files[0].name)
+    if proj.native:
+        return check_native(proj, [f.name for f in files[1:]])
     for key in ("project", "website", "book", "smalldocs"):
         section(cfg, key)
     kind = proj.project.get("type", "default")
@@ -234,6 +251,34 @@ def load(
     for name in filter_paths(cfg):
         if name.strip() and name != "quarto" and Path(name).name != "linkify.lua":  # `quarto` marks where Quarto's own filters run
             proj.warnings.append(f"filter {name} is not run: smalldocs runs no Lua")
+    return proj
+
+
+def check_native(
+    proj: Project,  # A project read from `_smalldocs.yml`
+    others: list[str],  # The other config files beside it, which smalldocs does not read
+) -> Project:  # The same project, with its warnings
+    "Check a `_smalldocs.yml`: its sections, and the keys that smalldocs does not read."
+    cfg = proj.config
+    for key in ("project", "website", "book", "api"):
+        section(cfg, key)
+    kind = proj.project.get("type", "website")
+    if kind == "book":
+        proj.warnings.append("project.type: book is built as a website; chapters become the sidebar")
+    elif kind not in ("website", "default"):
+        raise ConfigError(f"project.type {kind!r}: smalldocs builds only websites")
+    proj.warnings += [f"{n} is not read: {proj.file} is the config" for n in others]
+    known = {**{k: v for k, v in KNOWN.items() if k not in ("format", "smalldocs", "filters")}, **dict.fromkeys(OWN_KEYS), **dict.fromkeys(HTML_OPTIONS)}
+    for k in check_keys(cfg, known, ""):
+        if k.startswith("book"):
+            continue
+        top = k.partition(".")[0]
+        hint = {
+            "format": ": write the page options, such as theme and toc, at the top level",
+            "smalldocs": ": write linkify, symbols and api at the top level",
+            "filters": ": smalldocs runs no filters; linkify: true turns on its links",
+        }.get(top, "")
+        proj.warnings.append(f"unknown key {k}{hint}")
     return proj
 
 

@@ -381,7 +381,7 @@ def test_rebuild_empties_the_output(tmp_path: Path) -> None:
 
 def test_config_errors(tmp_path: Path) -> None:
     "No config, another project type, or an unknown theme stops with a message; unknown keys are warnings."
-    with pytest.raises(ConfigError, match=r"no _quarto\.yml"):
+    with pytest.raises(ConfigError, match=r"no _smalldocs\.yml or _quarto\.yml"):
         load(tmp_path)
     write(tmp_path, {"_quarto.yml": "project:\n  type: manuscript\n"})
     with pytest.raises(ConfigError, match="only websites"):
@@ -604,12 +604,217 @@ def test_api_commands(tmp_path: Path, capsys: pytest.CaptureFixture) -> None:
     assert main(["api", "check", "--dir", d]) == 1
     out = capsys.readouterr().out
     assert "tinypkg.core:undocumented: no docstring" in out and "tinypkg.core:Keys.age: no docment" in out
-    assert "tinypkg.core:undocumented(x): no type" in out and "tests/test_x.py" in out
+    assert "tinypkg.core:undocumented(x): no type" in out and "\ntests/test_x.py " in out and str(tmp_path) not in out
     assert main(["api", "module", "core", "--dir", d]) == 0
     assert capsys.readouterr().out.startswith("# tinypkg.core\n")
     assert main(["api", "module", "nope", "--dir", d]) == 2
     assert main(["api", "list", "--dir", d]) == 0
     assert "function  tinypkg.core.add" in capsys.readouterr().out
+
+
+CLIPKG = {
+    "src/clipkg/__init__.py": '''
+        "A package whose code is in its `__init__`."
+
+        from typing import TypedDict
+
+        import click
+        from pydantic import BaseModel, ConfigDict, Field
+
+
+        class Page(BaseModel):
+            "A page."
+
+            title: str  # The title of the page
+            extract: str = Field(description="The summary, from Field")
+            both: int = Field(0, description="The description wins")  # The comment loses
+            long: list[str] = Field(
+                default_factory=list,
+            )  # A comment on the last line
+            bare: str = ""
+
+
+        class Doc(BaseModel):
+            "A model with attribute docstrings."
+
+            model_config = ConfigDict(use_attribute_docstrings=True)
+            name: str
+            "The name, from its docstring."
+
+
+        class Child(Page):
+            "A model that inherits the fields of `Page`."
+
+            extra: bool = False  # One more field
+
+
+        class Odd:
+            "A class with a method named callback, which is not a command."
+
+            def callback(self) -> None:  # Nothing
+                "A method."
+
+
+        class Base(TypedDict):
+            "Keys to inherit."
+
+            a: int  # The a
+
+
+        class Kid(Base):
+            "Keys with a parent."
+
+            b: str  # The b
+
+
+        class Tooled(BaseModel):
+            "A model with a tool's comment."
+
+            x: int  # type: ignore
+
+
+        def make() -> int:  # One
+            "Make one."
+            return 1
+
+
+        class Holder:
+            "Not a command, though it has a function in `callback`."
+
+            def __init__(self) -> None:
+                "Hold `make`."
+                self.callback = make
+
+
+        held = Holder()
+        alias = click.command()(make)
+
+
+        @click.command()
+        @click.option("--language", "-l", default="en", metavar="LANG", help="The language, as its code")
+        @click.option("--loud", is_flag=True, help="Shout")
+        @click.argument("name")
+        def main(
+            language: str,  # The language, from --language
+            loud: bool,  # Whether to shout
+            name: str,  # Who to greet
+        ) -> None:
+            "Greet someone."
+
+
+        @click.group()
+        def cli() -> None:  # Nothing
+            "A group of commands."
+
+
+        @cli.command()
+        def sub(
+            undocumented,
+        ) -> None:
+            "A command with a gap."
+        ''',
+    "tests/conftest.py": '"Shared fixtures."\n\n\ndef helper() -> int:  # One\n    "Give one."\n    return 1\n',
+    "tests/deep/test_deep.py": '"Deep tests."\n\n\ndef test_deep():\n    pass\n',
+    "docs/_smalldocs.yml": """
+        project:
+          type: website
+        api:
+          packages: [clipkg]
+          check: ["tests/**/*.py"]
+        """,
+    "docs/index.qmd": "---\ntitle: Clip\n---\n\nSee `Page` and `main`.\n",
+}
+
+
+def fresh(
+    prefix: str,  # The start of the names of the modules to forget
+) -> None:
+    "Forget imported modules, so that a test imports its own package again."
+    for m in [m for m in sys.modules if m.startswith(prefix)]:
+        sys.modules.pop(m)
+
+
+def test_api_models_commands_and_init(tmp_path: Path, capsys: pytest.CaptureFixture) -> None:
+    "A model's field is described by its description, or else the comment beside it; a click command is documented as its function."
+    write(tmp_path, CLIPKG)
+    fresh("clipkg")
+    d = str(tmp_path / "docs")
+    assert main(["api", "module", "clipkg", "--dir", d]) == 0
+    md = capsys.readouterr().out
+    assert md.startswith("# clipkg\n\nA package whose code is in its `__init__`."), "a package's `__init__` with code has a page"
+    assert "| `title` | str | required | The title of the page |" in md
+    assert "| `extract` | str | required | The summary, from Field |" in md
+    assert "| `both` | int | `0` | The description wins |" in md and "The comment loses" not in md
+    assert "| `long` | list[str] |" in md and "A comment on the last line |" in md
+    assert "| `name` | str | required | The name, from its docstring. |" in md
+    assert "| `extra` | bool | `False` | One more field |" in md and md.count("| `title` | str | required | The title of the page |") == 2, "a subclass reads its parents' comments"
+    assert "## main\n\n```python\nmain(language: str, loud: bool, name: str) -> None\n```" in md
+    assert "| `language` | str | required | The language, from --language |" in md
+    assert "| `--language`, `-l` `LANG` | `'en'` | The language, as its code |" in md and "| `--loud` |  | Shout |" in md
+    assert "Sentinel" not in md and "| `NAME` |  |  |" in md, "an option or argument with no default shows none"
+    assert md.count("## make\n") == 1, "a function and the command made from it are one entry; an object with a callback is no command"
+    assert "| `a` | int | The a |" in md and "| `b` | str | The b |" in md, "a TypedDict reads its parents' comments"
+    assert "type: ignore" not in md
+    assert "## cli\n" in md and "## sub\n" in md and "## class Odd" in md and "### Odd.callback" in md
+    assert main(["api", "check", "--dir", d]) == 1
+    out = capsys.readouterr().out
+    assert "clipkg:Page.bare: no description" in out and "clipkg:Page.title" not in out and "clipkg:Child.extra" not in out
+    assert "clipkg:sub(undocumented): no type" in out and "clipkg:main" not in out
+    assert "clipkg:Tooled.x: no description" in out and "clipkg:Kid" not in out
+    assert "\ntests/conftest.py " in out and "\ntests/deep/test_deep.py " in out, "`tests/**/*.py` finds files in `tests/` and below"
+    assert "\ntests/deep/test_deep.py:test_deep: no docstring" in out and str(tmp_path) not in out, "files are named from the root"
+    write(tmp_path, {"docs/_smalldocs.yml": "api:\n  packages: [clipkg]\n  check: [\"**/*.py\"]\n"})
+    fresh("clipkg")
+    assert main(["api", "check", "--dir", d]) == 1
+    out = capsys.readouterr().out
+    assert "\ntests/conftest.py " in out and "src/clipkg" not in out, "`**/*.py` leaves out the files of a documented package"
+
+
+def test_smalldocs_yml(tmp_path: Path, capsys: pytest.CaptureFixture) -> None:
+    "`_smalldocs.yml` is read before `_quarto.yml`; its page options and its own options are at the top level."
+    write(tmp_path, {
+        "_smalldocs.yml": """
+            project:
+              type: website
+            website:
+              title: Mine
+            theme: flatly
+            toc: false
+            linkify: true
+            symbols: names.json
+            format:
+              html:
+                theme: darkly
+            filters: [linkify.lua]
+            smalldocs:
+              linkify: false
+            """,
+        "_quarto.yml": "project:\n  type: website\nformat:\n  html:\n    theme: darkly\n",
+        "names.json": '{"render": "api.html#render"}',
+        "index.md": "# Hi\n\nCall `render`.\n\n## Part\n",
+    })
+    p = load(tmp_path)
+    assert p.file == "_smalldocs.yml" and p.native and p.smalldocs == {"linkify": True, "symbols": "names.json"}
+    w = "\n".join(p.warnings)
+    assert "_quarto.yml is not read" in w and "unknown key format: write the page options" in w
+    assert "unknown key filters" in w and "unknown key smalldocs: write linkify" in w and "theme" not in w.replace("such as theme", "")
+    s = build(tmp_path, quiet=True)
+    html = (s.out / "index.html").read_text()
+    assert "flatly" in html and "darkly" not in html and 'id="TOC"' not in html
+    assert '<a href="api.html#render"><code>render</code></a>' in html
+    write(tmp_path, {"_smalldocs.yml": "linkify: false\nsymbols: names.json\n"})
+    s = build(tmp_path, quiet=True)
+    assert "<code>render</code></a>" not in (s.out / "index.html").read_text(), "linkify: false turns it off"
+    write(tmp_path, {"_smalldocs.yml": "api: [a]\n"})
+    with pytest.raises(ConfigError, match="api must be a mapping"):
+        load(tmp_path)
+    write(tmp_path, {"_smalldocs.yml": "project:\n  type: manuscript\n"})
+    with pytest.raises(ConfigError, match="only websites"):
+        load(tmp_path)
+    write(tmp_path, {"_smalldocs.yml": "project:\n  type: book\nbook:\n  chapters: [index.md]\n", "_smalldocs.yaml": ""})
+    p = load(tmp_path)
+    assert any("book is built as a website" in w for w in p.warnings) and not any("unknown key book" in w for w in p.warnings)
+    assert "_smalldocs.yaml is not read: _smalldocs.yml is the config" in p.warnings
 
 
 # ---------------------------------------------------------------- the commands

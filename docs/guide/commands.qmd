@@ -4,7 +4,7 @@ description: Each command of smalldocs, with its options.
 order: 9
 ---
 
-Each command takes the folder of the project, which holds `_quarto.yml`. If you give no folder, the
+Each command takes the folder of the project, which holds `_smalldocs.yml` or `_quarto.yml`. If you give no folder, the
 command uses the folder you are in.
 
 ## render
@@ -75,4 +75,4 @@ With `--no-render`, the command publishes the output folder as it is.
 |---|---|
 | 0 | Done |
 | 1 | Done, with something to fix: `--strict` with warnings, or `check` and `api check` with findings |
-| 2 | Stopped: no `_quarto.yml`, a bad option, a failed script, or a port in use |
+| 2 | Stopped: no `_smalldocs.yml` or `_quarto.yml`, a bad option, a failed script, or a port in use |

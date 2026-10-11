@@ -31,22 +31,58 @@ def add(
 smalldocs shows other kinds of class in their own way:
 
 - A dataclass shows its constructor, with the comment beside each field.
-- A pydantic model shows its fields, with their descriptions.
+- A pydantic model shows its fields. The next section tells where the description of each field
+  comes from.
 - A `TypedDict` shows its keys, with the comment beside each key.
+- A click command shows its function, with the comment beside each parameter. Then it shows a table of
+  its options, with the help of each option. A click group shows the same.
+
+If the `__init__.py` of a package defines functions or classes, the package has a page of its own.
+
+### The fields of a pydantic model
+
+For each field, the description in the reference is:
+
+1. The `description` of the field, when it has one. This covers `Field(description="...")`, and a
+   docstring under the field when the model sets `ConfigDict(use_attribute_docstrings=True)`.
+2. Otherwise, the comment beside the field.
+3. Otherwise, nothing, and `smalldocs api check` reports the gap, for example
+   `Page.title: no description`.
+
+A field with a description and a comment is documented, and the reference shows the description. A
+comment for a tool, such as `# type: ignore` or `# noqa`, is not a description.
+
+```python
+class Page(BaseModel):
+    """A page of Wikipedia: its title and the summary of its text."""
+
+    title: str  # The title of the page
+    extract: str = Field(description="The summary: the first paragraph of the page")
+```
+
+Each style is good for a different kind of model:
+
+- `Field(description="...")` is data that pydantic keeps when the program runs. It goes into
+  `model_json_schema()`, and so into an OpenAPI schema, a FastAPI page or the tool schema of an LLM. For
+  a model that is the schema of an API, the description does the work of the comment and more. Use it
+  there.
+- The comment is lighter, and it reads like the comments of a function. For a model that only parses
+  data, nothing else reads a description. There, the comment is enough.
 
 ## Turn on the reference
 
-Add a `smalldocs.api` section to `_quarto.yml`:
+Add an `api` section to `_smalldocs.yml`:
 
 ```yaml
-smalldocs:
-  api:
-    packages: [mypkg]                  # the importable packages to document
-    out: api                           # the folder of pages, inside the site; `api` by default
-    root: ..                           # the root of the repository, from the folder of the site
-    source: https://github.com/me/mypkg/blob/main   # each entry links to its line here
-    check: ["*.py", "tests/**/*.py"]   # more files that `smalldocs api check` holds to the convention
+api:
+  packages: [mypkg]                  # the importable packages to document
+  out: api                           # the folder of pages, inside the site; `api` by default
+  root: ..                           # the root of the repository, from the folder of the site
+  source: https://github.com/me/mypkg/blob/main   # each entry links to its line here
+  check: ["*.py", "tests/**/*.py"]   # more files that `smalldocs api check` holds to the convention
 ```
+
+In a `_quarto.yml`, write the same section under `smalldocs:`, as `smalldocs.api`.
 
 The default `root` is `..`. If the folder of the site holds `pyproject.toml`, the default is `.`.
 
@@ -90,6 +126,20 @@ smalldocs api check --dir docs        # what is typed and documented, and every 
 - a function without a docstring
 - a parameter without a type or a docment
 - a return value without a type or a docment
+- a field of a pydantic model without a description or a comment
+- a key of a `TypedDict` without a comment
+
+The globs of `api.check` start at the root of the repository. In them, `*` stays inside one folder,
+and `**/` is any number of folders, or none. So `*.py` finds the files at the root only, and
+`tests/**/*.py` finds `tests/conftest.py` and `tests/unit/test_x.py`. `check` leaves out the files of
+the packages in `packages`, because it already checks them as part of their package.
+
+`check` names each file by its path from the root, such as `tests/test_x.py`. So the output is the same
+on every computer:
+
+```
+tests/test_x.py:test_add: no docstring
+```
 
 Run `check` in your tests, or before each commit.
 
@@ -103,9 +153,9 @@ Some projects made their reference with their own `apidocs.py` script and the Lu
 - smalldocs sees `linkify.lua` in `filters`, and turns on its own linkify. It does not run the Lua
   file. See [Linkify](config.qmd#linkify).
 
-To change to `smalldocs.api`, do these steps:
+To change to the `api` of smalldocs, do these steps:
 
-1. Add the section above to `_quarto.yml`. Linkify is then on, with no filter.
+1. Add the section above to the config. Linkify is then on, with no filter.
 2. Remove `apidocs.py` from `pre-render`. Keep the other scripts of `pre-render`.
 3. Remove `linkify.lua` from `filters`, and remove `symbols` from the section `smalldocs`.
 4. Delete the files `apidocs.py` and `linkify.lua`.

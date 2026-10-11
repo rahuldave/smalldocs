@@ -1,0 +1,26 @@
+---
+title: smalldocs 0.1.3
+subtitle: A config file of its own, and a better API reference
+date: 2026-10-10
+author: Rahul Dave
+categories: [release]
+image: ../images/mark.svg
+---
+
+smalldocs now has a config file of its own, `_smalldocs.yml`. In it, the options of a page, such as
+`theme` and `toc`, are at the top level. The options of smalldocs, such as `linkify` and `api`, are at
+the top level too. smalldocs still builds a Quarto project from its `_quarto.yml`, with no change. See
+[The configuration](../guide/config.qmd).
+
+The API reference has these changes:
+
+- A field of a pydantic model takes its description from `Field(description=...)`. If the field has no
+  description, it takes the comment beside the field.
+- A click command shows its function, with the comment beside each parameter, and a table of its
+  options.
+- A package whose `__init__.py` defines code has a page of its own.
+- In `api.check`, the glob `tests/**/*.py` finds `tests/conftest.py` too.
+- `smalldocs api check` names each file by its path from the root, such as `tests/test_x.py`. So the
+  output is the same on every computer.
+
+See [The API reference](../guide/api.qmd).

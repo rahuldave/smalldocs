@@ -17,14 +17,14 @@ smalldocs imports the package to read its code.
 
 ## Make a site
 
-A project is a folder with a `_quarto.yml` file and some pages. A page is a `.qmd`, `.md` or `.ipynb`
+A project is a folder with a `_smalldocs.yml` file and some pages. A page is a `.qmd`, `.md` or `.ipynb`
 file. Front matter is the YAML block between two `---` lines at the top of a page. It holds the options
 of the page, such as its title.
 
 The smallest site has three files:
 
 ::: {.panel-tabset}
-## _quarto.yml
+## _smalldocs.yml
 
 ```yaml
 project:
@@ -38,10 +38,8 @@ website:
         text: Home
       - about.qmd
 
-format:
-  html:
-    theme: cosmo
-    toc: true
+theme: cosmo
+toc: true
 ```
 
 ## index.qmd

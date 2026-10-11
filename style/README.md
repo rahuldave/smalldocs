@@ -19,12 +19,12 @@ Use each term in this meaning, and define it on the first page where a reader me
 
 | Term | Meaning |
 |---|---|
-| project | A folder with a `_quarto.yml` file. smalldocs builds one project into one site |
+| project | A folder with a `_smalldocs.yml` or `_quarto.yml` file. smalldocs builds one project into one site |
 | site | The HTML files that smalldocs writes into the output folder |
 | output folder | The folder that holds the site: `_site`, or the folder that `output-dir` names |
 | page | A `.qmd`, `.md` or `.ipynb` file that smalldocs turns into one HTML file |
 | front matter | The YAML block between two `---` lines at the top of a page |
-| option | A key in `_quarto.yml`, in a `_metadata.yml` file or in front matter |
+| option | A key in `_smalldocs.yml`, in a `_metadata.yml` file or in front matter |
 | glob | A path pattern with `*`, `?` or `**`, such as `guide/*.qmd` |
 | theme | A Bootswatch stylesheet, which sets the colours and the fonts of the site |
 | navbar | The bar across the top of each page, with links to pages |

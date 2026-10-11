@@ -1,8 +1,9 @@
 # smalldocs
 
-smalldocs builds a website from a [Quarto](https://quarto.org) project, in Python. A Quarto project is a
-folder with a `_quarto.yml` file. smalldocs reads the same `_quarto.yml` and the same Markdown, and it
-writes the site into the folder `_site`. The site has these parts:
+smalldocs builds a website from a folder of Markdown pages and notebooks, in Python. A file
+`_smalldocs.yml` in the folder holds the options of the site. smalldocs looks like
+[Quarto](https://quarto.org), and also builds a Quarto project from its `_quarto.yml`, with no change.
+It writes the site into the folder `_site`. The site has these parts:
 
 - pages with a navbar, a sidebar and a table of contents
 - notebooks, with the outputs that were saved in them
@@ -28,8 +29,9 @@ The documentation is at [rahuldave.com/smalldocs](https://rahuldave.com/smalldoc
 
 ## What smalldocs reads
 
-- **The options.** smalldocs reads `_quarto.yml`, `_metadata.yml` and front matter, and merges them as
-  Quarto does. It reads the sections `project`, `website` and `format.html`.
+- **The options.** smalldocs reads `_smalldocs.yml`, `_metadata.yml` and front matter, and merges them
+  as Quarto does. In a `_quarto.yml`, it reads the sections `project`, `website`, `format.html` and
+  `smalldocs`.
 - **The Markdown.** smalldocs reads CommonMark, tables, footnotes, attributes, divs, callouts, tabsets,
   maths, diagrams, raw HTML and shortcodes. It makes the ids of headings by the rules of Pandoc. So links
   that were written for Quarto keep working.

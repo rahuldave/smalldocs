@@ -7,26 +7,28 @@
 
 Types come from the annotations, the description of a parameter from its docment (the comment beside
 it, read by fastcore), and the summary from the docstring. A dataclass shows its constructor, a pydantic
-model its fields, and a TypedDict its keys with the comment beside each. The settings live under
-`smalldocs.api` in `_quarto.yml`:
+model its fields with their descriptions or the comment beside each, a TypedDict its keys with the comment
+beside each, and a click command its function and its options. The settings are `api` in `_smalldocs.yml`,
+or `smalldocs.api` in `_quarto.yml`:
 
-    smalldocs:
-      api:
-        packages: [mypkg]                   # importable packages to document
-        out: api                            # the folder of pages, inside the site
-        root: ..                            # the repository's root, from the site's folder
-        source: https://github.com/me/mypkg/blob/main   # where `source` links point
-        check: ["*.py", "docs/*.py", "tests/**/*.py"]  # more files that `check` holds to the convention
+    api:
+      packages: [mypkg]                   # importable packages to document
+      out: api                            # the folder of pages, inside the site
+      root: ..                            # the repository's root, from the site's folder
+      source: https://github.com/me/mypkg/blob/main   # where `source` links point
+      check: ["*.py", "docs/*.py", "tests/**/*.py"]  # more files that `check` holds to the convention, from the root
 """
 
+import ast
 import builtins
-import fnmatch
 import importlib
 import importlib.util
 import inspect
 import json
 import re
 import sys
+import textwrap
+import tokenize
 import types
 import typing
 from dataclasses import dataclass, is_dataclass
@@ -36,8 +38,10 @@ from types import FunctionType, ModuleType
 
 from fastcore.docments import docments
 
+from .config import glob_regex
+
 EMPTY = inspect.Parameter.empty
-KEY_COMMENT = re.compile(r"^\s+(\w+)\s*:[^#\n]+#\s*(.+)$", re.MULTILINE)
+TOOL_COMMENT = re.compile(r"(type|noqa|pragma|fmt|pyright|mypy|pylint|ruff)\b")  # `# type: ignore` and its kind say nothing of a field
 HEADING = re.compile(r"^(#+) (?:class )?(\S+)$")
 
 Code = FunctionType | type
@@ -59,23 +63,24 @@ class Symbol:
 
 def package_modules(
     package: str,  # The name of an importable package, or of a single module
-) -> list[ModuleType]:  # Its public modules and those of its subpackages, in name order
-    "Import every public module of a package, its subpackages' too, in name order."
+) -> list[ModuleType]:  # The package, when its `__init__` defines code, then its public modules and its subpackages', in name order
+    "Import every public module of a package, its subpackages' too, in name order; the package itself when it defines code."
     pkg = importlib.import_module(package)
     if not hasattr(pkg, "__path__"):
         return [pkg]
     names = sorted(m.name for m in walk_packages(pkg.__path__, prefix=f"{package}.") if not any(p.startswith("_") for p in m.name.split(".")))
-    mods = [importlib.import_module(n) for n in names]
-    return [m for m in mods if not hasattr(m, "__path__") or own(m)]
+    mods = [pkg, *(importlib.import_module(n) for n in names)]
+    return [m for m in mods if not hasattr(m, "__path__") or own(m)]  # a package's `__init__` only when it defines code
 
 
 def file_modules(
     files: list[Path],  # Python files that are not part of a package
+    root: Path | None = None,  # The folder that names start from; `None` names each file by its full path
 ) -> list[ModuleType]:  # One module per file, named by its path, in the order given
-    "Import Python files as modules of their own, named by their paths."
+    "Import Python files as modules of their own, named by their paths from the root, such as `tests/test_x.py`."
     mods = []
     for file in files:
-        name = file.as_posix()
+        name = file.relative_to(root).as_posix() if root and file.is_relative_to(root) else file.as_posix()
         spec = importlib.util.spec_from_file_location(name, file)
         if spec is None or spec.loader is None:
             raise ImportError(f"cannot load {name}")
@@ -124,10 +129,35 @@ def line_of(
 
 def unwrapped(
     obj: object,  # Anything a module or a class holds under a name
-) -> object:  # The function inside it when it is a decorator's wrapper; otherwise the object itself
-    "See through a decorator that kept the function, as `functools.wraps` and a fixture do."
+) -> object:  # The function inside it when it is a decorator's wrapper or a click command; otherwise the object itself
+    "See through a decorator that kept the function, as `functools.wraps`, a fixture and a click command do."
+    if is_command(obj):
+        return obj.callback  # a click command or group keeps its function in `callback`
     inner = getattr(obj, "__func__", obj)
     return inspect.unwrap(inner) if callable(inner) and hasattr(inner, "__wrapped__") else inner
+
+
+def is_command(
+    obj: object,  # Anything a module holds under a name
+) -> bool:  # Whether it is a click command or group, found by its shape, without importing click
+    "Tell whether an object is a click command: it has a function in `callback`, a list in `params` and a `name`."
+    if inspect.isclass(obj) or inspect.isfunction(obj):
+        return False
+    try:
+        return inspect.isfunction(getattr(obj, "callback", None)) and isinstance(getattr(obj, "params", None), list) and isinstance(getattr(obj, "name", None), str)
+    except Exception:  # an object whose attributes fail
+        return False
+
+
+def command_of(
+    func: FunctionType,  # A function
+    mod: ModuleType,  # The module it was written in
+) -> object | None:  # The click command or group in the module whose function it is; `None` when there is none
+    "Find the click command that a function is the callback of, to list its options."
+    for o in vars(mod).values():
+        if is_command(o) and o.callback is func:
+            return o
+    return None
 
 
 def own(
@@ -145,7 +175,7 @@ def own(
         and (inspect.isfunction(o) or inspect.isclass(o))
         and getattr(o, "__module__", None) == mod.__name__
     ]
-    return sorted(found, key=line_of)
+    return sorted({id(o): o for o in found}.values(), key=line_of)  # a function and its command are one entry
 
 
 def is_dunder(
@@ -239,7 +269,10 @@ def type_text(
         return "..."
     if isinstance(anno, type):
         return anno.__name__
-    return repr(anno).replace("typing.", "")
+    named = [n for n, v in vars(mod).items() if v is anno and not n.startswith("_")]
+    if named:
+        return named[0]  # an object used as a type, such as fastcore's `Head`: its name, not its repr with an address
+    return re.sub(r" at 0x[0-9a-f]+", "", repr(anno)).replace("typing.", "")  # no memory address, so a page is the same at each build
 
 
 def signature(
@@ -334,18 +367,86 @@ def fields_table(
     mod: ModuleType,  # The module it was written in
 ) -> str:  # A Markdown table of its fields: type, default, description
     "Describe a pydantic model by its fields, because its constructor signature says nothing."
+    said = field_descriptions(model)
     rows = []
     for name, f in model.model_fields.items():
         default = "required" if f.is_required() else f"`{f.default!r}`"
-        rows.append([f"`{name}`", type_text(f.annotation, mod), default, f.description or ""])
+        rows.append([f"`{name}`", type_text(f.annotation, mod), default, said.get(name, "")])
     return table(rows, ["Field", "Type", "Default", "Description"])
 
 
+def field_descriptions(
+    model: type,  # A pydantic model class
+) -> dict[str, str]:  # For each field that has one, its description
+    "Describe each field of a model: its `description` when it has one, or else the comment beside it."
+    said = key_comments(model)
+    return {n: f.description or said[n] for n, f in model.model_fields.items() if f.description or n in said}
+
+
+def class_comments(
+    klass: type,  # A class
+) -> dict[str, str]:  # For each name annotated in the class body, the comment beside it
+    "Read the comment beside each annotated name in one class body, such as `title: str  # The title`."
+    try:
+        lines, _ = inspect.getsourcelines(klass)
+    except (OSError, TypeError):
+        return {}
+    src = textwrap.dedent("".join(lines))
+    try:
+        body = ast.parse(src).body[0]
+        comments = {t.start[0]: t.string.lstrip("#").strip() for t in tokenize.generate_tokens(iter(src.splitlines(True)).__next__) if t.type == tokenize.COMMENT}
+    except (SyntaxError, tokenize.TokenError):
+        return {}
+    out = {}
+    for node in getattr(body, "body", []):
+        if isinstance(node, ast.AnnAssign) and isinstance(node.target, ast.Name):
+            said = comments.get(node.lineno) or comments.get(node.end_lineno or node.lineno)  # on the first line, or the last
+            if said and not TOOL_COMMENT.match(said):
+                out[node.target.id] = said
+    return out
+
+
 def key_comments(
-    klass: type,  # A TypedDict class
-) -> dict[str, str]:  # For each key that has one, the comment beside it
-    "Read the docments of a TypedDict: the comment beside each key in the class body."
-    return dict(KEY_COMMENT.findall(inspect.getsource(klass)))
+    klass: type,  # A TypedDict or a model class
+) -> dict[str, str]:  # For each key that has one, the comment beside it, from the class and the classes it inherits
+    "Read the docments of a TypedDict's keys or a model's fields: the comment beside each, a subclass's first."
+    out: dict[str, str] = {}
+    for k in reversed(parents(klass)):
+        if k.__module__ not in ("builtins", "typing", "typing_extensions") and not k.__module__.startswith("pydantic"):
+            out.update(class_comments(k))
+    return out
+
+
+def parents(
+    klass: type,  # A class
+) -> list[type]:  # The class, then the classes it inherits, nearest first
+    "List a class and its parents; a TypedDict's parents are in `__orig_bases__`, because its `__mro__` is that of a dict."
+    if not typing.is_typeddict(klass):
+        return list(getattr(klass, "__mro__", (klass,)))
+    out = [klass]
+    for b in getattr(klass, "__orig_bases__", ()):
+        if typing.is_typeddict(b):
+            out += [p for p in parents(b) if p not in out]
+    return out
+
+
+def options_table(
+    command: object,  # A click command or group
+) -> str:  # A Markdown table of its options and arguments: names, default, help
+    "Describe a click command's options and arguments, as its `--help` does."
+    rows = []
+    for p in command.params:
+        if getattr(p, "param_type_name", "") == "argument":
+            names = f"`{getattr(p, 'human_readable_name', p.name)}`"  # an argument by its name in `--help`, such as `NAME`
+        else:
+            names = ", ".join(f"`{o}`" for o in [*getattr(p, "opts", []), *getattr(p, "secondary_opts", [])])
+        if getattr(p, "metavar", None) and getattr(p, "param_type_name", "") != "argument":
+            names += f" `{p.metavar}`"
+        default = getattr(p, "default", None)
+        unset = default is None or callable(default) or repr(default).startswith("Sentinel.")  # click 8.3 marks no default with `Sentinel.UNSET`
+        shown = "" if unset or getattr(p, "is_flag", False) else f"`{default!r}`"
+        rows.append([names, shown, getattr(p, "help", None) or ""])
+    return table(rows, ["Option", "Default", "Help"])
 
 
 def keys_table(
@@ -383,6 +484,9 @@ def entry(
         prefix = "async " if inspect.iscoroutinefunction(sym) else ""
         code = f"```python\n{prefix}{sym.__qualname__}{signature(sym, mod)}\n```"
         parts = [head, code, doc(sym), params_table(sym, mod)]
+        command = None if is_class else command_of(sym, mod)
+        if command is not None:
+            parts.append(options_table(command))
     return "\n\n".join(p for p in parts if p)
 
 
@@ -418,7 +522,8 @@ def gaps_of(
         out.append(f"{name}: no docstring")
     is_class = inspect.isclass(sym)
     if is_class and is_model(sym):
-        return out + [f"{name}.{n}: no description" for n, f in sym.model_fields.items() if not f.description]
+        said = field_descriptions(sym)
+        return out + [f"{name}.{n}: no description" for n in sym.model_fields if n not in said]
     if is_class and typing.is_typeddict(sym):
         said = key_comments(sym)
         return out + [f"{name}.{n}: no docment" for n in sym.__annotations__ if n not in said]
@@ -453,10 +558,11 @@ def gaps(
 def check(
     packages: list[str],  # The packages to hold to the convention
     files: list[Path],  # More Python files to hold to it, such as the tests
+    root: Path | None = None,  # The folder that the names of the files start from
 ) -> int:  # The exit code: 0 when nothing is missing, 1 otherwise
     "Print how much of each module is typed and documented, then every gap, then the total."
     found, done, total = [], 0, 0
-    mods = [m for p in packages for m in package_modules(p)] + file_modules(files)
+    mods = [m for p in packages for m in package_modules(p)] + file_modules(files, root)
     width = max((len(m.__name__) for m in mods), default=10)
     for mod in mods:
         missing = gaps(mod)
@@ -475,14 +581,14 @@ def check(
 
 @dataclass
 class Settings:
-    "What `smalldocs.api` in `_quarto.yml` says."
+    "What the api settings say: `api` in `_smalldocs.yml`, or `smalldocs.api` in `_quarto.yml`."
 
-    site: Path  # The site's folder, which holds `_quarto.yml`
+    site: Path  # The site's folder, which holds the config
     packages: list[str]  # The packages to document
     out: str = "api"  # The folder of pages, inside the site
     root: Path | None = None  # The repository's root, for source links and the files of `check`
     source: str = ""  # The URL that a file's path is added to for its `source` link
-    check: tuple[str, ...] = ()  # Globs, from the root, of more files that `check` holds to the convention
+    check: tuple[str, ...] = ()  # Globs, from the root, of more files that `check` holds to the convention; `**/` is any folders or none
     linkify: bool = True  # Whether a name in backticks links to its entry
 
     @classmethod
@@ -495,7 +601,7 @@ class Settings:
         pkgs = conf.get("packages") or conf.get("package") or []
         pkgs = [pkgs] if isinstance(pkgs, str) else list(pkgs)
         if not pkgs:
-            raise ValueError("smalldocs.api needs packages: the importable packages to document")
+            raise ValueError("the api settings need packages: the importable packages to document")
         at_root = (site / "pyproject.toml").exists() or (site / ".git").exists()
         root = (site / str(conf.get("root", "." if at_root else ".."))).resolve()
         chk = conf.get("check") or []
@@ -507,16 +613,31 @@ class Settings:
             if p.is_dir() and str(p) not in sys.path:
                 sys.path.insert(0, str(p))
 
+    def package_files(self) -> set[Path]:  # The folders of the documented packages, and the files of single modules
+        "Find where the documented packages are, so that `check` does not import their files a second time."
+        out = set()
+        for name in self.packages:
+            spec = importlib.util.find_spec(name)
+            if spec is None:
+                continue
+            out |= {Path(p).resolve() for p in spec.submodule_search_locations or []}
+            if spec.origin and not spec.submodule_search_locations:
+                out.add(Path(spec.origin).resolve())
+        return out
+
     def check_files(self) -> list[Path]:  # The files the globs of `check` find
         "Find the files of `check`."
         if not self.root:
             return []
+        documented = self.package_files()
         out = []
         for f in sorted(self.root.rglob("*.py")):
             r = f.relative_to(self.root).as_posix()
             if any(part.startswith(".") for part in Path(r).parts) or "site-packages" in r:
                 continue
-            if any(fnmatch.fnmatch(r, g) or (g.startswith("**/") and fnmatch.fnmatch(r, g[3:])) for g in self.check):
+            if f.resolve() in documented or any(d in f.resolve().parents for d in documented):
+                continue  # a file of a documented package is checked as part of its package
+            if any(glob_regex(g.lstrip("/")).match(r) for g in self.check):
                 out.append(f)
         return out
 
@@ -570,7 +691,7 @@ def build(
     out_dir = (s.site / s.out).resolve()
     site = s.site.resolve()
     if site not in out_dir.parents:
-        raise ValueError(f"smalldocs.api.out {s.out!r} must be a folder inside the site, such as api")
+        raise ValueError(f"api.out {s.out!r} must be a folder inside the site, such as api")
     out_dir.mkdir(parents=True, exist_ok=True)
     manifest = out_dir / ".smalldocs-api"
     before = set(manifest.read_text(encoding="utf-8").split("\n")) if manifest.exists() else set()
@@ -616,13 +737,13 @@ def build_from_config(
         s = Settings.read(project.root, project.smalldocs.get("api") or {})
         return build(s)
     except ImportError as e:
-        raise BuildError(f"smalldocs.api cannot import the package: {e}. Install smalldocs in the same environment as the package") from e
+        raise BuildError(f"the api settings: cannot import the package: {e}. Install smalldocs in the same environment as the package") from e
     except ValueError as e:
         raise BuildError(str(e)) from e
 
 
 def main(
-    site: str,  # The site's folder, whose `_quarto.yml` has `smalldocs.api`
+    site: str,  # The site's folder, whose config has the api settings
     action: str,  # `build`, `check`, `module` or `list`
     name: str | None = None,  # The module, for `module`
 ) -> int:  # The exit code
@@ -632,7 +753,8 @@ def main(
     project = load(site)
     conf = project.smalldocs.get("api")
     if not conf:
-        print("smalldocs api: _quarto.yml has no smalldocs.api section; see `smalldocs api --help`", file=sys.stderr)
+        where = "api" if project.native else "smalldocs.api"
+        print(f"smalldocs api: {project.file} has no {where} section; see `smalldocs api --help`", file=sys.stderr)
         return 2
     try:
         return run(Settings.read(project.root, conf), action, name)
@@ -653,7 +775,7 @@ def run(
         print(f"wrote {len(pages)} page(s) to {s.site / s.out}")
         return 0
     if action == "check":
-        return check(s.packages, s.check_files())
+        return check(s.packages, s.check_files(), s.root)
     if action == "list":
         found = inventory(s.packages)
         names = [f"{x.module}.{x.name}" if x.name else x.module for x in found]

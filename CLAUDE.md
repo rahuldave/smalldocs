@@ -1,6 +1,6 @@
 # smalldocs
 
-smalldocs builds a Quarto-like website from a `_quarto.yml` project, in pure Python, and is published on
+smalldocs builds a Quarto-like website from a `_smalldocs.yml` or `_quarto.yml` project, in pure Python, and is published on
 PyPI as `smalldocs`. It exists so that Rahul's projects (babykev, smallwikiapp, nbinlineai, ProblemSolving,
 the timewalk class kits) can build their docs sites without Quarto, which is 600 MB of Pandoc, Deno, Sass
 and Typst. It makes websites only: no PDF, Word, slides or books, and it runs no code.
@@ -17,8 +17,11 @@ reads the Markdown cells of the notebooks; it must pass before a commit.
 - **A project that builds with Quarto builds with smalldocs, with the same pages, the same anchors and the
   same links.** Heading ids follow Pandoc's algorithm (`markdown.pandoc_id`); links to `.qmd`/`.md`/`.ipynb`
   become `.html`; links from `/` start at the root. Check a change against real sites (below).
-- **Read `_quarto.yml` unchanged.** smalldocs' own settings live under `smalldocs:`, which Quarto ignores. A
-  key smalldocs does not read is a warning, never silent.
+- **`_smalldocs.yml` is the config; read `_quarto.yml` unchanged.** `config.load` looks for `_smalldocs.yml`
+  first (`Project.native`). There the page options and smalldocs' own options (`linkify`, `symbols`, `api`,
+  `config.OWN_KEYS`) are top-level keys, and `format`, `smalldocs` and `filters` are warnings. In a
+  `_quarto.yml`, page options are under `format.html` and smalldocs' own settings under `smalldocs:`, which
+  Quarto ignores. A key smalldocs does not read is a warning, never silent.
 - **Any Bootswatch theme, with no Sass.** `assets/smalldocs.css` uses only Bootstrap's `--bs-*` variables
   and its own `--sd-*` ones. Never hard-code a colour that a theme should set (the Quarto highlight colours
   and the inline-code purple are the exceptions, with dark variants under `html.quarto-dark`).
@@ -27,7 +30,7 @@ reads the Markdown cells of the notebooks; it must pass before a commit.
   pages listed in its manifest, `api/.smalldocs-api`, and `api.out` must be inside the site. Keep these
   guards; each has a test.
 - **Never publish a source.** A link to a page that is not built is reported, and its `.qmd` is never
-  copied. `resources` and `render` take one glob or a list (`config.as_list`); globs use `config.glob_match`
+  copied. `resources` and `render` take one glob or a list (`config.as_list`); globs use `config.glob_match` (but `api.check` uses `glob_regex` from the root, so `*.py` is the root's files only)
   (as Quarto: with a `/`, `*` stays in one folder; with no `/`, the glob matches at any depth).
 - **`publish` never touches the working tree or the current branch.** It works in a temporary worktree,
   removes it in `finally`, deletes only a branch it made (a uuid name), skips hooks, and refuses to
@@ -41,7 +44,7 @@ reads the Markdown cells of the notebooks; it must pass before a commit.
 
 | File | What it is |
 |---|---|
-| `src/smalldocs/config.py` | `_quarto.yml`: load, merge (`merge`, `dir_metadata`), the known keys, `ConfigError`, `BuildError` |
+| `src/smalldocs/config.py` | `_smalldocs.yml` or `_quarto.yml`: load, merge (`merge`, `dir_metadata`), the known keys, `ConfigError`, `BuildError` |
 | `src/smalldocs/markdown.py` | markdown-it-py with mdit-py-plugins, and Pandoc's rules: heading attributes and ids, fenced divs, callouts, tabsets, figures, sections, typography, code, maths |
 | `src/smalldocs/highlight.py` | Pygments tokens to Pandoc's classes (`kw`, `st`, `co`, ...) |
 | `src/smalldocs/notebook.py` | `.ipynb` to Markdown with raw HTML outputs; nothing runs |

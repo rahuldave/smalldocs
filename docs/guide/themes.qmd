@@ -6,13 +6,13 @@ order: 7
 
 A theme is a stylesheet that sets the colours and the fonts of the site. smalldocs includes the 25
 themes of [Bootswatch](https://bootswatch.com) 5.3, as the CSS files that Bootswatch builds. To use a
-theme, give its name in `format.html.theme`:
+theme, give its name in `theme`, at the top level of `_smalldocs.yml`:
 
 ```yaml
-format:
-  html:
-    theme: flatly
+theme: flatly
 ```
+
+In a `_quarto.yml`, `theme` is under `format.html`.
 
 The themes have these names:
 
@@ -28,11 +28,9 @@ If you give two themes, the navbar or the sidebar gets a toggle between them. Th
 choice of the reader. This site uses two themes:
 
 ```yaml
-format:
-  html:
-    theme:
-      light: cosmo
-      dark: darkly
+theme:
+  light: cosmo
+  dark: darkly
 ```
 
 ## How the page gets the colours of the theme
@@ -48,10 +46,8 @@ in the light theme and in the dark theme.
 ## Your own CSS
 
 ```yaml
-format:
-  html:
-    theme: cosmo
-    css: styles.css
+theme: cosmo
+css: styles.css
 ```
 
 The browser loads `styles.css` after the theme and after the stylesheet of smalldocs. In it, set the

@@ -35,7 +35,8 @@ If the command finds anything, its exit code is 1.
 
 ## What is the same
 
-- smalldocs merges `_quarto.yml`, `_metadata.yml` and front matter in the same order as Quarto.
+- smalldocs reads `_quarto.yml`, and merges it with `_metadata.yml` and front matter in the same order
+  as Quarto.
 - smalldocs makes the ids of headings by the rules of Pandoc. So links and anchors that were written
   for Quarto keep working.
 - A link to a `.qmd`, `.md` or `.ipynb` file becomes a link to the `.html` file. A link that starts with
@@ -51,5 +52,7 @@ If the command finds anything, its exit code is 1.
 2. Run `smalldocs preview`. Compare each page with the page that Quarto made.
 3. In the recipe that builds the site, change `quarto render` to `smalldocs render`. Change
    `quarto publish gh-pages` to `smalldocs publish gh-pages`.
-4. If the project has its own `apidocs.py`, think about `smalldocs.api` instead. See
+4. If the project has its own `apidocs.py`, think about the `api` of smalldocs instead. See
    [The API reference](api.qmd).
+5. When Quarto no longer builds the project, change `_quarto.yml` to `_smalldocs.yml`. See
+   [A _quarto.yml](config.qmd#a-_quarto.yml).

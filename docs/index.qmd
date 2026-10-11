@@ -11,11 +11,12 @@ listing:
   filter-ui: false
 ---
 
-smalldocs builds a website from a [Quarto](https://quarto.org) project. Quarto is a tool that turns
-Markdown and notebooks into websites, PDFs and slides. A Quarto project is a folder with a
-`_quarto.yml` file, which holds the options of the site.
+smalldocs builds a website from a folder of Markdown pages and notebooks. A file `_smalldocs.yml` in
+the folder holds the options of the site.
 
-smalldocs reads the same `_quarto.yml` and the same Markdown. It writes the site into the folder
+smalldocs looks like [Quarto](https://quarto.org), and reads its Markdown. Quarto is a tool that turns
+Markdown and notebooks into websites, PDFs and slides. smalldocs also builds a Quarto project, from its
+file `_quarto.yml`, with no change. It writes the site into the folder
 `_site`. Each page of the site has a navbar at the top, a sidebar at the left and a table of contents
 at the right. smalldocs also makes reference pages from your Python code, and pages that list other
 pages, such as a blog.

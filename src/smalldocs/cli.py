@@ -59,12 +59,12 @@ def cmd_publish(
 
 def parser() -> argparse.ArgumentParser:  # The parser for every command
     "Describe the commands and their options."
-    p = argparse.ArgumentParser(prog="smalldocs", description="Quarto-like websites from a _quarto.yml project, in pure Python.")
+    p = argparse.ArgumentParser(prog="smalldocs", description="Quarto-like websites from a _smalldocs.yml or _quarto.yml project, in pure Python.")
     p.add_argument("--version", action="version", version=f"smalldocs {__version__}")
     sub = p.add_subparsers(dest="command", required=True)
 
     r = sub.add_parser("render", help="build the site into its output-dir (default _site)")
-    r.add_argument("dir", nargs="?", default=".", help="the project folder, with _quarto.yml")
+    r.add_argument("dir", nargs="?", default=".", help="the project folder, with _smalldocs.yml or _quarto.yml")
     r.add_argument("--quiet", "-q", action="store_true", help="print only warnings and errors")
     r.add_argument("--strict", action="store_true", help="exit 1 when there is any warning")
     r.set_defaults(func=cmd_render)
@@ -83,7 +83,7 @@ def parser() -> argparse.ArgumentParser:  # The parser for every command
     a = sub.add_parser("api", help="the API reference: build its pages, check the docments, or print one module")
     a.add_argument("action", choices=["build", "check", "module", "list"], help="build: the pages; check: the gaps; module NAME: one module; list: every symbol")
     a.add_argument("name", nargs="?", help="the module, for `module`")
-    a.add_argument("--dir", default=".", help="the project folder, whose _quarto.yml has smalldocs.api")
+    a.add_argument("--dir", default=".", help="the project folder, whose config has the api settings")
     a.set_defaults(func=cmd_api)
 
     g = sub.add_parser("publish", help="build and push the site to the gh-pages branch")

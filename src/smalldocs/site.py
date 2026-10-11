@@ -231,7 +231,7 @@ class Site:
             joined = posixpath.normpath(posixpath.join(str(page.src.parent) if page else "", path))
         if joined == ".." or joined.startswith("../"):
             if record:
-                self.broken.append((str(page.src) if page else "_quarto.yml", f"{href} (outside the project)"))
+                self.broken.append((str(page.src) if page else self.project.file, f"{href} (outside the project)"))
             return href
         target = PurePosixPath(joined)
         found = self.find_page(target)
@@ -242,7 +242,7 @@ class Site:
         if target.suffix in PAGE_EXTS and file.is_file():
             # a page that is not built: a draft, or left out by `render`. Never publish its source
             if record:
-                self.broken.append((str(page.src) if page else "_quarto.yml", f"{href} (a page that is not built)"))
+                self.broken.append((str(page.src) if page else self.project.file, f"{href} (a page that is not built)"))
             return rel(target.with_suffix(".html"), page) + tail
         if file.is_file():
             self.resources.add(target)
@@ -252,7 +252,7 @@ class Site:
         if target.suffix in PAGE_EXTS:
             target = target.with_suffix(".html")
         if record and not (self.out / joined).exists():
-            self.broken.append((str(page.src) if page else "_quarto.yml", href))
+            self.broken.append((str(page.src) if page else self.project.file, href))
         return rel(target, page) + tail
 
     # ------------------------------------------------------------ the steps
@@ -289,7 +289,7 @@ class Site:
         "Read the name index that turns a name in backticks into a link: `_symbols.json`, when linkify is on."
         sd = self.project.smalldocs
         api = sd.get("api") or {}
-        filters = filter_paths(self.project.config)
+        filters = [] if self.project.native else filter_paths(self.project.config)
         on = sd.get("linkify", api.get("linkify", bool(api) or any(Path(f).name == "linkify.lua" for f in filters)))
         index = self.root / str(sd.get("symbols") or "_symbols.json")
         if on and index.exists():

@@ -4,7 +4,7 @@ project:
 
 website:
   title: smalldocs
-  description: Quarto-like websites from a _quarto.yml project, in pure Python
+  description: Quarto-like websites in pure Python
   site-url: https://rahuldave.com/smalldocs/
   repo-url: https://github.com/rahuldave/smalldocs
   repo-actions: [source, issue]
@@ -33,16 +33,14 @@ website:
     left: "smalldocs is MIT-licensed."
     right: "Built with [smalldocs](https://github.com/rahuldave/smalldocs)."
 
-format:
-  html:
-    theme:
-      light: cosmo
-      dark: darkly
-    toc: true
-    code-copy: true
+theme:
+  light: cosmo
+  dark: darkly
+toc: true
+code-copy: true
 
-smalldocs:
-  api:
-    packages: [smalldocs]
-    root: ..
-    source: https://github.com/rahuldave/smalldocs/blob/main
+linkify: true
+api:
+  packages: [smalldocs]
+  root: ..
+  source: https://github.com/rahuldave/smalldocs/blob/main
