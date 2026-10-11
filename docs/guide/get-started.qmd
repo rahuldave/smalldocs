@@ -17,9 +17,10 @@ smalldocs imports the package to read its code.
 
 ## Make a site
 
-A project is a folder with a `_smalldocs.yml` file and some pages. A page is a `.qmd`, `.md` or `.ipynb`
-file. Front matter is the YAML block between two `---` lines at the top of a page. It holds the options
-of the page, such as its title.
+A project is a folder with a `_smalldocs.yml` file and some pages. A page is a Markdown file, `.md` or
+`.qmd`, or a Jupyter notebook, `.ipynb`. A `.qmd` file is Markdown with some additions, such as callouts
+and tabs. [Writing pages](markdown.qmd) describes them. Front matter is the YAML block between two `---`
+lines at the top of a page. It holds the options of the page, such as its title.
 
 The smallest site has three files:
 

@@ -4,8 +4,10 @@ description: Any Bootswatch theme, a light theme and a dark theme together, and 
 order: 7
 ---
 
-A theme is a stylesheet that sets the colours and the fonts of the site. smalldocs includes the 25
-themes of [Bootswatch](https://bootswatch.com) 5.3, as the CSS files that Bootswatch builds. To use a
+A theme is a stylesheet that sets the colours and the fonts of the site. The pages of smalldocs use
+[Bootstrap](https://getbootstrap.com), a library of CSS. [Bootswatch](https://bootswatch.com) is a set of
+free themes for Bootstrap. smalldocs includes the 25 themes of Bootswatch 5.3, as the CSS files that
+Bootswatch builds. To use a
 theme, give its name in `theme`, at the top level of `_smalldocs.yml`:
 
 ```yaml
@@ -35,9 +37,9 @@ theme:
 
 ## How the page gets the colours of the theme
 
-Quarto compiles the Sass source of each theme with its own Sass, so it needs a Sass compiler. smalldocs
-does not need one. A Bootstrap 5.3 theme sets its colours, fonts and borders as CSS variables, such as
-`--bs-primary`, `--bs-body-bg` and `--bs-border-color`.
+Bootswatch writes each theme in Sass, a language that a compiler turns into CSS. smalldocs uses the CSS
+that Bootswatch builds, so it needs no Sass compiler. A Bootstrap 5.3 theme sets its colours, fonts and
+borders as CSS variables, such as `--bs-primary`, `--bs-body-bg` and `--bs-border-color`.
 
 The stylesheet of smalldocs lays out the navbar, the sidebar, the table of contents, the callouts and
 the listings. It uses only those variables. So each part of the page gets the colours of the theme,

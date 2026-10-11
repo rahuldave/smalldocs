@@ -1,9 +1,8 @@
 # smalldocs
 
 smalldocs builds a website from a folder of Markdown pages and notebooks, in Python. A file
-`_smalldocs.yml` in the folder holds the options of the site. smalldocs looks like
-[Quarto](https://quarto.org), and also builds a Quarto project from its `_quarto.yml`, with no change.
-It writes the site into the folder `_site`. The site has these parts:
+`_smalldocs.yml` in the folder holds the options of the site. smalldocs writes the site into the folder
+`_site`. The site has these parts:
 
 - pages with a navbar, a sidebar and a table of contents
 - notebooks, with the outputs that were saved in them
@@ -13,15 +12,19 @@ It writes the site into the folder `_site`. The site has these parts:
 The site can use any [Bootswatch](https://bootswatch.com) theme, in a light version and a dark version.
 
 smalldocs makes websites only. It does not make PDF files, Word files, slides or books, and it runs no
-code. It is one package from PyPI, and it needs no Pandoc, Deno, Sass or TeX.
+code. It is one package from PyPI, and it needs no other programs.
+
+smalldocs takes its conventions from [Quarto](https://quarto.org). They are the `.qmd` pages, the
+Markdown of [Pandoc](https://pandoc.org) and the options of a site. So a Quarto website builds with smalldocs, from its `_quarto.yml`,
+with no change.
 
 ```bash
 pip install smalldocs
 
 smalldocs render docs              # build docs/_site
 smalldocs preview docs             # serve it at http://127.0.0.1:4200, and build it again on each change
-smalldocs check docs               # what smalldocs ignores, broken links, Markdown that only Pandoc reads
-smalldocs api build --dir docs     # the API reference, from docstrings, types and docments
+smalldocs check docs               # options that smalldocs ignores, broken links, Markdown it does not read
+smalldocs api build --dir docs     # the API reference, from docstrings, types and comments
 smalldocs publish gh-pages docs    # push the site to the branch gh-pages
 ```
 
@@ -29,14 +32,14 @@ The documentation is at [rahuldave.com/smalldocs](https://rahuldave.com/smalldoc
 
 ## What smalldocs reads
 
-- **The options.** smalldocs reads `_smalldocs.yml`, `_metadata.yml` and front matter, and merges them
-  as Quarto does. In a `_quarto.yml`, it reads the sections `project`, `website`, `format.html` and
-  `smalldocs`.
-- **The Markdown.** smalldocs reads CommonMark, tables, footnotes, attributes, divs, callouts, tabsets,
-  maths, diagrams, raw HTML and shortcodes. It makes the ids of headings by the rules of Pandoc. So links
-  that were written for Quarto keep working.
-- **Notebooks.** smalldocs shows the outputs that were saved in a notebook. It obeys the `#|` options of
-  Quarto in each cell.
+- **The options.** smalldocs reads `_smalldocs.yml`, a `_metadata.yml` file in each folder, and the
+  front matter of each page. The front matter wins over a `_metadata.yml`, and a `_metadata.yml` wins
+  over `_smalldocs.yml`.
+- **The Markdown.** smalldocs reads CommonMark. It also reads front matter, tables, footnotes,
+  attributes, divs, callouts, tabs, maths, diagrams, raw HTML and shortcodes. A `.qmd` page is Markdown
+  that uses them. [Writing pages](https://rahuldave.com/smalldocs/guide/markdown.html) describes each one.
+- **Notebooks.** smalldocs shows the outputs that were saved in a notebook. The `#|` option lines at
+  the top of a cell can hide its code or its output.
 - **Listings.** smalldocs makes listings as rows, cards or a table, with sorting, a filter, categories,
   pages and an RSS feed.
 

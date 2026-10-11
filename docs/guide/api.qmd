@@ -146,7 +146,7 @@ Run `check` in your tests, or before each commit.
 ## Move from apidocs.py
 
 Some projects made their reference with their own `apidocs.py` script and the Lua filter
-`linkify.lua`. smalldocs builds such a project with no change:
+`linkify.lua`. A Lua filter is a script that Quarto runs on each page. smalldocs builds such a project with no change:
 
 - smalldocs runs the `pre-render` script. So `apidocs.py` writes the pages and `_symbols.json` as
   before.
@@ -161,4 +161,4 @@ To change to the `api` of smalldocs, do these steps:
 4. Delete the files `apidocs.py` and `linkify.lua`.
 5. Delete the old pages in the reference folder, once. smalldocs deletes only the pages that it wrote.
 
-For the `apidocs.py` of babykev, the pages that smalldocs writes are the same, byte for byte.
+For one such project, the pages that smalldocs writes are the same as before, byte for byte.

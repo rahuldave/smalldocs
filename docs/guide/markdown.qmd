@@ -4,13 +4,47 @@ description: The Markdown that smalldocs reads, each feature with its source and
 order: 3
 ---
 
-smalldocs reads CommonMark, the common form of Markdown. It also reads the parts of Pandoc's Markdown
-that websites use. Pandoc is the program that Quarto uses to read Markdown. Each section below shows the
-source of a feature, and then the result.
+A page is a Markdown file. smalldocs reads [CommonMark](https://commonmark.org), the standard form of
+Markdown. It also reads some additions to Markdown, which this page describes:
+
+- front matter, the options of the page at its top
+- attributes, which give an id, classes or a width to a heading, a link or a picture
+- divs, which are blocks with their own classes, and the callouts and tabs made from them
+- figures, maths, diagrams and raw HTML
+- shortcodes, which put other text into the page
+
+Each section below shows the source of a feature, and then the result.
+
+## .md and .qmd files
+
+A page can be a `.md` file or a `.qmd` file. smalldocs reads both in the same way. A `.qmd` file is a
+Markdown file that uses the additions above. The name `.qmd` comes from Quarto, and the additions come
+from the Markdown of [Pandoc](https://pandoc.org), as Quarto uses it. So name a page `.qmd` to show
+that it uses them. A Markdown viewer that does not know them, such as the file view of GitHub, shows
+them as plain text.
+
+A page can also be a Jupyter notebook, a `.ipynb` file. See [Notebooks](notebooks.ipynb).
+
+## Front matter
+
+Front matter is a block of YAML between two `---` lines at the top of a page. It holds the options of
+the page:
+
+```markdown
+---
+title: Writing pages
+description: The Markdown that smalldocs reads.
+order: 3
+---
+```
+
+The title goes at the top of the page and in the sidebar. [The configuration](config.qmd) lists the
+other options.
 
 ## Text
 
-smalldocs changes some characters in text, as the `smart` extension of Pandoc does:
+smalldocs changes some characters in text. To keep them as you type them, set the option
+`from: markdown-smart`:
 
 | You write | The page shows |
 |---|---|
@@ -31,14 +65,20 @@ Term
 
 ## Headings and attributes
 
-smalldocs makes the id of a heading as Pandoc makes it. So a link that was written for Quarto still
-works. To give your own id and classes, put them in braces:
+Each heading has an id, so a link can point at it, as in `config.qmd#globs`. smalldocs makes the id
+from the text of the heading. The id is in lower case, with a `-` between the words. It keeps letters,
+digits, `_`, `-` and `.`, and it drops other punctuation and anything before the first letter. So
+`## A _quarto.yml` gets the id `a-_quarto.yml`. Pandoc makes ids by the same rules, so a link written for
+Pandoc or Quarto still works.
+
+To give your own id and classes, put them in braces:
 
 ```markdown
 ## Install it {#install .important}
 ```
 
-A link, a picture, a span and inline code take attributes too. Write `[text](url){.btn .btn-primary}`,
+A link, a picture, a span and inline code take attributes too. A span is text in brackets with
+attributes after it. Write `[text](url){.btn .btn-primary}`,
 `![alt](pic.png){width=50%}` or `[red]{.text-danger}`. Here is [a button](get-started.qmd){.btn .btn-primary .btn-sm}
 and a [span with a class]{.text-danger}.
 
@@ -132,8 +172,8 @@ A tab can hold any Markdown.
 
 ## Code
 
-smalldocs colours code with Pygments. It uses the same classes as Quarto, so the colours are the same.
-A copy button shows when the pointer is on the code. A `filename` goes above the code:
+smalldocs colours code with [Pygments](https://pygments.org), in the light theme and in the dark
+theme. See [Themes](themes.qmd). A copy button shows when the pointer is on the code. A `filename` goes above the code:
 
 ```{.python filename="hello.py"}
 import sys
@@ -144,9 +184,14 @@ def main() -> int:
     return 0
 ```
 
-A code block whose fence ends with `{python}` is a cell, which Quarto runs. smalldocs shows the cell as
-code. It does not run the code, so the page shows no output. It removes the `#|` lines, and it obeys
-`echo: false`.
+A code block whose fence names a language in braces, such as `{python}` or `{r}`, is a cell. A cell is
+code that is meant to run when the page is built, with its output in the page. smalldocs does not run
+code. It shows the cell as code, and the page shows no output. The build gives a warning for each page
+with cells.
+
+A cell can start with option lines that begin with `#|`. smalldocs removes these lines. It hides the
+cell for `#| echo: false` or `#| include: false`. To hide every cell of a page, set `echo: false` in its
+front matter.
 
 ## Raw HTML
 
@@ -165,11 +210,16 @@ caption:
 
 ## Tables
 
-| Feature | Quarto | smalldocs |
+A table has a row of headings, a row of dashes, and a row for each line of the table. A `|` goes
+between the cells:
+
+| Feature | Written as | Note |
 |---|---|---|
-| Pipe tables | yes | yes |
-| Grid tables | yes | no: write a pipe table |
-| `\|` in a cell | yes | yes |
+| A column | `\| a \|` | Put `\|` at both ends of each row |
+| Alignment | `\|:---\|---:\|` | A colon sets the side |
+| `\|` in a cell | `\\|` | A backslash before it |
+
+smalldocs does not read the grid tables of Pandoc, which are drawn with `+` and `-`.
 
 ## Maths
 
@@ -179,8 +229,9 @@ $$
 \int_0^1 x^2 \, dx = \frac{1}{3}
 $$
 
-A dollar before a space or a digit is money, so the text "it costs $5 and $10" stays as it is. If
-`format.html` has `from: markdown-tex_math_dollars`, a dollar is always a dollar. KaTeX draws the maths.
+A dollar before a space or a digit is money, so the text "it costs $5 and $10" stays as it is. With
+the option `from: markdown-tex_math_dollars`, in the front matter or in `_smalldocs.yml`, each `$` is a
+dollar, and smalldocs draws no maths written with dollars. KaTeX, a JavaScript library, draws the maths.
 smalldocs loads KaTeX only on pages that have maths.
 
 ## Diagrams
@@ -204,7 +255,7 @@ replaces these shortcodes everywhere except in code blocks:
 |---|---|
 | `{{</* include _part.qmd */>}}` | The file, without its front matter |
 | `{{</* meta title */>}}` | An option of the page: {{< meta title >}} |
-| `{{</* var version */>}}` | A value from `_variables.yml` |
+| `{{</* var version */>}}` | A value from `_variables.yml`, a YAML map of names to values at the root of the project |
 | `{{</* env HOME */>}}` | An environment variable |
 
 To show a shortcode as it is, put `/*` and `*/` inside its braces. The left column of the table does

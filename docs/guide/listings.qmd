@@ -4,8 +4,8 @@ description: Pages that list other pages as rows, as cards or as a table, with c
 order: 6
 ---
 
-A listing is a page that lists other pages, as in Quarto. A page with `listing:` in its front matter is
-a listing. The [News](../news/index.qmd) page is a listing. The cards of the guide on the
+A listing is a page that lists other pages, such as the posts of a blog. A page with `listing:` in its
+front matter is a listing. The [News](../news/index.qmd) page is a listing. The cards of the guide on the
 [home page](../index.qmd) are a listing too.
 
 ```yaml
@@ -16,7 +16,7 @@ listing:
   type: default            # default, grid or table
   sort: "date desc"        # or a list: ["date desc", "title"]; false keeps the order found
   categories: true         # the categories at the right: true, numbered, unnumbered or cloud
-  feed: true               # an RSS feed beside the page; it needs website.site-url
+  feed: true               # an RSS feed beside the page, for feed readers; it needs website.site-url
 ---
 ```
 

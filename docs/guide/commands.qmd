@@ -32,12 +32,14 @@ error and keeps the last good site. It listens on this computer only. To listen 
 smalldocs check [DIR]
 ```
 
-The command builds the site into a temporary folder. Then it lists what to fix before you move a project
-from Quarto:
+The command builds the site into a temporary folder, and keeps your output folder as it is. It still
+writes the API pages and runs the `pre-render` and `post-render` commands, as a build does. Then it
+lists what to fix:
 
 - the options that smalldocs ignores
 - the broken links
-- the Markdown that only Pandoc reads
+- the Markdown that smalldocs does not read or does not run, with the file and the line of each. Examples
+  are citations, cross-references, grid tables and code cells
 
 If it finds anything, the exit code is 1.
 
@@ -48,7 +50,7 @@ smalldocs api build|check|list [--dir DIR]
 smalldocs api module NAME [--dir DIR]
 ```
 
-The command makes the reference pages, checks the docments, lists the symbols, or prints one module as
+The command makes the reference pages, checks the docments, lists the documented names, or prints one module as
 Markdown. See [The API reference](api.qmd).
 
 ## publish
