@@ -817,6 +817,70 @@ def test_smalldocs_yml(tmp_path: Path, capsys: pytest.CaptureFixture) -> None:
     assert "_smalldocs.yaml is not read: _smalldocs.yml is the config" in p.warnings
 
 
+TUTORIAL = {
+    "_smalldocs.yml": """
+        project:
+          type: website
+          render: ["index.qmd", "do/*.qmd", "watch/*.qmd"]
+        website:
+          title: A tutorial
+          sidebar:
+            style: docked
+            contents:
+              - index.qmd
+              - section: Do
+                href: do/step-08.qmd
+                contents:
+                  - section: "step-08: Docs"
+                    href: do/step-08.qmd
+                    contents:
+                      - text: "step-08.5 A site"
+                        href: do/step-08.qmd#step-08.5
+              - section: Watch
+                href: watch/step-08.qmd
+                contents:
+                  - text: "step-08.5 A site"
+                    href: watch/step-08.qmd#step-08.5
+        theme: cosmo
+        css: styles.css
+        toc: true
+        toc-depth: 3
+        code-copy: true
+        from: markdown-tex_math_dollars-smart
+        """,
+    "styles.css": "body {}\n",
+    "index.qmd": '---\ntitle: "A tutorial: home"\n---\n<!-- written by timewalk-tutorial -->\n\nStart at [step-08.5](do/step-08.qmd#step-08.5).\n',
+    "do/step-08.qmd": '---\ntitle: "step-08: Docs"\n---\n<!-- written by timewalk-tutorial -->\n\n## step-08.5 A site {#step-08.5}\n\n::: do\nType this.\n:::\n\n::: callout-tip\nIt\'s a tip, costs $5 and $6.\n:::\n',
+    "watch/step-08.qmd": '---\ntitle: "step-08: Docs"\n---\n<!-- written by timewalk-tutorial -->\n\n## step-08.5 A site {#step-08.5}\n\n::: {.watch}\nWatch this.\n:::\n',
+    "notes.md": "## step-08 Docs\n\n::: do\nNot a page.\n:::\n",
+    "draft/extra.qmd": "# Not rendered\n",
+}
+
+
+def test_timewalk_tutorial_sites(tmp_path: Path) -> None:
+    "A site shaped like the ones timewalk-tutorial writes: dotted ids, `#fragment` sidebar links, a mixed `render` list, and `do`/`watch` as plain divs."
+    write(tmp_path, TUTORIAL)
+    s = build(tmp_path, quiet=True)
+    assert not s.broken and not s.project.warnings
+    built = sorted(p.relative_to(s.out).as_posix() for p in s.out.rglob("*.html"))
+    assert built == ["do/step-08.html", "index.html", "watch/step-08.html"], "render builds only the names and globs it lists"
+    do = (s.out / "do/step-08.html").read_text()
+    assert 'id="step-08.5"' in do and "<title>step-08: Docs" in do
+    assert '<div class="do">' in do and "Type this." in do, "`do` is an ordinary div"
+    assert '<div class="watch">' in (s.out / "watch/step-08.html").read_text(), "`watch` is an ordinary div"
+    assert "callout-tip" in do and "$5 and $6" in do and "katex" not in do.lower(), "-tex_math_dollars leaves dollars as text"
+    assert "\u2019" not in do and ("It's" in do or "It&#x27;s" in do), "-smart keeps a straight apostrophe"
+    checked = 0
+    for page in s.out.rglob("*.html"):
+        for href in re.findall(r'<a[^>]+href="([^"#:]+\.html)#([^"]+)"', page.read_text()):
+            target = (page.parent / href[0]).resolve()
+            assert target.is_file() and f'id="{href[1]}"' in target.read_text(), f"{page.name}: {href[0]}#{href[1]} must resolve"
+            checked += 1
+    assert checked >= 6, "the sidebar of each page, and the link in the text, point at ids"
+    sidebar = (s.out / "index.html").read_text()
+    assert 'href="do/step-08.html#step-08.5"' in sidebar and 'href="watch/step-08.html#step-08.5"' in sidebar
+
+
 # ---------------------------------------------------------------- the commands
 
 
