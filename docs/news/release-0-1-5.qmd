@@ -1,0 +1,24 @@
+---
+title: smalldocs 0.1.5
+subtitle: Defaults in the docs, and fewer wrong links
+date: 2026-10-12
+author: Rahul Dave
+categories: [release]
+image: ../images/mark.svg
+---
+
+Linkify now links a name in backticks only when it looks like code. Calls such as `inventory()`, dotted
+names such as `Site.build`, names with an underscore and classes such as `Site` link. A plain lowercase word, such as `main` or `check`, stays as code. Before, such a word linked
+to any function of that name, even when the text meant a branch or an option. To keep a name as code,
+write `` `Site`{.nolink} ``. See [Links from the text](../guide/api.qmd#links-from-the-text).
+
+A table that is too wide for the page now scrolls in its own box, so the page does not scroll
+sideways on a phone.
+
+The docs have these changes:
+
+- Each table of options in [The configuration](../guide/config.qmd) gives the default of each option.
+- [What a build writes](../guide/config.qmd#what-a-build-writes) lists the files of a build, such as
+  `search.json` and `sitemap.xml`.
+- [The index of names](../guide/api.qmd#the-index-of-names) tells how smalldocs makes `_symbols.json`.
+- The rule for a dollar in [Maths](../guide/markdown.qmd#maths) is now the rule that smalldocs follows.

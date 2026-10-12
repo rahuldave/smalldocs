@@ -84,10 +84,19 @@ api:
 
 In a `_quarto.yml`, write the same section under `smalldocs:`, as `smalldocs.api`.
 
-The default `root` is `..`. If the folder of the site holds `pyproject.toml`, the default is `.`.
+| Key | What it does | Default |
+|---|---|---|
+| `packages` | The importable packages to document. `package` with one name works too | None. An `api` section without it stops the build |
+| `out` | The folder of the reference pages, from the folder of the site. It must be inside the site | `api` |
+| `root` | The root of the repository, from the folder of the site. The globs of `check` start here | `..`, or `.` when the folder of the site holds `pyproject.toml` or `.git` |
+| `source` | The address of the code. Each entry links to its line there | None: no links to the code |
+| `check` | Globs of more files that `smalldocs api check` holds to the convention | None: only the packages |
+| `linkify` | Names in backticks link to their entries. The top-level `linkify` wins over it | On |
 
-Each build then writes a page `api/<module>.qmd` for each public module. It also writes
-`_symbols.json`, the index of names. The folder `out` must be inside the site.
+Each build then writes a page `api/<module>.qmd` for each public module. A module is public when no
+part of its name starts with `_`. The page has the name of the module without its package, such as
+`site.qmd` for `smalldocs.site`. When two modules have the same last name, each page takes the full name.
+A package whose `__init__.py` defines functions or classes gets a page too.
 
 smalldocs notes the pages that it writes in the file `api/.smalldocs-api`. It deletes a page only if an
 earlier build wrote the page and the new build did not. So a page of your own in the folder, such as
@@ -106,11 +115,54 @@ website:
 smalldocs imports your package. So install smalldocs in the environment of the package. If the import
 fails, smalldocs also looks in the root of the repository and in its `src` folder.
 
+## The index of names
+
+Each build also writes `_symbols.json`, in the folder of the site, before it builds the pages. It is a
+JSON object. Each key is a name, and its value is the entry of that name, as a page and an anchor:
+
+```json
+{
+ "Site": "/api/site.qmd#Site",
+ "smalldocs.site.Site": "/api/site.qmd#Site",
+ "Site.build": "/api/site.qmd#Site.build",
+ "smalldocs.site.Site.build": "/api/site.qmd#Site.build"
+}
+```
+
+smalldocs makes the index from the reference. For each class, method and function, it adds two keys:
+
+- the name in its module, such as `Site` or `Site.build`
+- the full name, with the module, such as `smalldocs.site.Site.build`
+
+Two modules can have a function with the same name, such as `build`. Then the short name links to the
+first one, in the order of `packages`, and then of the names of the modules. The full names link to each one.
+
+smalldocs writes the file only when its content changes. Linkify then reads it.
+
 ## Links from the text
 
-When the reference is on, a name in backticks becomes a link to its entry, on every page of the site.
-The name must be in the reference, for example `Site`, `inventory` or `smalldocs.markdown.render`. A name
-inside a link stays as it is. A name that the reference does not know stays as code.
+When the reference is on, a name in backticks can become a link to its entry, on every page of the
+site. Linkify looks only at inline code, the text between backticks. It never changes the words of a
+sentence.
+
+The name must be in the reference, and it must look like code. A name looks like code when it has one
+of these forms:
+
+- a call, which ends in `()`, such as `inventory()`
+- a dotted name, such as `Site.build` or `smalldocs.markdown.render`
+- a name with an underscore, such as `package_modules`
+- a name that starts with a capital letter, such as the class `Site`
+
+A plain lowercase word, such as `main` or `check`, stays as code. Docs often name a branch, an option
+or a command with such a word, and a link would go to the wrong place. To link a function, write it
+as a call, `check()`, or with its module, `smalldocs.api.check`.
+
+These names also stay as code:
+
+- a name inside a link
+- a name that the reference does not know
+- a name with the class `nolink`, written as `` `Site`{.nolink} ``. Use it when a name looks like
+  code but means something else, such as a `Site`{.nolink} in another program
 
 ## Use the reference at the terminal
 
@@ -142,23 +194,3 @@ tests/test_x.py:test_add: no docstring
 ```
 
 Run `check` in your tests, or before each commit.
-
-## Move from apidocs.py
-
-Some projects made their reference with their own `apidocs.py` script and the Lua filter
-`linkify.lua`. A Lua filter is a script that Quarto runs on each page. smalldocs builds such a project with no change:
-
-- smalldocs runs the `pre-render` script. So `apidocs.py` writes the pages and `_symbols.json` as
-  before.
-- smalldocs sees `linkify.lua` in `filters`, and turns on its own linkify. It does not run the Lua
-  file. See [Linkify](config.qmd#linkify).
-
-To change to the `api` of smalldocs, do these steps:
-
-1. Add the section above to the config. Linkify is then on, with no filter.
-2. Remove `apidocs.py` from `pre-render`. Keep the other scripts of `pre-render`.
-3. Remove `linkify.lua` from `filters`, and remove `symbols` from the section `smalldocs`.
-4. Delete the files `apidocs.py` and `linkify.lua`.
-5. Delete the old pages in the reference folder, once. smalldocs deletes only the pages that it wrote.
-
-For one such project, the pages that smalldocs writes are the same as before, byte for byte.

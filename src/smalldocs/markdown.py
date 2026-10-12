@@ -588,6 +588,13 @@ def link_close(
     return self.renderToken(tokens, idx, options, env)
 
 
+def looks_like_code(
+    text: str,  # The text in backticks
+) -> bool:  # Whether linkify may link it
+    "Say whether a name in backticks looks like code: a call `f()`, a dotted name `a.b`, a name with `_`, or a class `Name`. A plain word such as `main` does not."
+    return text.endswith("()") or "." in text or "_" in text or text[:1].isupper()
+
+
 def code_inline(
     self: RendererHTML,  # The renderer
     tokens: Sequence[Token],  # The tokens of the page
@@ -595,13 +602,14 @@ def code_inline(
     options: OptionsDict,  # The parser's options
     env: dict,  # The render environment
 ) -> str:  # The `<code>` element, linked when it names a documented symbol
-    "Render inline code; a documented name in backticks, outside a link, links to its reference entry."
+    "Render inline code; a documented name in backticks that looks like code, outside a link and without `.nolink`, links to its entry."
     t = tokens[idx]
     attrs = "".join(f' {k}="{html.escape(str(v))}"' for k, v in t.attrs.items())
     code = f"<code{attrs}>{html.escape(t.content)}</code>"
     symbols = env.get("symbols") or {}
     key = re.sub(r"\(\)$", "", t.content)
-    if key in symbols and not env.get("_in_link"):
+    nolink = "nolink" in str(t.attrs.get("class", "")).split()
+    if key in symbols and not env.get("_in_link") and not nolink and looks_like_code(t.content):
         target = env["link"](symbols[key], "href") if env.get("link") else symbols[key]
         return f'<a href="{html.escape(target)}">{code}</a>'
     return code
@@ -614,8 +622,19 @@ def table_open(
     options: OptionsDict,  # The parser's options
     env: dict,  # The render environment
 ) -> str:  # The opening tag of the table
-    "Render a table with Bootstrap's classes, as Quarto does."
-    return '<table class="caption-top table">\n'
+    "Render a table with Bootstrap's classes, as Quarto does, in a box that scrolls when the table is too wide."
+    return '<div class="sd-table">\n<table class="caption-top table">\n'
+
+
+def table_close(
+    self: RendererHTML,  # The renderer
+    tokens: Sequence[Token],  # The tokens of the page
+    idx: int,  # The index of the token to render
+    options: OptionsDict,  # The parser's options
+    env: dict,  # The render environment
+) -> str:  # The closing tags of the table and its box
+    "Close a table and the box that `table_open` opened."
+    return "</table>\n</div>\n"
 
 
 def fence(
@@ -776,6 +795,7 @@ def make_parser(
         "link_close": link_close,
         "code_inline": code_inline,
         "table_open": table_open,
+        "table_close": table_close,
         "fence": fence,
         "code_block": code_block,
     }

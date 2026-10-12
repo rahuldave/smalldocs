@@ -28,7 +28,7 @@ If the command finds anything, its exit code is 1.
 | PDF, Word, slides, books, manuscripts | Websites only. A `book` is built as a website |
 | Runs `{python}`, `{r}` and `{ojs}` cells | Shows the code and runs nothing. A notebook shows its saved outputs |
 | Compiles `.scss` themes | Takes any Bootswatch theme and your CSS. See [Themes](themes.qmd) |
-| Lua filters | Runs no Lua. The [linkify](config.qmd#linkify) of smalldocs does the work of `linkify.lua` |
+| Lua filters | Runs no Lua. The [linkify](config.qmd#linkify) of smalldocs does the work of `linkify.lua`, but links only names that look like code. See [Lua filters](config.qmd#lua-filters) |
 | Grid tables, citations, cross-references (`@fig-x`) | Does not read them. Write a pipe table, and a link to the id |
 | Every Pandoc extension | CommonMark, tables, footnotes, definition lists, task lists, attributes, divs, callouts, tabsets, maths, raw HTML, shortcodes |
 | Algolia search, comments, analytics | A search box over `search.json`. Add the others with `include-in-header` |
@@ -52,7 +52,7 @@ If the command finds anything, its exit code is 1.
 2. Run `smalldocs preview`. Compare each page with the page that Quarto made.
 3. In the recipe that builds the site, change `quarto render` to `smalldocs render`. Change
    `quarto publish gh-pages` to `smalldocs publish gh-pages`.
-4. If the project has its own `apidocs.py`, think about the `api` of smalldocs instead. See
-   [The API reference](api.qmd).
+4. If a script of the project writes its API reference, use the `api` section of smalldocs instead.
+   Remove the script from `pre-render`. See [The API reference](api.qmd).
 5. When Quarto no longer builds the project, change `_quarto.yml` to `_smalldocs.yml`. See
    [A _quarto.yml](config.qmd#a-_quarto.yml).

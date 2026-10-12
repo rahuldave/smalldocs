@@ -248,10 +248,15 @@ $$
 \int_0^1 x^2 \, dx = \frac{1}{3}
 $$
 
-A dollar before a space or a digit is money, so the text "it costs $5 and $10" stays as it is. With
-the option `from: markdown-tex_math_dollars`, in the front matter or in `_smalldocs.yml`, each `$` is a
-dollar, and smalldocs draws no maths written with dollars. KaTeX, a JavaScript library, draws the maths.
-smalldocs loads KaTeX only on pages that have maths.
+KaTeX, a JavaScript library, draws the maths. smalldocs loads KaTeX only on pages that have maths.
+
+smalldocs reads a dollar as the start of maths when it has no digit before it and no space after it.
+The maths ends at the next dollar in the paragraph. If that dollar has a space before it or a digit
+after it, the first dollar is only a dollar. So the text "it costs $5 and $10" stays as it is. To keep
+one dollar as a dollar, write `\$`.
+
+For text with many prices, set the option `from: markdown-tex_math_dollars`, in the front matter or in
+`_smalldocs.yml`. Then each dollar is a dollar, and smalldocs draws no maths written with dollars.
 
 ## Diagrams
 

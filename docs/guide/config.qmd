@@ -23,7 +23,8 @@ An option is a key in `_smalldocs.yml`, in a `_metadata.yml` file or in the fron
 smalldocs merges the options in this order, and a later value wins:
 
 1. The top level of `_smalldocs.yml`.
-2. A `_metadata.yml` file in each folder on the path to the page.
+2. A `_metadata.yml` file in each folder on the path to the page. smalldocs does not read a
+   `_metadata.yml` in the folder of the project. Put those options in `_smalldocs.yml`.
 3. The front matter of the page.
 
 `metadata-files` is a list of more YAML files, with paths from the folder of the project. smalldocs
@@ -32,15 +33,19 @@ merges them into `_smalldocs.yml`, and a key in `_smalldocs.yml` wins over the s
 If smalldocs does not read an option, the build gives a warning. With `smalldocs render --strict`, a
 warning makes the build fail.
 
+Each table below gives the default of each option, which is what smalldocs does when you do not set it.
+The smallest config is a `_smalldocs.yml` with no keys. Then smalldocs builds every page in the
+folder with the theme `cosmo`, and with no navbar, sidebar or table of contents.
+
 ## project
 
-| Key | What it does |
-|---|---|
-| `type` | `website`. `book`, a type of project in Quarto, is built as a website, with its chapters as the sidebar. Another type stops the build |
-| `output-dir` | The output folder; `_site` by default. See the note below the table |
-| `render` | One glob, or a list of globs, of the pages to build. A glob is a path pattern; see [Globs](#globs). A glob that starts with `!` leaves pages out. Without `render`, every `.qmd`, `.md` and `.ipynb` file is a page |
-| `resources` | One glob, or a list of globs, of more files to copy into the site, such as `.nojekyll` or `images/**` |
-| `pre-render`, `post-render` | Commands to run before and after the build, in the folder of the project. A command that is one `.py` file runs with the Python of smalldocs. See the note below the table |
+| Key | What it does | Default |
+|---|---|---|
+| `type` | `website`, or `default`, which is the same. `book`, a type of project in Quarto, is built as a website, with its chapters as the sidebar. Another type stops the build | `website` |
+| `output-dir` | The output folder. See the note below the table | `_site` |
+| `render` | One glob, or a list of globs, of the pages to build. A glob is a path pattern; see [Globs](#globs). A glob that starts with `!` leaves pages out | Every `.qmd`, `.md` and `.ipynb` file, except the files that are left out below |
+| `resources` | One glob, or a list of globs, of more files to copy into the site, such as `.nojekyll` or `images/**` | None. A file that a page links to, such as an image, is copied without this option |
+| `pre-render`, `post-render` | Commands to run before and after the build, in the folder of the project. A command that is one `.py` file runs with the Python of smalldocs. See the note below the table | None |
 
 A command of `pre-render` or `post-render` gets these environment variables. Their names come from
 Quarto, so a script written for Quarto still works:
@@ -60,8 +65,14 @@ cases:
 - The folder holds files, but no `site_libs` folder. A `site_libs` folder shows that an earlier build
   made the folder.
 
-Without `render`, smalldocs leaves out some files. It leaves out files and folders whose
-names start with `_` or `.`, the output folder, virtual environments and `README.md`.
+Without `render`, smalldocs leaves out these files:
+
+- the files and folders whose names start with `_` or `.`
+- the output folder
+- the folders `env`, `venv`, `renv`, `node_modules`, `site-packages` and `__pycache__`
+- each file with the name `README`, such as `README.md` or `readme.qmd`
+
+To build a page that one of these rules leaves out, list it in `render`.
 
 ## Globs
 
@@ -78,17 +89,24 @@ and it never copies the source of that page into the site.
 
 ## website
 
-| Key | What it does |
-|---|---|
-| `title`, `description` | The name and the summary of the site |
-| `site-url` | The address of the site. smalldocs needs it for `sitemap.xml` and for feeds |
-| `repo-url`, `repo-branch`, `repo-subdir`, `repo-actions` | Links under the table of contents: `edit`, `source`, `issue` |
-| `navbar` | `left`, `right`, `tools`, `title`, `logo`, `background`, `search`. An entry is a page, or `href` and `text`, with an `icon`. `menu` makes a dropdown |
-| `sidebar` | `contents`, `style` (`floating` sits beside the text, and `docked` is a full-height panel at the left edge), `title`, `logo`, `search`, `tools`, `collapse-level`. A list gives several sidebars |
-| `page-navigation` | Links to the previous page and the next page of the sidebar |
-| `page-footer` | One text, or `left`, `center` and `right`. Each part is Markdown or a list of entries |
-| `search` | `false` turns search off |
-| `favicon`, `open-graph`, `bread-crumbs` | The icon in the browser tab. The Open Graph tags, which give the title and the picture that a link to the page shows in other apps. The breadcrumbs, the path of the page above its title; `false` hides them |
+| Key | What it does | Default |
+|---|---|---|
+| `title` | The name of the site, in the navbar and in the browser tab after the title of the page | None. The browser tab shows only the title of the page |
+| `description` | The summary of the site. The home page uses it when its front matter has no `description` | None |
+| `site-url` | The address of the site. smalldocs needs it for `sitemap.xml` and for feeds | None, and smalldocs writes no `sitemap.xml` |
+| `repo-url`, `repo-subdir` | The repository of the site, and the folder of the site in it | None |
+| `repo-branch` | The branch for the `edit` and `source` links | `main` |
+| `repo-actions` | Links under the table of contents: `edit`, `source`, `issue`. They need `repo-url` | None |
+| `navbar` | `left`, `right`, `tools`, `title`, `logo`, `background`, `search`. An entry is a page, or `href` and `text`, with an `icon`. `menu` makes a dropdown | No navbar. The sidebar then shows the title of the site |
+| `sidebar` | `contents`, `style`, `title`, `logo`, `search`, `tools`, `collapse-level`. A list gives several sidebars | No sidebar |
+| `sidebar.style` | `floating` sits beside the text, and `docked` is a full-height panel at the left edge | `floating` |
+| `sidebar.collapse-level` | The sections above this level start open. With `2`, the top-level sections start open, and the sections inside them start closed. A section that holds the current page is always open | `2` |
+| `page-navigation` | Links to the previous page and the next page of the sidebar | Off |
+| `page-footer` | One text, or `left`, `center` and `right`. Each part is Markdown or a list of entries | None |
+| `search` | The search box. `false` turns search off | On |
+| `favicon` | The icon in the browser tab | None |
+| `open-graph` | The Open Graph tags, which give the title and the picture that a link to the page shows in other apps | Off |
+| `bread-crumbs` | The breadcrumbs, the path of the page above its title. `false` hides them | On |
 
 The `contents` of a sidebar takes these entries:
 
@@ -111,52 +129,75 @@ sidebar:
 ## The options of a page
 
 Write these options at the top level of `_smalldocs.yml` or of a `_metadata.yml` file. A page can also
-set them in its front matter.
+set them in its front matter. smalldocs reads `theme` only from the config of the
+project. It reads `order` only from the front matter of a page.
 
-| Key | What it does |
-|---|---|
-| `theme` | A Bootswatch name, or `light:` and `dark:` for two themes and a toggle. See [Themes](themes.qmd) |
-| `css` | Your stylesheets, after the stylesheet of the theme |
-| `toc`, `toc-depth`, `toc-title` | The table of contents at the right of the page |
-| `number-sections` | Numbers before the headings |
-| `code-copy` | The copy button on code. It is on by default |
-| `from` | Turns off a part of the Markdown. `markdown-smart` keeps quotes and dashes as you type them. `markdown-tex_math_dollars` reads each `$` as a dollar. `markdown-smart-tex_math_dollars` does both |
-| `page-layout` | `article` (the default), `full` or `custom` |
-| `link-external-newwindow` | Open links to other sites in a new tab |
-| `include-in-header`, `include-before-body`, `include-after-body` | Files, or `text:` entries, to put into each page |
-| `echo`, `output`, `include`, `execute` | Hide the code or the output of every cell, in a notebook or in a page. `execute: {echo: false}` works too |
-| `title`, `subtitle`, `description`, `author`, `date`, `date-format`, `categories`, `image` | The title block, which is the title, subtitle, author and date at the top of the page. Also what a [listing](listings.qmd) shows |
-| `draft` | `true` leaves the page out of the site |
-| `order` | The place of a page among the pages that a glob finds |
-| `listing` | A list of other pages. See [Listings](listings.qmd) |
-| `title-block-banner` | A band of the primary colour behind the title |
+| Key | What it does | Default |
+|---|---|---|
+| `theme` | A Bootswatch name, or `light:` and `dark:` for two themes and a toggle. See [Themes](themes.qmd) | `cosmo` |
+| `css` | Your stylesheets, after the stylesheet of the theme | None |
+| `toc` | The table of contents at the right of the page | Off |
+| `toc-depth` | The deepest level of heading in the table of contents | `3` |
+| `toc-title` | The heading above the table of contents | `On this page` |
+| `number-sections` | Numbers before the headings | Off |
+| `code-copy` | The copy button on code | On |
+| `from` | Turns off a part of the Markdown. `markdown-smart` keeps quotes and dashes as you type them. `markdown-tex_math_dollars` reads each `$` as a dollar. `markdown-smart-tex_math_dollars` does both | `markdown`, with every part on |
+| `page-layout` | `article`, `full` or `custom` | `article` |
+| `link-external-newwindow` | Open links to other sites in a new tab | Off |
+| `include-in-header`, `include-before-body`, `include-after-body` | Files, or `text:` entries, to put into each page | None |
+| `echo`, `output`, `include`, `execute` | `false` hides the code or the output of every cell, in a notebook or in a page. `execute: {echo: false}` works too | `true`: the code and the output show |
+| `title` | The title of the page | A level-one heading (`#`) at the very top of the page. Otherwise the name of the file, with a space for each `-` and `_` |
+| `subtitle`, `description`, `author`, `date`, `categories`, `image` | The title block, which is the title, subtitle, author and date at the top of the page. Also what a [listing](listings.qmd) shows | None |
+| `date-format` | How the title block writes `date`, such as `YYYY-MM-DD`, `long` or `short` | `MMMM D, YYYY`, such as `October 12, 2026` |
+| `draft` | `true` leaves the page out of the site | `false` |
+| `order` | The place of a page among the pages that a glob of the sidebar finds. A listing has its own `sort` | None. The page comes after the pages that have an `order` |
+| `listing` | A list of other pages. See [Listings](listings.qmd) | None |
+| `title-block-banner` | A band of the primary colour behind the title | Off |
 
 ## The options of smalldocs
 
 These options belong to smalldocs. They are at the top level of `_smalldocs.yml`.
 
-```yaml
-linkify: true          # a documented name in backticks links to its entry; on with `api`
-symbols: _symbols.json # the index of names that linkify reads
-api:                   # the API reference: see the API page
-  packages: [mypkg]
-```
+| Key | What it does | Default |
+|---|---|---|
+| `linkify` | A documented name in backticks links to its entry in the API reference. See [Linkify](#linkify) | On when `api` has `packages`, or when the `filters` of a `_quarto.yml` name `linkify.lua`. Off otherwise |
+| `symbols` | The index of names that linkify reads, from the folder of the site. Set it only for an index that you write yourself, without `api`. The `api` section always writes `_symbols.json` | `_symbols.json` |
+| `api` | The API reference. See [The API reference](api.qmd#turn-on-the-reference) | None: no reference |
 
 ## Linkify
 
 Linkify turns a name in backticks into a link to the entry of that name in the API reference. For
-example, `` `Site.build` `` and `` `Site.build()` `` link to the entry of `Site.build`. A name in
-backticks inside a link stays as it is.
+example, `` `Site.build` `` and `` `Site.build()` `` link to the entry of `Site.build`. Linkify links
+only names that look like code, such as a call, a dotted name or a class. A plain lowercase word, such
+as `main`, stays as code. See [Links from the text](api.qmd#links-from-the-text).
 
 Linkify reads the names and their links from the file `_symbols.json`, in the folder of the site. When
-the config has `api`, each build writes this file before it builds the pages. An `apidocs.py` script
-writes it too. Set `symbols` only for an index that another script writes.
+the config has `api`, each build writes this file before it builds the pages. See
+[The index of names](api.qmd#the-index-of-names).
 
 smalldocs decides whether linkify is on in this order:
 
 1. `linkify`, if you set it. `linkify: true` turns it on, and `linkify: false` turns it off.
 2. `api.linkify`, if you set it.
-3. Otherwise, linkify is on when `api` has a `packages` list.
+3. Otherwise, linkify is on when `api` has `packages`.
+
+## What a build writes
+
+A build writes the pages, and these files, into the output folder:
+
+- `index.html`, the home page, from `index.qmd`, `index.md` or `index.ipynb` at the top of the folder.
+  The title of the site in the navbar links to it. A folder can have an index page too. A link to the
+  folder opens it, and an `auto` section of the sidebar takes its title.
+- `search.json`, the index of the search box. It has one entry for each section of each page, with the
+  title of the section and its text. A page with `search: false` in its front matter is not in it.
+- `sitemap.xml`, the list of pages for search engines, when `site-url` is set.
+- `site_libs`, the stylesheets and the scripts of the site.
+- A feed for each listing that asks for one, when `site-url` is set. See [Listings](listings.qmd).
+- A copy of each file that a page links to, such as an image, and of the files of `resources`, `css`
+  and `favicon`. Each copy keeps its path from the folder of the project.
+
+With an `api` section, a build first writes the reference pages and `_symbols.json` into the folder of
+the project. Then it builds them as it builds the other pages. See [The API reference](api.qmd).
 
 ## A _quarto.yml
 
@@ -186,8 +227,10 @@ top level. Then remove `format` and `filters`. If you write `format`, `smalldocs
 
 ### Lua filters
 
-smalldocs runs no Lua. Its linkify is Python code. It does the same work as the Lua filter
-`linkify.lua` did for Quarto.
+smalldocs runs no Lua. Its linkify is Python code, and it does the work of the Lua filter
+`linkify.lua`, with one difference. The filter links every name in the index. smalldocs links only
+names that look like code, so a plain lowercase word, such as `encode`, stays as code. Write it as a
+call, `encode()`, to link it.
 
 In a `_quarto.yml`, a file with the name `linkify.lua` in `filters` also turns on linkify, as step 3
 of the list above. smalldocs does not read the file `linkify.lua`, and does not run it. The name only

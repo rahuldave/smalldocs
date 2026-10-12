@@ -213,6 +213,14 @@ def test_diff_blocks() -> None:
     assert highlight("$ ls\ntotal 0", "console") == "$ ls\ntotal 0"
 
 
+def test_tables_scroll_in_their_own_box() -> None:
+    "A table sits in a box that scrolls when the table is too wide, and keeps Bootstrap's classes."
+    html = md("| a | b |\n|---|---|\n| 1 | 2 |\n")
+    assert html.startswith('<div class="sd-table">\n<table class="caption-top table">') and html.rstrip().endswith("</table>\n</div>")
+    css = (Path(smalldocs.__file__).parent / "assets" / "smalldocs.css").read_text()
+    assert ".sd-table { overflow-x: auto; }" in css
+
+
 def test_executable_cells_are_shown_not_run() -> None:
     "A `{python}` cell is shown as code, without its `#|` options, and noted."
     env: dict = {}
@@ -222,11 +230,21 @@ def test_executable_cells_are_shown_not_run() -> None:
 
 
 def test_linkify_names_in_backticks() -> None:
-    "A documented name in backticks links to its entry, but not inside a link, and not when unknown."
-    env = {"symbols": {"render": "api.html#render"}, "link": lambda h, k: h}
-    html = render("Call `render()` or `other`, or [see `render`](x.html).\n", env)
+    "A documented name in backticks that looks like code links to its entry, but not inside a link, with `.nolink`, or when unknown."
+    syms = {"render": "api.html#render", "main": "api.html#main", "Site": "s.html#Site", "Site.build": "s.html#Site.build", "a.main": "api.html#main", "to_record": "r.html#to_record"}
+    env = {"symbols": syms, "link": lambda h, k: h}
+    html = render("Call `render()` or `other`, or [see `render()`](x.html).\n", env)
     assert '<a href="api.html#render"><code>render()</code></a>' in html
     assert "<code>other</code>" in html and html.count('href="api.html#render"') == 1
+    # A plain lowercase word is a word: the branch `main`, the option `render`. A call, a dotted name or a class links.
+    html = render("The branch `main`, the option `render`, `main()`, `a.main`, `Site` and `Site.build`. Plain main.\n", env)
+    assert "<code>main</code>" in html and "<code>render</code>" in html and 'href="api.html#render"' not in html
+    assert '<a href="api.html#main"><code>main()</code></a>' in html and '<a href="api.html#main"><code>a.main</code></a>' in html
+    assert '<a href="s.html#Site"><code>Site</code></a>' in html and '<a href="s.html#Site.build"><code>Site.build</code></a>' in html
+    assert "Plain main." in html and '<a href="r.html#to_record"><code>to_record</code></a>' in render("`to_record`\n", env)
+    # `.nolink` keeps a name that looks like code as plain code.
+    html = render("The class `Site`{.nolink} and `Site.build()`{.nolink}.\n", env)
+    assert "href" not in html and '<code class="nolink">Site</code>' in html
 
 
 def test_title_from_a_leading_heading() -> None:
@@ -597,7 +615,7 @@ PKG = {
             source: https://github.com/me/tinypkg/blob/main
             check: ["tests/*.py"]
         """,
-    "docs/index.qmd": "---\ntitle: Tiny\n---\n\nUse `add` and `Point.norm`, not `nothing`.\n",
+    "docs/index.qmd": "---\ntitle: Tiny\n---\n\nUse `add()` and `Point.norm`, not `nothing`.\n",
 }
 
 
@@ -616,7 +634,7 @@ def test_api_pages_and_links(tmp_path: Path) -> None:
     index = json.loads((tmp_path / "docs/_symbols.json").read_text())
     assert index["add"] == "/api/core.qmd#add" and index["tinypkg.core.Point.norm"] == "/api/core.qmd#Point.norm"
     home = (s.out / "index.html").read_text()
-    assert '<a href="api/core.html#add"><code>add</code></a>' in home and "<code>nothing</code>" in home
+    assert '<a href="api/core.html#add"><code>add()</code></a>' in home and "<code>nothing</code>" in home
     assert "tinypkg.core" in home, "the reference is in the sidebar"
 
 
@@ -817,7 +835,7 @@ def test_smalldocs_yml(tmp_path: Path, capsys: pytest.CaptureFixture) -> None:
             """,
         "_quarto.yml": "project:\n  type: website\nformat:\n  html:\n    theme: darkly\n",
         "names.json": '{"render": "api.html#render"}',
-        "index.md": "# Hi\n\nCall `render`.\n\n## Part\n",
+        "index.md": "# Hi\n\nCall `render()`.\n\n## Part\n",
     })
     p = load(tmp_path)
     assert p.file == "_smalldocs.yml" and p.native and p.smalldocs == {"linkify": True, "symbols": "names.json"}
@@ -827,10 +845,10 @@ def test_smalldocs_yml(tmp_path: Path, capsys: pytest.CaptureFixture) -> None:
     s = build(tmp_path, quiet=True)
     html = (s.out / "index.html").read_text()
     assert "flatly" in html and "darkly" not in html and 'id="TOC"' not in html
-    assert '<a href="api.html#render"><code>render</code></a>' in html
+    assert '<a href="api.html#render"><code>render()</code></a>' in html
     write(tmp_path, {"_smalldocs.yml": "linkify: false\nsymbols: names.json\n"})
     s = build(tmp_path, quiet=True)
-    assert "<code>render</code></a>" not in (s.out / "index.html").read_text(), "linkify: false turns it off"
+    assert "<code>render()</code></a>" not in (s.out / "index.html").read_text(), "linkify: false turns it off"
     write(tmp_path, {"_smalldocs.yml": "api: [a]\n"})
     with pytest.raises(ConfigError, match="api must be a mapping"):
         load(tmp_path)
