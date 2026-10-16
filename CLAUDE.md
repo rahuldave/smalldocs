@@ -17,6 +17,7 @@ reads the Markdown cells of the notebooks; it must pass before a commit.
 - **A project that builds with Quarto builds with smalldocs, with the same pages, the same anchors and the
   same links.** Heading ids follow Pandoc's algorithm (`markdown.pandoc_id`); links to `.qmd`/`.md`/`.ipynb`
   become `.html`; links from `/` start at the root. Check a change against real sites (below).
+- **New features never change existing output.** A page, site or notebook that uses none of a new feature builds byte for byte as before. Check it against Rahul's sites before a release (see Checking a change).
 - **`_smalldocs.yml` is the config; read `_quarto.yml` unchanged.** `config.load` looks for `_smalldocs.yml`
   first (`Project.native`). There the page options and smalldocs' own options (`linkify`, `symbols`, `api`,
   `config.OWN_KEYS`) are top-level keys, and `format`, `smalldocs` and `filters` are warnings. In a
@@ -48,12 +49,15 @@ reads the Markdown cells of the notebooks; it must pass before a commit.
 | `src/smalldocs/markdown.py` | markdown-it-py with mdit-py-plugins, and Pandoc's rules: heading attributes and ids, fenced divs, callouts, tabsets, figures, sections, typography, code, maths |
 | `src/smalldocs/highlight.py` | Pygments tokens to Pandoc's classes (`kw`, `st`, `co`, ...) |
 | `src/smalldocs/notebook.py` | `.ipynb` to Markdown with raw HTML outputs; nothing runs |
-| `src/smalldocs/shortcodes.py` | `include`, `meta`, `var`, `env`, `pagebreak` |
+| `src/smalldocs/shortcodes.py` | `include`, `meta`, `var`, `env`, `pagebreak`, `kbd`, `video`, `lipsum`, `placeholder` |
 | `src/smalldocs/site.py` | `Site`: discovery, pages, link rewriting (`resolve`), scripts, assets, resources, search.json, sitemap |
 | `src/smalldocs/layout.py` | `SiteNav` (sidebars, navbar, order, breadcrumbs) and `Layout` (the page, in Quarto's markup, with `fastcore.xml`) |
 | `src/smalldocs/listing.py` | Listings (default, grid, table), categories, RSS |
 | `src/smalldocs/api.py` | The API reference: inventory, Markdown, pages, `_symbols.json`, `check` |
 | `src/smalldocs/serve.py`, `publish.py`, `check.py`, `cli.py` | The commands |
+| `src/smalldocs/extensions.py` | Theme extensions: `smalldocs add`, `smalldocs themes`, and finding `_extensions/<name>/smalldocs.yml` |
+| `src/smalldocs/quarto_keys.py` | The names of Quarto's page options for HTML, written by `scripts/quarto_keys.py` from Quarto's schema. A front-matter key in it that smalldocs does not read is a warning |
+| `QUARTO-GAPS.md` | What Quarto does that smalldocs does not, ticked as each gap closes |
 | `src/smalldocs/assets/` | `smalldocs.css`, `smalldocs.js`, and `vendor/` (Bootswatch 5.3.8, Bootstrap 5.3.8, Bootstrap Icons 1.11.3, Fuse.js 7.0.0). Vendored: do not edit |
 | `tests/test_smalldocs.py` | One test per feature |
 | `docs/` | smalldocs' own site; it uses every feature, and its Reference is made by `smalldocs.api` from this package |

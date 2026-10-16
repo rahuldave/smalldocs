@@ -21,17 +21,56 @@ The command builds the site into a temporary folder. Then it lists what smalldoc
 
 If the command finds anything, its exit code is 1.
 
-## What smalldocs does not do
+## What works
+
+smalldocs reads most of the options of Quarto for a website. [The configuration](config.qmd) lists
+them, with the default of each. [Writing pages](markdown.qmd) shows the Markdown that smalldocs reads.
+This Markdown includes callouts, tabsets, figures, table captions, footnotes, the margin, maths, diagrams
+and shortcodes.
+
+A site also gets listings, search, a light and a dark theme, comments and Google
+Analytics, as in Quarto. A notebook shows its saved outputs, with the options of its cells. See
+[Notebooks](notebooks.ipynb).
+
+## What smalldocs does not do yet
+
+smalldocs gives a warning for each of these options, or shows the Markdown as text:
+
+| Quarto | smalldocs |
+|---|---|
+| Cross-references, such as `@fig-a`, `@tbl-a`, `@sec-a` and `@eq-a`, with numbers, and the `crossref` options | Not read. Write a link to the id, such as `[the table](#tbl-a)` |
+| Figure divs, `::: {#fig-a}`, and subfigures | Not read. A picture alone in its paragraph is a figure |
+| Labels on equations, `$$...$$ {#eq-a}` | Not read |
+| A negative width in `layout`, for an empty space | Not read. The other widths work |
+| Code annotations, `# <1>` | Not read |
+| Example lists, `(@)`, and line blocks, `\|` | Not read |
+| `lightbox`, `footnotes-hover`, `reader-mode`, `code-tools`, `highlight-style` | Not read |
+| `website.announcement`, `body-header`, `body-footer`, `margin-header`, `margin-footer`, `cookie-consent` | Not read |
+| `listing`: `image-placeholder`, `image-align`, `image-lazy-loading`, `field-types`, `field-links`, `field-required` | Not read |
+| `search`: `copy-button`, `collapse-after`, `show-item-context`, `merge-navbar-crumbs` | Not read |
+| `_brand.yml` | Not read. Use a [theme](themes.qmd), or the [options for fonts and colours](themes.qmd#fonts-and-colours-from-options) |
+| Citations and a bibliography | Not read |
+
+## What smalldocs will not do
 
 | Quarto | smalldocs |
 |---|---|
 | PDF, Word, slides, books, manuscripts | Websites only. A `book` is built as a website |
-| Runs `{python}`, `{r}` and `{ojs}` cells | Shows the code and runs nothing. A notebook shows its saved outputs |
+| Runs `{python}`, `{r}` and `{ojs}` cells, with `jupyter`, `freeze`, `cache`, `engine` and `df-print` | Shows the code and runs nothing. A notebook shows its saved outputs. Each of these options gives a warning |
 | Compiles `.scss` themes | Takes any Bootswatch theme, your CSS, and the CSS of a theme extension. See [Themes](themes.qmd) |
+| `embed-resources` and `self-contained` | Not read. The pages load the stylesheets and the scripts from `site_libs` |
 | Lua filters | Runs no Lua. The [linkify](config.qmd#linkify) of smalldocs does the work of `linkify.lua`, but links only names that look like code. See [Lua filters](config.qmd#lua-filters) |
-| Grid tables, citations, cross-references (`@fig-x`) | Does not read them. Write a pipe table, and a link to the id |
-| Every Pandoc extension | CommonMark, tables, footnotes, definition lists, task lists, attributes, divs, callouts, tabsets, maths, raw HTML, shortcodes |
-| Algolia search, comments, analytics | A search box over `search.json`. Add the others with `include-in-header` |
+| Graphviz `{dot}` blocks | Not read. Make an SVG with Graphviz, and use it as a picture |
+| `listing.template`, `about` pages, Algolia search | Not read. A listing is a default, grid or table listing, and search reads `search.json` |
+| Grid tables and raw LaTeX | `smalldocs check` reports them. Write a pipe table |
+
+## Different defaults
+
+Two defaults of smalldocs differ from Quarto. They stay, so that sites that exist do not change:
+
+- The key `/` goes to the search box. Quarto also uses `f` and `s`. See [Search](config.qmd#search).
+- A figure starts at the left of the column. Quarto puts it in the centre. See
+  [Figures](markdown.qmd#figures).
 
 ## What is the same
 

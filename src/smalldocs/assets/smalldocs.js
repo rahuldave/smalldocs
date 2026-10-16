@@ -163,8 +163,9 @@
       const q = input.value.trim();
       if (q.length < 2) { hide(); return; }
       await loadIndex();
-      const hits = fuse ? fuse.search(q, { limit: 20 }).map((h) => h.item)
-        : index.filter((e) => (e.title + " " + e.section + " " + e.text).toLowerCase().includes(q.toLowerCase())).slice(0, 20);
+      const limit = parseInt(box.dataset.limit, 10) || 20;
+      const hits = fuse ? fuse.search(q, { limit }).map((h) => h.item)
+        : index.filter((e) => (e.title + " " + e.section + " " + e.text).toLowerCase().includes(q.toLowerCase())).slice(0, limit);
       if (!hits.length) { show('<div class="search-none">No results</div>'); return; }
       show(hits.map((e) => `<a class="search-result" href="${offset}${e.href}">` +
         `<div class="search-result-title">${escapeHtml(e.title)}</div>` +
@@ -190,10 +191,17 @@
     });
     document.addEventListener("click", (ev) => { if (!box.contains(ev.target)) hide(); });
   });
+  // the keys that focus search: search.keyboard-shortcut when the site sets it, else / as before; Ctrl-K or Cmd-K too
+  const keyed = $("[data-keyboard-shortcut]");
+  let searchKeys = ["/"];
+  try { if (keyed) searchKeys = JSON.parse(keyed.dataset.keyboardShortcut); } catch (e) { /* keep / */ }
   document.addEventListener("keydown", (ev) => {
     const typing = /^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement.tagName) || document.activeElement.isContentEditable;
-    if ((ev.key === "/" && !typing) || ((ev.metaKey || ev.ctrlKey) && ev.key === "k")) {
-      const input = $$(".smalldocs-search input").find((i) => i.offsetParent !== null);
+    const plain = !keyed || (!ev.metaKey && !ev.ctrlKey && !ev.altKey);  // with no keys set, any / goes to search, as before
+    if ((plain && searchKeys.includes(ev.key) && !typing) || ((ev.metaKey || ev.ctrlKey) && ev.key === "k")) {
+      const box = $$(".smalldocs-search").find((b) => b.offsetParent !== null);
+      if (box && box.classList.contains("sd-search-overlay")) box.classList.add("sd-open");
+      const input = box && $("input", box);
       if (input) { ev.preventDefault(); input.focus(); }
     }
   });
@@ -270,4 +278,121 @@
     setCategory(cat === categoryFromHash() && c.classList.contains("listing-category") ? "" : cat);
   });
   window.addEventListener("hashchange", () => listings.forEach(refresh));
+
+  // ---- Quarto features: Markdown
+  // Tabsets with the same `group`: a tab chosen in one shows the tab of the same name in the others, and the page
+  // remembers the choice, under Quarto's own key
+  const tabKey = "quarto-persistent-tabsets-data";
+  const readTabs = () => { try { return JSON.parse(store.get(tabKey) || "{}") || {}; } catch (e) { return {}; } };
+  const grouped = $$(".panel-tabset[data-group]");
+  const tabLinks = (set) => $$(":scope > .nav-tabs .nav-link", set);
+  const showTab = (group, name) => grouped.filter((s) => s.dataset.group === group).forEach((set) => {
+    const links = tabLinks(set);
+    const hit = links.find((a) => a.textContent.trim() === name);
+    if (!hit) return;
+    links.forEach((a) => {
+      const on = a === hit;
+      a.classList.toggle("active", on);
+      a.setAttribute("aria-selected", on ? "true" : "false");
+      const pane = document.getElementById(a.getAttribute("aria-controls"));
+      if (pane) pane.classList.toggle("active", on);
+    });
+  });
+  grouped.forEach((set) => tabLinks(set).forEach((a) => a.addEventListener("click", () => {
+    const name = a.textContent.trim(), data = readTabs();
+    data[set.dataset.group] = name;
+    store.set(tabKey, JSON.stringify(data));
+    showTab(set.dataset.group, name);
+  })));
+  if (grouped.length) Object.entries(readTabs()).forEach(([group, name]) => showTab(group, name));
+
+  // ---- Quarto features: page and site
+
+  // toc-expand: the levels below the setting open for the section the reader is in
+  const tocNav = $("#TOC[data-toc-expanded]");
+  if (tocNav) {
+    const expandToc = () => {
+      $$("ul.collapse", tocNav).forEach((u) => u.classList.remove("show"));
+      const on = $("a.nav-link.active", tocNav);
+      if (!on) return;
+      const own = on.parentElement.querySelector(":scope > ul.collapse");
+      if (own) own.classList.add("show");
+      for (let el = on.parentElement; el && el !== tocNav; el = el.parentElement) {
+        if (el.matches("ul.collapse")) el.classList.add("show");
+      }
+    };
+    document.addEventListener("scroll", expandToc, { passive: true });
+    expandToc();
+  }
+
+  // pinned: false hides the header while the reader scrolls down, and shows it when they scroll up
+  if (header && header.classList.contains("sd-headroom")) {
+    let last = window.scrollY;
+    document.addEventListener("scroll", () => {
+      const y = window.scrollY;
+      if (y > last + 5 && y > header.offsetHeight) {
+        header.classList.add("sd-header-hidden");
+        document.documentElement.style.setProperty("--sd-header-height", "0px");
+        document.documentElement.style.scrollPaddingTop = "16px";
+      } else if (y < last - 5 || y <= 0) {
+        header.classList.remove("sd-header-hidden");
+        setHeader();
+      }
+      last = y;
+    }, { passive: true });
+  }
+
+  // search.type: overlay: the icon opens the search box, and the box closes when it is empty and loses focus
+  $$(".sd-search-overlay").forEach((box) => {
+    const btn = $(".sd-search-toggle", box), input = $("input", box);
+    const close = () => { if (!input.value) { box.classList.remove("sd-open"); btn.setAttribute("aria-expanded", "false"); } };
+    btn.addEventListener("click", () => {
+      const open = !box.classList.contains("sd-open");
+      box.classList.toggle("sd-open", open);
+      btn.setAttribute("aria-expanded", String(open));
+      if (open) input.focus();
+    });
+    input.addEventListener("blur", () => setTimeout(close, 200));
+    input.addEventListener("keydown", (ev) => { if (ev.key === "Escape") { input.value = ""; close(); } });
+  });
+
+  // back-to-top-navigation: the link shows as the reader scrolls up, and at the end of the page, as in Quarto
+  const toTop = $("#quarto-back-to-top");
+  if (toTop) {
+    let lastTop = window.scrollY;
+    document.addEventListener("scroll", () => {
+      const y = window.scrollY;
+      if (y - 5 > lastTop) { toTop.style.display = "none"; lastTop = Math.max(0, y); }
+      else if (y < lastTop - 35) { toTop.style.display = "inline-block"; lastTop = Math.max(0, y); }
+      if (y <= 0) toTop.style.display = "none";
+      else if (window.innerHeight + y >= document.body.offsetHeight) toTop.style.display = "inline-block";
+    }, { passive: true });
+  }
+
+  // link-external-icon and link-external-filter: mark each link to another site; the filter names links that are not
+  const main = $("main.content");
+  if (main && (main.dataset.externalIcon || main.dataset.externalFilter)) {
+    let filter = null;
+    try { if (main.dataset.externalFilter) filter = new RegExp(main.dataset.externalFilter); } catch (e) { filter = null; }
+    const internal = (a) => !/^https?:$/.test(a.protocol) || a.host === location.host || (filter && filter.test(a.href));
+    $$("a[href]", main).forEach((a) => {
+      if (a.matches(".nav-link, .no-external, .anchorjs-link, .pagination-link, .toc-action, [aria-hidden]")) return;
+      if (internal(a)) {
+        if (filter && filter.test(a.href) && a.target === "_blank") a.removeAttribute("target");
+        return;
+      }
+      if (main.dataset.externalIcon) a.classList.add("external");
+    });
+  }
+
+  // giscus follows the light or dark mode of the page
+  const giscusTheme = () => {
+    const frame = $("iframe.giscus-frame"), base = $("#giscus-base-theme"), alt = $("#giscus-alt-theme");
+    if (!frame || !base || !alt) return;
+    const theme = document.documentElement.classList.contains("quarto-dark") ? alt.value : base.value;
+    frame.contentWindow.postMessage({ giscus: { setConfig: { theme } } }, "https://giscus.app");
+  };
+  if ($("#giscus-base-theme") && window.MutationObserver) {
+    new MutationObserver(giscusTheme).observe(document.documentElement, { attributes: true, attributeFilter: ["class"] });
+  }
 })();

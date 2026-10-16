@@ -7,21 +7,52 @@ from pathlib import Path
 
 import yaml
 
+from .quarto_keys import QUARTO_PAGE_OPTIONS
+
 PAGE_EXTS = (".qmd", ".md", ".ipynb")
-# The keys smalldocs reads. A value of None means any value is taken as it is.
+# The keys smalldocs reads, down to the keys inside. None means any value; a dict lists the keys inside a mapping,
+# or inside each mapping of a list. Any other key is a warning: smalldocs never ignores a key silently.
+LOGO = {"path": None, "alt": None, "light": {"path": None, "alt": None}, "dark": {"path": None, "alt": None}}
+# One entry of a navbar, a sidebar, a menu or a footer
+ENTRY: dict = {
+    "text": None, "href": None, "url": None, "file": None, "icon": None, "target": None, "rel": None, "aria-label": None,
+    "id": None, "section": None, "part": None, "chapters": None, "auto": None,
+}  # fmt: skip
+ENTRY["menu"] = ENTRY
+ENTRY["contents"] = ENTRY
+NAVBAR = {
+    "title": None, "logo": LOGO, "logo-alt": None, "logo-href": None, "background": None, "foreground": None,
+    "left": ENTRY, "right": ENTRY, "tools": ENTRY, "search": None, "collapse": None, "collapse-below": None,
+    "toggle-position": None, "tools-collapse": None, "pinned": None,
+}  # fmt: skip
+SIDEBAR = {
+    "id": None, "title": None, "logo": LOGO, "logo-alt": None, "logo-href": None, "style": None, "contents": ENTRY,
+    "tools": ENTRY, "search": None, "background": None, "foreground": None, "border": None, "alignment": None,
+    "header": None, "footer": None, "pinned": None, "collapse-level": None,
+}  # fmt: skip
+GISCUS = {
+    "repo": None, "repo-id": None, "category": None, "category-id": None, "mapping": None, "reactions-enabled": None,
+    "loading": None, "input-position": None, "theme": {"light": None, "dark": None}, "language": None,
+}  # fmt: skip
+COMMENTS = {"giscus": GISCUS, "utterances": {"repo": None, "label": None, "theme": None, "issue-term": None}, "hypothesis": None}
+# The keys of `execute:` that smalldocs reads; the others are for running code
+EXECUTE = {"echo": None, "output": None, "include": None}
 KNOWN: dict = {
     "project": {
         "type": None, "output-dir": None, "render": None, "resources": None, "pre-render": None, "post-render": None,
-        "title": None, "execute-dir": None, "preview": None,
+        "title": None, "preview": None,
     },
     "website": {
-        "title": None, "description": None, "site-url": None, "site-path": None, "repo-url": None, "repo-branch": None,
-        "repo-subdir": None, "repo-actions": None, "favicon": None, "image": None, "navbar": None, "sidebar": None,
-        "page-navigation": None, "page-footer": None, "search": None, "open-graph": None, "twitter-card": None,
-        "back-to-top-navigation": None, "bread-crumbs": None, "reader-mode": None, "draft-mode": None, "drafts": None,
-        "google-analytics": None, "cookie-consent": None, "other-links": None, "code-links": None,
+        "title": None, "description": None, "site-url": None, "repo-url": None, "repo-branch": None, "repo-subdir": None,
+        "repo-actions": None, "favicon": None, "image": None, "logo": LOGO, "navbar": NAVBAR,
+        "sidebar": SIDEBAR, "page-navigation": None, "page-footer": {"left": ENTRY, "center": ENTRY, "right": ENTRY,
+        "background": None, "foreground": None, "border": None}, "search": {"location": None, "type": None, "limit": None,
+        "keyboard-shortcut": None}, "open-graph": {"locale": None, "site-name": None}, "twitter-card": {"title": None, "description": None, "image": None,
+        "card-style": None, "creator": None, "site": None}, "google-analytics": {"tracking-id": None, "anonymize-ip": None,
+        "storage": None}, "comments": COMMENTS, "back-to-top-navigation": None, "bread-crumbs": None, "draft-mode": None,
+        "drafts": None, "other-links": ENTRY, "code-links": ENTRY,
     },
-    "execute": None,
+    "execute": EXECUTE,
     "format": None,
     "smalldocs": None,
     "filters": None,
@@ -33,13 +64,30 @@ CONFIG_FILES = ("_smalldocs.yml", "_smalldocs.yaml", "_quarto.yml", "_quarto.yam
 OWN_KEYS = ("linkify", "symbols", "api")
 HTML_OPTIONS = {
     "theme", "css", "toc", "toc-depth", "toc-title", "toc-location", "toc-expand", "number-sections", "number-depth",
-    "code-copy", "code-overflow", "highlight-style", "from", "page-layout", "anchor-sections", "smooth-scroll",
-    "link-external-newwindow", "link-external-icon", "include-in-header", "include-before-body", "include-after-body",
-    "title-block-banner", "grid", "lang", "fig-align", "code-fold", "code-tools", "html-math-method", "mainfont",
-    "monofont", "fontsize", "linestretch", "linkcolor", "backgroundcolor", "fontcolor", "max-width", "callout-appearance",
-    "callout-icon", "date-format", "author", "date", "title-prefix", "pagetitle", "description", "keywords",
-    "citations-hover", "footnotes-hover", "reference-location", "fig-cap-location", "cap-location", "search", "comments", "license", "copyright",
-    "execute", "jupyter", "echo", "warning", "freeze", "minimal", "embed-resources", "self-contained", "df-print",
+    "code-copy", "code-overflow", "code-fold", "code-summary", "code-line-numbers", "from", "page-layout",
+    "anchor-sections", "smooth-scroll", "link-external-newwindow", "link-external-icon", "link-external-filter",
+    "include-in-header", "include-before-body", "include-after-body", "title-block-banner", "title-block-style",
+    "lang", "fig-align", "mainfont", "monofont", "fontsize", "linestretch", "linkcolor", "backgroundcolor", "fontcolor",
+    "max-width", "callout-appearance", "callout-icon", "date-format", "author", "date", "title-prefix", "pagetitle",
+    "description", "keywords", "reference-location", "fig-cap-location", "tbl-cap-location", "cap-location", "search",
+    "comments", "license", "copyright", "back-to-top-navigation", "other-links", "code-links", "execute", "echo",
+}  # fmt: skip
+
+
+# The options that only make sense when code runs. smalldocs runs no code, so it says so.
+NO_CODE = {"jupyter", "freeze", "cache", "engine", "knitr", "df-print", "execute-dir", "keep-ipynb", "ipynb-filters", "ipynb-shell-interactivity"}
+# The keys of a page's front matter that smalldocs reads, beside the page options
+PAGE_KEYS = HTML_OPTIONS | {
+    "title", "subtitle", "author", "date", "date-modified", "categories", "image", "image-alt", "description", "listing",
+    "draft", "order", "page-navigation", "format", "pagetitle", "lang",
+}  # fmt: skip
+# The keys of a `listing:` that smalldocs reads
+LISTING = {
+    "id": None, "contents": None, "type": None, "sort": None, "sort-ui": None, "filter-ui": None, "fields": None,
+    "field-display-names": None, "categories": None, "date-format": None, "max-items": None, "max-description-length": None,
+    "page-size": None, "grid-columns": None, "grid-item-align": None, "grid-item-border": None, "image-height": None,
+    "table-hover": None, "table-striped": None, "include": None, "exclude": None,
+    "feed": {"items": None, "title": None, "description": None},
 }  # fmt: skip
 
 
@@ -215,16 +263,52 @@ def merge(
 
 def check_keys(
     cfg: dict,  # A part of the config
-    known: dict,  # What smalldocs knows of that part
+    known: dict,  # What smalldocs knows of that part: None for any value, a dict for the keys inside
     path: str,  # Where the part is, for the message
 ) -> list[str]:  # A line for each key that smalldocs ignores
-    "List the keys of the config that smalldocs does not read."
+    "List the keys of the config that smalldocs does not read, inside mappings and the mappings of lists."
     out = []
     for k, v in cfg.items():
         if k not in known:
             out.append(f"{path}{k}")
-        elif isinstance(known[k], dict) and isinstance(v, dict):
-            out += check_keys(v, known[k], f"{path}{k}.")
+        elif isinstance(known[k], dict):
+            for n, item in enumerate(v if isinstance(v, list) else [v]):
+                if isinstance(item, dict):
+                    out += check_keys(item, known[k], f"{path}{k}{f'[{n}]' if isinstance(v, list) else ''}.")
+    return out
+
+
+def unread(
+    key: str,  # The dotted path of a key that smalldocs does not read, such as `website.navbar.foo`
+) -> str:  # The warning
+    "Say that smalldocs ignores a key, and why when the key is for running code."
+    if key.rpartition(".")[2] in NO_CODE or key.startswith("execute."):
+        return f"{key} is ignored: smalldocs runs no code"
+    return f"unknown key {key}"
+
+
+def check_page(
+    meta: dict,  # The front matter of a page, or a `_metadata.yml`
+    where: str,  # The file, for the message
+) -> list[str]:  # A warning for each Quarto option that smalldocs does not read
+    "Warn about the Quarto options of a page that smalldocs ignores; other keys are the page's own metadata, as in Quarto."
+    out = []
+    for k, v in meta.items():
+        if k in NO_CODE:
+            out.append(f"{where}: {k} is ignored: smalldocs runs no code")
+        elif k == "format" and isinstance(v, dict):
+            key, html = html_format(v)
+            out += [f"{where}: format {f} is not built: smalldocs makes only html" for f in v if f != key]
+            if isinstance(html, dict):
+                out += check_page({h: x for h, x in html.items() if h in QUARTO_PAGE_OPTIONS or h in NO_CODE}, f"{where} format.{key}")
+        elif k == "execute" and isinstance(v, dict):
+            out += [f"{where}: execute.{m} is ignored: smalldocs runs no code" for m in v if m not in EXECUTE]
+        elif k in QUARTO_PAGE_OPTIONS and k not in PAGE_KEYS:
+            out.append(f"{where}: {k} is not read by smalldocs")
+        elif k == "listing":
+            for lst in v if isinstance(v, list) else [v]:
+                if isinstance(lst, dict):
+                    out += [f"{where}: listing.{m} is not read by smalldocs" for m in check_keys(lst, LISTING, "")]
     return out
 
 
@@ -258,13 +342,13 @@ def load(
         proj.warnings.append("project.type: book is built as a website; chapters become the sidebar")
     elif kind not in ("website", "default"):
         raise ConfigError(f"project.type {kind!r}: smalldocs builds only websites")
-    proj.warnings += [f"unknown key {k}" for k in check_keys(cfg, KNOWN, "") if not k.startswith("book")]
+    proj.warnings += [unread(k) for k in check_keys(cfg, KNOWN, "") if not k.startswith("book")]
     fmt = cfg.get("format") or {}
     if isinstance(fmt, dict):
         key, html = html_format(fmt)
         proj.warnings += [f"format {k} is not built: smalldocs makes only html" for k in fmt if k != key]
         if isinstance(html, dict):
-            proj.warnings += [f"format.{key}.{k} is ignored" for k in html if k not in HTML_OPTIONS]
+            proj.warnings += [unread(f"format.{key}.{k}") if k in NO_CODE else f"format.{key}.{k} is ignored" for k in html if k not in HTML_OPTIONS]
     for name in filter_paths(cfg):
         if name.strip() and name != "quarto" and Path(name).name != "linkify.lua":  # `quarto` marks where Quarto's own filters run
             proj.warnings.append(f"filter {name} is not run: smalldocs runs no Lua")
@@ -295,7 +379,7 @@ def check_native(
             "smalldocs": ": write linkify, symbols and api at the top level",
             "filters": ": smalldocs runs no filters; linkify: true turns on its links",
         }.get(top, "")
-        proj.warnings.append(f"unknown key {k}{hint}")
+        proj.warnings.append(unread(k) + hint)
     return proj
 
 

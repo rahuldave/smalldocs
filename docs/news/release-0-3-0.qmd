@@ -1,0 +1,52 @@
+---
+title: smalldocs 0.3.0
+subtitle: More options, and a warning for each option that is not read
+date: 2026-10-16
+author: Rahul Dave
+categories: [release]
+image: ../images/mark.svg
+---
+
+smalldocs now gives a warning for each key of the config that it does not read. It checks the keys
+inside the navbar, the sidebar and a listing too. In front matter, it gives a warning only for an option of Quarto
+that it does not read, so your own keys are fine. The options that run code, such as `jupyter` and
+`freeze`, give a warning that says smalldocs runs no code. With `smalldocs render --strict`, a warning
+makes the exit code 1. See
+[Options that smalldocs does not read](../guide/config.qmd#options-that-smalldocs-does-not-read).
+
+A site that uses none of the new options builds as before.
+
+## Markdown
+
+- Table captions, `: Caption {#tbl-a}`, and `tbl-cap-location`.
+- Content for some builds only, with `.content-visible` and `.content-hidden`.
+- The shortcodes `kbd` and `video`.
+- Tabsets with the same `group` switch together.
+- Code options: `code-line-numbers`, `code-overflow`, and `code-fold` with `code-summary`.
+- Subscripts, `H~2~O`, and superscripts, `x^2^`.
+- Lists numbered with letters or roman numerals.
+- `fig-align`, `fig-alt`, and `layout-ncol`, `layout-nrow` and `layout` on a div.
+- `callout-appearance` and `callout-icon` for each callout of a page.
+- `anchor-sections` and `number-depth`.
+
+See [Writing pages](../guide/markdown.qmd).
+
+## Page and site
+
+- The table of contents at the left, in the body or in two places, with `toc-location` and `toc-expand`.
+- Fonts, colours and the width of the text from options, such as `mainfont` and `max-width`. See
+  [Themes](../guide/themes.qmd#fonts-and-colours-from-options).
+- More options for the navbar, the sidebar, the footer and the search box, and attributes such as
+  `target` on each link.
+- A logo for the light mode and one for the dark mode.
+- `google-analytics`, `twitter-card`, `keywords`, `title-prefix`, `license` and `copyright`.
+- `back-to-top-navigation`, `other-links`, `code-links`, `link-external-icon` and `smooth-scroll`.
+- Drafts, with `draft-mode` and `drafts`.
+- Comments on each page, with giscus, utterances or Hypothesis.
+
+See [The configuration](../guide/config.qmd).
+
+## Notebook cells
+
+A code cell of a notebook can set `fig-cap`, `fig-alt`, `fig-align`, `tbl-cap`, `column`, `layout-ncol`
+and the code options in its `#|` lines. See [Notebooks](../guide/notebooks.ipynb#figures-and-tables).

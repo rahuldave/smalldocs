@@ -451,3 +451,145 @@ html[data-scheme="alternate"] .quarto-color-scheme-toggle .bi::before { content:
   .grid[class*="quarto-listing-cols-"] { grid-template-columns: 1fr; }
   .quarto-title h1.title { font-size: 1.8rem; }
 }
+
+/* ---------------------------------------------------------------- Quarto features: Markdown */
+
+/* A table with a caption: `<caption>` in the table, or a figure with `figcaption` when it has an id or a caption in the margin */
+.quarto-float { margin: 1rem 0; }
+.quarto-figure-center > figure.quarto-float-tbl { display: block; text-align: start; }
+.quarto-float-caption { color: var(--sd-muted); font-size: .9rem; margin: 0 0 .5rem; }
+.quarto-float-caption-bottom { margin: .5rem 0 0; }
+.quarto-float-tbl .sd-table > table { margin-bottom: 0; }
+table > caption { color: var(--sd-muted); font-size: .9rem; }
+.sd-table:has(kbd) { position: relative; }  /* so the hidden text of a `kbd` in a cell scrolls with the table, and does not widen the page */
+
+/* Numbered lines: each line is a span with an empty link, and CSS draws its number */
+pre.numberSource { padding-left: 3.75rem; }
+pre.numberSource code { counter-reset: source-line 0; }
+pre.numberSource code > span { display: inline-block; position: relative; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child { text-decoration: none; }
+pre.numberSource code > span > a:first-child::before {
+  content: counter(source-line); position: absolute; left: -3.25rem; width: 2.5rem; text-align: right;
+  color: var(--sd-muted); -webkit-user-select: none; user-select: none;
+}
+
+/* Long lines: wrap or scroll */
+pre.code-overflow-wrap > code { white-space: pre-wrap; overflow-wrap: anywhere; }
+pre.code-overflow-scroll > code { white-space: pre; }
+
+/* Folded code of a cell */
+details.code-fold { margin: 1rem 0; }
+details.code-fold > summary { cursor: pointer; color: var(--sd-muted); font-size: .875rem; }
+details.code-fold > summary:hover { color: var(--bs-body-color); }
+details.code-fold div.sourceCode { margin: .5rem 0 0; }
+
+/* Videos */
+.quarto-video { margin: 1rem 0; }
+.quarto-video iframe { max-width: 100%; }
+.quarto-video video { width: 100%; height: auto; }
+
+/* Figures to the left or the right */
+.quarto-figure-left > figure, .quarto-figure-right > figure { display: block; }
+.quarto-figure-left > figure { text-align: left; }
+.quarto-figure-right > figure { text-align: right; }
+
+/* Blocks side by side: `layout-ncol`, `layout-nrow` and `layout`; one under the other on a phone */
+.quarto-layout-panel { margin: 1rem 0; }
+.quarto-layout-row { display: flex; flex-direction: row; align-items: flex-start; gap: 1rem; }
+.quarto-layout-row + .quarto-layout-row { margin-top: 1rem; }
+.quarto-layout-cell { min-width: 0; }
+.quarto-layout-cell > .quarto-figure { margin: 0; }
+.quarto-layout-cell > :last-child { margin-bottom: 0; }
+@media (max-width: 575.98px) {
+  .quarto-layout-row { flex-direction: column; }
+  .quarto-layout-cell { flex-basis: auto !important; width: 100%; }
+}
+
+/* ---------------------------------------------------------------- Quarto features: page and site */
+
+/* a logo for each mode: the light image, or the dark one under html.quarto-dark */
+.dark-content { display: none; }
+html.quarto-dark .dark-content { display: inline; }
+html.quarto-dark .light-content { display: none; }
+
+/* navbar: the toggle at the left or the right (toggle-position), tools that stay out of the menu (tools-collapse: false) */
+.navbar .sd-navbar-tools { flex-direction: row; }
+.navbar.sd-toggle-left .navbar-toggler { order: 1; margin-right: .5rem; }
+.navbar.sd-toggle-left .navbar-brand-container { order: 2; }
+.navbar.sd-toggle-left .sd-navbar-tools { order: 3; }
+.navbar.sd-toggle-left .navbar-collapse { order: 20; }
+.navbar.sd-toggle-right .navbar-brand-container { order: 1; }
+.navbar.sd-toggle-right .sd-navbar-tools { order: 2; }
+.navbar.sd-toggle-right .navbar-toggler { order: 4; margin-left: .5rem; }
+.navbar.sd-toggle-right .navbar-collapse { order: 20; }
+/* a header that hides while the reader scrolls down (pinned: false); smalldocs.js sets the class */
+#quarto-header.sd-headroom { transition: transform .2s; }
+#quarto-header.sd-headroom.sd-header-hidden { transform: translateY(-100%); }
+
+/* sidebar: background, foreground, border, alignment, header and footer */
+#quarto-sidebar.sd-sidebar-bg { background: var(--sd-sidebar-bg); color: var(--bs-body-color); padding-left: .75rem; border-radius: .25rem; }
+#quarto-sidebar.sd-sidebar-fg .sidebar-link, #quarto-sidebar.sd-sidebar-fg .sidebar-title a,
+#quarto-sidebar.sd-sidebar-fg .sidebar-item-toggle, #quarto-sidebar.sd-sidebar-fg .sidebar-tool { color: var(--sd-sidebar-fg); }
+#quarto-sidebar.sd-sidebar-border { border-right: 1px solid var(--sd-border); }
+body.docked #quarto-sidebar.sd-sidebar-noborder, #quarto-sidebar.sd-sidebar-noborder { border-right: 0; }
+.sidebar-header.sd-align-center { align-items: center; }
+.sidebar-header.sd-align-right { align-items: flex-end; }
+.quarto-sidebar-header, .quarto-sidebar-footer { font-size: .875rem; }
+.quarto-sidebar-header { margin-bottom: .5rem; }
+.quarto-sidebar-footer { margin-top: 1rem; padding-top: .5rem; border-top: 1px solid var(--sd-border); }
+.sidebar-header-item > :last-child, .sidebar-footer-item > :last-child { margin-bottom: 0; }
+
+/* the table of contents at the left, in the sidebar or alone, and in the text */
+#quarto-sidebar #TOC { margin-top: 1rem; padding-top: .75rem; border-top: 1px solid var(--sd-border); font-size: .875rem; }
+#quarto-sidebar.sd-toc-sidebar #TOC { margin-top: 0; padding-top: 1.5rem; border-top: 0; }
+main.content > #TOC, main.content > #TOC-body { margin: 0 0 1.5rem; padding: .75rem 1rem; border: 1px solid var(--sd-border); border-radius: .25rem; }
+main.content > #TOC #toc-title, main.content > #TOC-body h2 { font-size: 1rem; font-weight: 600; margin: 0 0 .5rem; border: 0; padding: 0; }
+#TOC-body ul { list-style: none; padding-left: 0; margin: 0; }
+#TOC-body ul ul { padding-left: 1rem; }
+main.content > #TOC a, #TOC-body a { text-decoration: none; }
+
+/* other-links and code-links, under the table of contents */
+.quarto-other-links, .quarto-code-links { margin-top: 1rem; }
+.quarto-other-links h2, .quarto-code-links h2 { font-size: .875rem; font-weight: 400; margin: 0 0 .4rem; border: 0; padding: 0; }
+.quarto-other-links ul, .quarto-code-links ul { list-style: none; padding-left: 0; margin: 0; }
+.quarto-other-links a, .quarto-code-links a { color: var(--sd-muted); text-decoration: none; font-size: .825rem; }
+.quarto-other-links a:hover, .quarto-code-links a:hover { color: var(--bs-link-hover-color); }
+.quarto-other-links .bi, .quarto-code-links .bi { margin-right: .35rem; }
+
+/* page-footer: background, foreground, border */
+.footer.sd-footer-bg { background: var(--sd-footer-bg); color: var(--bs-body-color); }
+.footer.sd-footer-fg, .footer.sd-footer-fg a, .footer.sd-footer-fg .nav-link { color: var(--sd-footer-fg); }
+/* search results in the sidebar stay as wide as the sidebar, which would cut them off */
+.footer.sd-footer-noborder { border-top: 0; }
+
+/* search: an icon that opens the box (type: overlay) */
+.sd-search-overlay .sd-search-toggle { padding: .2rem .45rem; color: inherit; border: 0; }
+.sd-search-overlay:not(.sd-open) input { display: none; }
+.sd-search-overlay.sd-open input { min-width: 12rem; padding-left: .5rem; margin-left: .25rem; }
+.quarto-navbar-tools .sd-search-overlay.sd-open input { width: 14rem; }
+
+/* Back to top: smalldocs.js shows it as the reader scrolls up */
+#quarto-back-to-top {
+  display: none; position: fixed; bottom: 50px; left: 50%; transform: translate(-50%, 0); z-index: 1030;
+  padding: .4rem .8rem; font-size: .9em; text-align: center; text-decoration: none; cursor: pointer;
+  background-color: var(--bs-body-bg); color: var(--sd-muted); border-radius: var(--bs-border-radius);
+  box-shadow: 0 .2rem .5rem var(--sd-muted), 0 0 .05rem var(--sd-muted);
+}
+
+/* the appendix: Reuse and Copyright */
+#quarto-appendix { margin-top: 3rem; padding-top: 1rem; border-top: 1px solid var(--sd-border); font-size: .9rem; color: var(--sd-muted); }
+#quarto-appendix .quarto-appendix-heading { font-size: 1rem; border: 0; margin: 1rem 0 .25rem; padding: 0; color: var(--bs-body-color); }
+
+/* the title block's keywords */
+.quarto-title-block .keywords { margin-top: 1rem; }
+.quarto-title-block .keywords .block-title { text-transform: uppercase; font-size: .75rem; color: var(--sd-muted); margin-bottom: .2rem; }
+.quarto-title-block .keywords p { margin: 0; }
+
+/* a link to another site (link-external-icon); smalldocs.js marks it */
+a.external::after { content: "\f1c5"; font-family: bootstrap-icons; font-size: .7em; margin-left: .25em; vertical-align: .1em; }
+div.sourceCode code a.external::after { content: none; }
+
+@media (max-width: 991.98px) {
+  #quarto-sidebar.sd-toc-sidebar { display: none; }
+  #quarto-sidebar.sd-sidebar-bg { border-radius: 0; }
+}

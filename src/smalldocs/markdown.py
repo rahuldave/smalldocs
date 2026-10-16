@@ -1,6 +1,7 @@
 "Pandoc-flavoured Markdown to the HTML that Quarto makes, with markdown-it-py and a few rules of our own."
 
 import html
+import os
 import re
 from collections.abc import Callable, Sequence
 from dataclasses import dataclass, field
@@ -10,6 +11,7 @@ from markdown_it import MarkdownIt
 from markdown_it.renderer import RendererHTML
 from markdown_it.rules_block import StateBlock
 from markdown_it.rules_core import StateCore
+from markdown_it.rules_inline import StateInline
 from markdown_it.token import Token
 from markdown_it.utils import OptionsDict
 from mdit_py_plugins.attrs import attrs_plugin
@@ -28,6 +30,15 @@ LINK_WITH_SPACES = re.compile(r"\]\(([^()<>\"'\s][^()<>\"'\n]*?\s[^()<>\"'\n]*?)
 ATTR_TOKEN = re.compile(r"""([#.][^\s#{}"'=]+)|([^\s=]+)=("(?:[^"\\]|\\.)*"|'[^']*'|[^\s]+)|(-)""")
 CALLOUTS = {"note": "Note", "tip": "Tip", "warning": "Warning", "important": "Important", "caution": "Caution"}
 EXECUTABLE = {"python", "r", "julia", "ojs", "bash", "sql"}
+HTML_FORMATS = {"html", "html:js", "html5"}  # the formats that `when-format` matches for a website
+CONDITION = re.compile(r"(when|unless)-(format|meta|profile)")
+CAPTION = re.compile(r"^ {0,3}(?:[Tt]able)?:[ \t]+(\S.*)$")  # a table's caption: `: text` or `Table: text`
+DELIM_ROW = re.compile(r"^ {0,3}\|?\s*:?-+:?\s*(\|\s*:?-+:?\s*)*\|?\s*$")  # the row of dashes under a table's headings
+# The classes that Quarto turns into Bootstrap's table classes: `.striped` is `table-striped`
+TABLE_CLASSES = {"primary", "secondary", "success", "danger", "warning", "info", "light", "dark", "striped", "hover", "active", "bordered", "borderless", "sm"}
+LIST_MARK = re.compile(r"^( *)(\(?)([A-Za-z]+)([.)])( +|\t)(?=\S)")
+ROMAN = re.compile(r"^M{0,4}(CM|CD|D?C{0,3})(XC|XL|L?X{0,3})(IX|IV|V?I{0,3})$")
+OTHER_ITEM = re.compile(r"^( *)([-*+]|\d{1,9}[.)])( +|\t|$)")
 
 
 @dataclass
@@ -183,6 +194,211 @@ def fenced_div(
     return True
 
 
+def table_caption(
+    state: StateBlock,  # The block parser's state
+    start: int,  # The line to try
+    end: int,  # The line after the last one
+    silent: bool,  # Only say whether a caption starts here
+) -> bool:  # Whether a caption starts here
+    "Parse a table's caption, `: text` or `Table: text`, in the paragraph just after a table or just before one."
+    if state.sCount[start] - state.blkIndent >= 4:
+        return False
+    m = CAPTION.match(state.src[state.bMarks[start] : state.eMarks[start]])
+    if not m:
+        return False
+    line = start + 1
+    while line < end and not state.isEmpty(line):
+        line += 1
+    prev = state.tokens[-1] if state.tokens else None
+    after = prev is not None and prev.type == "table_close" and prev.level == state.level
+    nxt = line
+    while nxt < end and state.isEmpty(nxt):
+        nxt += 1
+    head = state.src[state.bMarks[nxt] : state.eMarks[nxt]] if nxt + 1 < end else ""
+    before = "|" in head and bool(DELIM_ROW.match(state.src[state.bMarks[nxt + 1] : state.eMarks[nxt + 1]])) if head else False
+    if not (after or before):
+        return False
+    if silent:
+        return True
+    text = " ".join([m.group(1), *(state.src[state.bMarks[k] : state.eMarks[k]].strip() for k in range(start + 1, line))]).strip()
+    a = Attrs()
+    am = HEADING_ATTRS.search(text)
+    if am and ATTR_ONLY.fullmatch(am.group(1)):
+        a, text = parse_attrs("{" + am.group(1) + "}"), text[: am.start()].rstrip()
+    tok = state.push("table_caption_open", "", 1)
+    tok.map, tok.block, tok.meta = [start, line], True, {"attrs": a, "after": after}
+    inl = state.push("inline", "", 0)
+    inl.content, inl.map, inl.children = text, [start, line], []
+    state.push("table_caption_close", "", -1).block = True
+    state.line = line
+    return True
+
+
+# ---------------------------------------------------------------- inline rules: subscript and superscript
+
+
+def sub_sup(
+    mark: str,  # `~` for a subscript, `^` for a superscript
+    tag: str,  # `sub` or `sup`
+) -> Callable:  # The inline rule
+    "Make an inline rule for Pandoc's `H~2~O` and `x^2^`: no space inside, unless escaped as `\\ `; `~~` stays strikethrough."
+
+    def rule(
+        state: StateInline,  # The inline parser's state
+        silent: bool,  # Only say whether one starts here
+    ) -> bool:  # Whether a subscript or a superscript starts here
+        "Parse one subscript or superscript."
+        start, top = state.pos, state.posMax
+        src = state.src
+        if silent or src[start] != mark or start + 2 >= top or src[start + 1] == mark or (start and src[start - 1] == mark):
+            return False
+        if mark == "^" and src[start + 1] == "[":  # `^[note]` is an inline footnote, as Pandoc reads it first
+            return False
+        state.pos = start + 1
+        found = False
+        while state.pos < top:
+            if src[state.pos] == mark:
+                found = True
+                break
+            state.md.inline.skipToken(state)
+        inner = src[start + 1 : state.pos]
+        if not found or not inner or re.search(r"(?<!\\)\s", inner) or (state.pos + 1 < top and src[state.pos + 1] == mark):
+            state.pos = start
+            return False
+        state.posMax, state.pos = state.pos, start + 1
+        state.push(f"{tag}_open", tag, 1).markup = mark
+        state.md.inline.tokenize(state)
+        state.push(f"{tag}_close", tag, -1).markup = mark
+        state.pos, state.posMax = state.posMax + 1, top
+        return True
+
+    return rule
+
+
+# ---------------------------------------------------------------- lists numbered with letters or roman numerals
+
+
+def roman(
+    s: str,  # Letters such as `iv` or `XII`
+) -> int | None:  # Their value, or None when they are no roman numeral
+    "Read a roman numeral, in lower or upper case."
+    if not s or not (s.islower() or s.isupper()) or not ROMAN.match(s.upper()):
+        return None
+    vals = {"I": 1, "V": 5, "X": 10, "L": 50, "C": 100, "D": 500, "M": 1000}
+    n = [vals[c] for c in s.upper()]
+    return sum(-v if i + 1 < len(n) and v < n[i + 1] else v for i, v in enumerate(n))
+
+
+def marker_value(
+    tok: str,  # The letters of a list marker, such as `b` or `iv`
+    style: str | None,  # The style of the list it continues: `a`, `A`, `i` or `I`; None for a new list
+) -> tuple[str, int] | None:  # The style and the number, or None when the marker is not one
+    "Read a list marker by Pandoc's rules: a lone `i` starts a roman list, another lone letter a lettered one."
+    if style in ("a", "A"):
+        return (style, ord(tok) - ord(style) + 1) if len(tok) == 1 and (tok.islower() == (style == "a")) else None
+    if style in ("i", "I"):
+        n = roman(tok)
+        return (style, n) if n and (tok.islower() == (style == "i")) else None
+    if tok in ("i", "I"):
+        return tok, 1
+    if len(tok) == 1:
+        return ("a" if tok.islower() else "A"), ord(tok.lower()) - ord("a") + 1
+    n = roman(tok)
+    return (("i" if tok.islower() else "I"), n) if n else None
+
+
+def letter_lists(
+    text: str,  # Markdown
+) -> tuple[str, dict[int, str]]:  # The text with the markers as numbers, and the list type of each item's line
+    "Rewrite list markers such as `a.`, `(b)`, `iv)` and `A.` to numbers, which markdown-it reads, and note each list's type."
+    if not re.search(r"(?m)^ *\(?[A-Za-z]+[.)][ \t]", text):
+        return text, {}
+    lines = text.split("\n")
+    types: dict[int, str] = {}
+    # The open list at each indent: its style, its delimiter as written, and its delimiter as rewritten. markdown-it joins two
+    # lists with the same delimiter, and Pandoc starts a new list when the style changes; so a new list after another at the
+    # same indent takes the other delimiter, which the HTML does not show.
+    lists: dict[int, tuple[str, str, str]] = {}
+    fence, prev_blank, prev_item = None, True, None
+    html_end: re.Pattern | str | None = None  # the end of a raw HTML block: a closing tag, or a blank line
+    content = None  # the column where the text of the last list item starts; four more is indented code
+    for n, line in enumerate(lines):
+        if html_end is not None:
+            if (html_end == "blank" and not line.strip()) or (html_end != "blank" and html_end.search(line)):
+                html_end, prev_blank = None, not line.strip()
+            continue
+        hb = re.match(r"^ {0,3}<(/?)([A-Za-z][\w-]*)", line)
+        if hb and not fence:
+            tag = hb.group(2).lower()
+            html_end = re.compile(rf"</{tag}>", re.I) if tag in ("pre", "script", "style", "textarea") else "blank"
+            if html_end != "blank" and html_end.search(line[hb.end() :]):
+                html_end = None
+            continue
+        fm = re.match(r"^ *(`{3,}|~{3,})", line)
+        if fence:
+            if fm and fm.group(1)[0] == fence[0] and len(fm.group(1)) >= len(fence) and not line.strip()[len(fm.group(1)) :].strip():
+                fence = None
+            continue
+        if fm:
+            fence, prev_blank, prev_item = fm.group(1), False, None
+            continue
+        if not line.strip():
+            prev_blank = True
+            continue
+        m = LIST_MARK.match(line)
+        hit, cont = None, None
+        if m and content is not None and len(m.group(1)) >= content + 4:
+            m = None  # indented code inside a list item
+        if m and (m.group(2) != "(" or m.group(4) == ")"):
+            indent, delim = len(m.group(1)), ("()" if m.group(2) else m.group(4))
+            cont = lists.get(indent)
+            cont = cont if cont and cont[1] == delim and cont[0] != "1" else None
+            hit = marker_value(m.group(3), cont[0]) if cont else None
+            if hit is None:
+                cont = None
+                if (prev_blank or (prev_item is not None and indent > prev_item)) and (indent <= 3 or prev_item is not None):
+                    hit = marker_value(m.group(3), None)
+            if hit and delim == "." and (hit[0] == "A" or (hit[0] == "I" and hit[1] in (1, 5, 10, 50, 100, 500, 1000))) and m.group(5) == " ":
+                hit = None  # Pandoc: a capital letter and a period need two spaces after them, so `A. Smith` stays text
+        if hit:
+            out = cont[2] if cont else ("." if delim == "." else ")")
+            if not cont and indent in lists and lists[indent][2] == out:
+                out = "." if out == ")" else ")"
+            new = f"{hit[1]}{out}"
+            gap = m.group(5) if m.group(5) == "\t" else " " * max(1, len(m.group(2) + m.group(3) + m.group(4) + m.group(5)) - len(new))
+            lines[n] = m.group(1) + new + gap + line[m.end() :]
+            content = len(m.group(1) + new + gap)
+            types[n] = hit[0]
+            lists = {k: v for k, v in lists.items() if k < indent}
+            lists[indent] = (hit[0], delim, out)
+            prev_item = indent
+        else:
+            other = OTHER_ITEM.match(line)
+            indent = len(line) - len(line.lstrip())
+            if other and content is not None and len(other.group(1)) >= content + 4:
+                other = None  # indented code inside a list item
+            if other:
+                content = other.end()
+            if other and other.group(2)[0].isdigit():  # a list of numbers, so that a list of letters after it is a new list
+                k, delim = len(other.group(1)), other.group(2)[-1]
+                prior = lists.get(k)
+                out = prior[2] if prior and prior[0] == "1" and prior[1] == delim else delim
+                if prior and prior[0] != "1" and prior[2] == out:
+                    out = "." if out == ")" else ")"
+                lines[n] = line[: other.end(2) - 1] + out + line[other.end(2) :]
+                lists = {i: v for i, v in lists.items() if i < k}
+                lists[k] = ("1", delim, out)
+                prev_item = k
+            elif other:
+                prev_item = len(other.group(1))
+                lists = {k: v for k, v in lists.items() if k < prev_item}
+            elif prev_blank:
+                lists = {k: v for k, v in lists.items() if k < indent}
+                prev_item = prev_item if prev_item is not None and indent > prev_item else None
+        prev_blank = False
+    return "\n".join(lines), types
+
+
 # ---------------------------------------------------------------- core rules
 
 
@@ -253,6 +469,71 @@ def raw(
     return t
 
 
+def holds(
+    kind: str,  # `format`, `meta` or `profile`
+    value: str,  # What the attribute names: a format, a dotted key of the page's options, or profiles, with commas
+    env: dict,  # The render environment, with the page's options in `meta`
+) -> bool:  # Whether the page is built in that format, has that option, or runs in that profile
+    "Test one condition of `.content-visible` or `.content-hidden`."
+    if kind == "format":
+        return value.strip() in HTML_FORMATS
+    if kind == "meta":
+        cur: object = env.get("meta") or {}
+        for part in value.strip().split("."):
+            cur = cur.get(part) if isinstance(cur, dict) else None
+        return bool(cur) and str(cur).lower() != "false"
+    active = {p.strip() for p in os.environ.get("QUARTO_PROFILE", "").split(",") if p.strip()}
+    return any(p.strip() in active for p in value.split(","))
+
+
+def shown(
+    classes: list[str],  # The classes of a div or a span
+    kv: dict[str, str],  # Its other attributes
+    env: dict,  # The render environment
+) -> bool | None:  # Whether to keep it; None when it is not conditional
+    "Decide whether conditional content stays: `.content-visible` when every condition holds, `.content-hidden` unless every one does."
+    visible, hidden = "content-visible" in classes, "content-hidden" in classes
+    if not (visible or hidden):
+        return None
+    met = True
+    for k, v in kv.items():
+        m = CONDITION.fullmatch(k)
+        if m:
+            met = met and holds(m.group(2), v, env) == (m.group(1) == "when")
+    return met if visible else not met
+
+
+def table_classes(
+    a: Attrs,  # The caption's attributes
+) -> list[str]:  # Bootstrap's classes for the table, such as `table-striped`
+    "Turn Quarto's table classes, such as `.striped`, into Bootstrap's."
+    return [f"table-{c}" for c in a.classes if c in TABLE_CLASSES]
+
+
+def layout_rows(
+    kv: dict[str, str],  # The div's attributes: `layout-ncol`, `layout-nrow` or `layout`
+    n: int,  # How many blocks the div holds
+) -> list[list[float]] | None:  # The width of each cell of each row, as a share of the row; None when the layout cannot be read
+    "Read a div's layout into rows of widths, as Quarto does: `layout-ncol=2`, `layout-nrow=2` or `layout=\"[[1,1],[1]]\"`."
+    try:
+        if "layout" in kv:
+            rows = yaml.safe_load(kv["layout"])
+            if not (isinstance(rows, list) and rows and all(isinstance(r, list) and r for r in rows)):
+                return None
+            rows = [[float(x) for x in r] for r in rows]
+        else:
+            ncol = int(kv["layout-ncol"]) if "layout-ncol" in kv else -(-n // max(1, int(kv["layout-nrow"])))
+            rows = [[1.0] * max(1, ncol)]
+    except (ValueError, TypeError, yaml.YAMLError):
+        return None
+    if any(w <= 0 for row in rows for w in row):
+        return None
+    out = [[w / sum(row) * 100 for w in row] for row in rows]
+    while sum(len(r) for r in out) < n:
+        out.append(out[-1])
+    return out
+
+
 class Rules:
     "The core rules that run after inline parsing; each reads and writes `env`."
 
@@ -300,6 +581,176 @@ class Rules:
         if env.get("headings"):
             env["headings"].pop(0)
 
+    def conditions(
+        self,
+        state: StateCore,  # The core parser's state
+    ) -> None:  # Nothing; the tokens are changed in place
+        "Keep or drop `.content-visible` and `.content-hidden` divs and spans; what is dropped is gone from the page and from search."
+        toks, env = state.tokens, state.env
+        i = 0
+        while i < len(toks):
+            t = toks[i]
+            a = (t.meta or {}).get("attrs") if t.type == "div_open" else None
+            keep = shown(a.classes, a.kv, env) if a else None
+            if keep is None:
+                if t.type == "inline" and t.children:
+                    t.children = self.inline_conditions(t.children, env)
+                i += 1
+                continue
+            j = matching_close(toks, i)
+            if keep:
+                del toks[j]
+                del toks[i]
+            else:
+                del toks[i : j + 1]
+
+    def inline_conditions(
+        self,
+        kids: list[Token],  # The children of an inline token
+        env: dict,  # The render environment
+    ) -> list[Token]:  # The children, without the spans that are hidden
+        "Keep or drop the conditional spans of an inline run; a span that stays loses its condition, as in Quarto."
+        out: list[Token] = []
+        skip = 0
+        for c in kids:
+            if skip:
+                skip += c.nesting if c.type.startswith("span_") else 0
+                continue
+            if c.type == "span_open":
+                attrs = {str(k): str(v) for k, v in c.attrs.items()}
+                classes = attrs.get("class", "").split()
+                keep = shown(classes, attrs, env)
+                if keep is False:
+                    skip = 1
+                    continue
+                if keep:
+                    rest = [x for x in classes if x not in ("content-visible", "content-hidden")]
+                    c.attrs = {k: v for k, v in c.attrs.items() if k != "class" and not CONDITION.fullmatch(str(k))}
+                    if rest:
+                        c.attrSet("class", " ".join(rest))
+            out.append(c)
+        return out
+
+    def table_captions(
+        self,
+        state: StateCore,  # The core parser's state
+    ) -> None:  # Nothing; the tokens are moved in place
+        "Join each caption to its table: in the table as `<caption>`, or, with an id or in the margin, in a figure around it, as Quarto does."
+        toks, env = state.tokens, state.env
+        i = 0
+        while i < len(toks):
+            if toks[i].type != "table_caption_open":
+                i += 1
+                continue
+            cap = toks[i : i + 3]
+            meta = cap[0].meta
+            if meta["after"]:
+                end = i - 1
+                depth, start = 0, end
+                while start >= 0:
+                    depth += toks[start].nesting
+                    if depth == 0:
+                        break
+                    start -= 1
+            else:
+                start = i + 3
+                end = matching_close(toks, start)
+            if start < 0 or toks[start].type != "table_open" or (toks[start].meta or {}).get("caption"):
+                po, pc = Token("paragraph_open", "p", 1), Token("paragraph_close", "p", -1)
+                po.block = pc.block = True
+                toks[i : i + 3] = [po, cap[1], pc]  # a second caption for one table stays a paragraph
+                i += 3
+                continue
+            a: Attrs = meta["attrs"]
+            where = a.kv.get("tbl-cap-location") or env.get("tbl_cap_location") or "top"
+            where = where if where in ("top", "bottom", "margin") else "top"
+            float_ = bool(a.id) or where == "margin"
+            info = {"attrs": a, "where": where, "float": float_}
+            toks[start].meta = {**(toks[start].meta or {}), "caption": info}
+            toks[end].meta = {**(toks[end].meta or {}), "caption": info}
+            cap[0].meta, cap[2].meta = {**meta, "caption": info}, {"caption": info}
+            if where == "margin":
+                env["margin_notes"] = True
+            del toks[i : i + 3]
+            if not meta["after"]:
+                start, end = start - 3, end - 3
+            at = start + 1 if not float_ else (end + 1 if where == "bottom" else start)
+            toks[at:at] = cap
+            i = end + 4
+
+    def escaped_spaces(
+        self,
+        state: StateCore,  # The core parser's state
+    ) -> None:  # Nothing; the text is changed in place
+        "Turn `\\ ` in a subscript or a superscript into a space that does not break, as Pandoc does."
+        for t in state.tokens:
+            depth = 0
+            for c in (t.children or []) if t.type == "inline" else []:
+                depth += c.nesting if c.type in ("sub_open", "sub_close", "sup_open", "sup_close") else 0
+                if depth and c.type == "text":
+                    c.content = c.content.replace("\\ ", " ")
+
+    def list_types(
+        self,
+        state: StateCore,  # The core parser's state
+    ) -> None:  # Nothing; the lists are changed in place
+        "Give a list numbered with letters or roman numerals its `type`, from the lines that `letter_lists` noted."
+        types = state.env.get("_list_types") or {}
+        for t in state.tokens:
+            if t.type == "ordered_list_open" and t.map and t.map[0] in types:
+                t.attrSet("type", types[t.map[0]])
+
+    def layouts(
+        self,
+        state: StateCore,  # The core parser's state
+    ) -> None:  # Nothing; the tokens are changed in place
+        "Put the blocks of a div with `layout-ncol`, `layout-nrow` or `layout` side by side, in Quarto's rows and cells."
+        toks = state.tokens
+        i = 0
+        while i < len(toks):
+            t = toks[i]
+            a = (t.meta or {}).get("attrs") if t.type == "div_open" else None
+            if not (a and {"layout", "layout-ncol", "layout-nrow"} & set(a.kv)):
+                i += 1
+                continue
+            j = matching_close(toks, i)
+            blocks, k = [], i + 1
+            while k < j:
+                end = matching_close(toks, k) if toks[k].nesting == 1 else k
+                blocks.append(toks[k : end + 1])
+                k = end + 1
+            rows = layout_rows(a.kv, len(blocks))
+            if rows is None or not blocks:
+                i += 1
+                continue
+            key = next(k for k in ("layout", "layout-ncol", "layout-nrow") if k in a.kv)
+            panel = Attrs(id=a.id, classes=["quarto-layout-panel", *a.classes], kv={f"data-{key}": a.kv[key]})
+            new = [raw(f"<div{panel.html()}>\n")]
+            for row in rows:
+                if not blocks:
+                    break
+                new.append(raw('<div class="quarto-layout-row">\n'))
+                for w in row:
+                    if not blocks:
+                        break
+                    new.append(raw(f'<div class="quarto-layout-cell" style="flex-basis: {w:.1f}%;justify-content: flex-start;">\n'))
+                    new += blocks.pop(0)
+                    new.append(raw("</div>\n"))
+                new.append(raw("</div>\n"))
+            new.append(raw("</div>\n"))
+            toks[i : j + 1] = new
+            i += 1
+
+    def video_sources(
+        self,
+        state: StateCore,  # The core parser's state
+    ) -> None:  # Nothing; the raw HTML is changed in place
+        "Rewrite the file of a `video` shortcode for the page, so the build copies it, as it does a picture."
+        link = state.env.get("link")
+        for t in state.tokens:
+            if link and t.type == "html_block" and 'class="quarto-video"' in t.content:
+                t.content = re.sub(r'(<source src=")([^"]*)(")', lambda m: m.group(1) + html.escape(link(html.unescape(m.group(2)), "src")) + m.group(3), t.content)
+
     def callouts(
         self,
         state: StateCore,  # The core parser's state
@@ -323,8 +774,8 @@ class Rules:
                 del toks[i + 1 : i + 4]
                 j -= 3
             collapse = a.kv.get("collapse")
-            appearance = a.kv.get("appearance", "default")
-            icon = a.kv.get("icon", "true") != "false"
+            appearance = a.kv.get("appearance", state.env.get("callout_appearance") or "default")
+            icon = a.kv.get("icon", str(state.env.get("callout_icon", "true")).lower()) != "false"
             titled = bool(title) or appearance != "minimal"
             title = title or CALLOUTS[kind]
             cid = a.id or f"callout-{state.env.setdefault('_callouts', [0])[0] + 1}"
@@ -379,7 +830,10 @@ class Rules:
             for state_head in state.env.get("headings", []):
                 if state_head["id"] in {toks[k].meta["attrs"].id for k in heads}:
                     state_head["tab"] = True
-            new = [raw(f'<div class="panel-tabset{"".join(" " + c for c in a.classes if c != "panel-tabset")}"><ul class="nav nav-tabs" role="tablist">{nav}</ul><div class="tab-content">\n')]
+            group = f' data-group="{html.escape(a.kv["group"])}"' if a.kv.get("group") else ""  # tabs of a group switch together
+            new = [
+                raw(f'<div class="panel-tabset{"".join(" " + c for c in a.classes if c != "panel-tabset")}"{group}><ul class="nav nav-tabs" role="tablist">{nav}</ul><div class="tab-content"{group}>\n')
+            ]
             for m, k in enumerate(heads):
                 end = heads[m + 1] if m + 1 < len(heads) else j
                 new.append(raw(f'<div id="{ids[m]}" class="tab-pane{" active" if m == 0 else ""}" role="tabpanel" aria-labelledby="{ids[m]}-tab">\n'))
@@ -415,7 +869,10 @@ class Rules:
                     margin_cap = where == "margin" and not cols and not any(wide)
                     if margin_cap or "column-margin" in cols:
                         state.env["margin_notes"] = True
-                    toks[i].meta = {**(toks[i].meta or {}), "figure": img, "columns": cols, "margin_caption": margin_cap}
+                    align = img.attrs.pop("fig-align", None)
+                    align = align if align and align != "default" else state.env.get("fig_align")
+                    align = align if align in ("left", "right", "center") else "center"
+                    toks[i].meta = {**(toks[i].meta or {}), "figure": img, "columns": cols, "margin_caption": margin_cap, "align": align}
                     img.meta = {**(img.meta or {}), "figure": True}
 
     def margins(
@@ -553,19 +1010,23 @@ def heading_open(
     "Render a heading as Quarto does: the id is on the section; the heading has `anchored` and `data-anchor-id`."
     t = tokens[idx]
     a: Attrs = (t.meta or {}).get("attrs") or Attrs()
+    anchored = ["anchored"] if env.get("anchor_sections", True) else []  # `anchor-sections: false`: no anchor links
     if t.level == 0:
         num = ""
-        if env.get("number_sections") and "unnumbered" not in a.classes:
+        depth = env.get("number_depth")
+        lvl = int(t.tag[1])
+        if env.get("number_sections") and "unnumbered" not in a.classes and not (depth and lvl > depth):
             counts = env.setdefault("_counts", [0] * 7)
-            lvl = int(t.tag[1])
             counts[lvl] += 1
             counts[lvl + 1 :] = [0] * (6 - lvl)
             first = env.get("_numfrom") or lvl
             env["_numfrom"] = first
             num = f'<span class="header-section-number">{".".join(str(c) for c in counts[first : lvl + 1])}</span> '
-        return f'<{t.tag} class="anchored" data-anchor-id="{html.escape(a.id)}">{num}'
-    cls = " ".join(["anchored", *a.classes])
-    return f'<{t.tag} id="{html.escape(a.id)}" class="{html.escape(cls)}" data-anchor-id="{html.escape(a.id)}">'
+        cls = ' class="anchored"' if anchored else ""
+        return f'<{t.tag}{cls} data-anchor-id="{html.escape(a.id)}">{num}'
+    cls = " ".join([*anchored, *a.classes])
+    cls = f' class="{html.escape(cls)}"' if cls else ""
+    return f'<{t.tag} id="{html.escape(a.id)}"{cls} data-anchor-id="{html.escape(a.id)}">'
 
 
 def div_open(
@@ -579,7 +1040,7 @@ def div_open(
     a: Attrs = tokens[idx].meta["attrs"]
     if "hidden" in a.classes:
         a.kv.setdefault("hidden", "")
-    if "column-margin" in a.classes or "aside" in a.classes:
+    if "aside" in a.classes and "column-margin" not in a.classes:
         a.classes.append("column-margin")
     return f"<div{a.html()}>\n"
 
@@ -609,7 +1070,7 @@ def paragraph_open(
         return self.renderToken(tokens, idx, options, env)
     cols = "".join(f" {c}" for c in meta.get("columns", []))
     cap = f'<figcaption class="margin-caption">{self.renderInline(fig.children or [], options, env)}</figcaption>\n' if meta.get("margin_caption") else ""
-    return f'<div class="quarto-figure quarto-figure-center{cols}">\n<figure class="figure">\n{cap}<p>'
+    return f'<div class="quarto-figure quarto-figure-{meta.get("align", "center")}{cols}">\n<figure class="figure">\n{cap}<p>'
 
 
 def paragraph_close(
@@ -643,13 +1104,14 @@ def image(
     t.attrSet("src", env["link"](src, "src") if env.get("link") else src)
     cls = (t.attrGet("class") or "").split()
     cls += ["img-fluid"] + (["figure-img"] if (t.meta or {}).get("figure") else [])
+    t.attrs.pop("fig-align", None)  # an option of the figure, not an attribute of the picture
     t.attrSet("class", " ".join(dict.fromkeys(cls)))
     for k in ("width", "height"):
         v = t.attrGet(k)
         if v and not v.isdigit():
             t.attrs.pop(k)
             t.attrSet("style", f"{t.attrGet('style') or ''}{k}: {v};")
-    alt = plain(t.children)
+    alt = str(t.attrs.pop("fig-alt", None) or plain(t.children))  # `fig-alt` gives a figure alt text other than its caption
     attrs = "".join(f' {k}="{html.escape(str(v))}"' for k, v in t.attrs.items() if k != "alt")
     return f'<img alt="{html.escape(alt)}"{attrs}>'
 
@@ -719,7 +1181,15 @@ def table_open(
     env: dict,  # The render environment
 ) -> str:  # The opening tag of the table
     "Render a table with Bootstrap's classes, as Quarto does, in a box that scrolls when the table is too wide."
-    return '<div class="sd-table">\n<table class="caption-top table">\n'
+    cap = (tokens[idx].meta or {}).get("caption")
+    if not cap:
+        return '<div class="sd-table">\n<table class="caption-top table">\n'
+    a: Attrs = cap["attrs"]
+    cls = " ".join([*table_classes(a), *(["caption-top"] if cap["float"] or cap["where"] == "top" else []), "table"])
+    box = f'<div class="sd-table">\n<table class="{cls}">\n'
+    if cap["float"] and cap["where"] == "bottom":
+        return float_open(a) + f"<div{described(a)}>\n" + box
+    return box
 
 
 def table_close(
@@ -730,7 +1200,59 @@ def table_close(
     env: dict,  # The render environment
 ) -> str:  # The closing tags of the table and its box
     "Close a table and the box that `table_open` opened."
+    cap = (tokens[idx].meta or {}).get("caption")
+    if cap and cap["float"]:
+        return "</table>\n</div>\n</div>\n" + ("" if cap["where"] == "bottom" else "</figure>\n</div>\n")
     return "</table>\n</div>\n"
+
+
+def float_open(
+    a: Attrs,  # The caption's attributes
+) -> str:  # The opening tags of the figure around a table
+    "Open the figure that holds a table with an id, as Quarto's `quarto-float`, with the id where a link to `#tbl-...` lands."
+    cls = [*a.classes, "quarto-float", "quarto-figure", "quarto-figure-center", "anchored"]
+    kv = {f"data-{k}": v for k, v in a.kv.items()}
+    return f'<div{Attrs(id=a.id, classes=cls, kv=kv).html()}>\n<figure class="quarto-float quarto-float-tbl figure">\n'
+
+
+def described(
+    a: Attrs,  # The caption's attributes
+) -> str:  # The `aria-describedby` attribute, or nothing when the table has no id
+    "Point a table at its caption, for screen readers."
+    return f' aria-describedby="{html.escape(a.id)}-caption"' if a.id else ""
+
+
+def table_caption_open(
+    self: RendererHTML,  # The renderer
+    tokens: Sequence[Token],  # The tokens of the page
+    idx: int,  # The index of the token to render
+    options: OptionsDict,  # The parser's options
+    env: dict,  # The render environment
+) -> str:  # The opening tag of the caption, after the figure's when the caption comes first
+    "Open a table's caption: `<caption>` in the table, or Quarto's `<figcaption>` in a figure."
+    cap = tokens[idx].meta["caption"]
+    if not cap["float"]:
+        return "<caption>"
+    a: Attrs = cap["attrs"]
+    cls = f"quarto-float-caption-{cap['where']} quarto-float-caption quarto-float-tbl" + (" margin-caption" if cap["where"] == "margin" else "")
+    ident = f' id="{html.escape(a.id)}-caption"' if a.id else ""
+    return ("" if cap["where"] == "bottom" else float_open(a)) + f'<figcaption class="{cls}"{ident}>\n'
+
+
+def table_caption_close(
+    self: RendererHTML,  # The renderer
+    tokens: Sequence[Token],  # The tokens of the page
+    idx: int,  # The index of the token to render
+    options: OptionsDict,  # The parser's options
+    env: dict,  # The render environment
+) -> str:  # The closing tag of the caption, and of the figure when the caption comes last
+    "Close a table's caption."
+    cap = tokens[idx].meta["caption"]
+    if not cap["float"]:
+        return "</caption>\n"
+    if cap["where"] == "bottom":
+        return "\n</figcaption>\n</figure>\n</div>\n"
+    return f"\n</figcaption>\n<div{described(cap['attrs'])}>\n"
 
 
 def fence(
@@ -778,7 +1300,38 @@ def fence(
         env.setdefault("unrun", []).append(t.map[0] + 1 if t.map else 0)
         if opts.get("echo") == "false" or opts.get("include") == "false":
             return ""
+        for k in ("code-line-numbers", "code-overflow"):
+            if k in opts:
+                a.kv[k] = opts[k]
+        fold = str(opts.get("code-fold", a.kv.pop("code-fold", env.get("code_fold", "false")))).lower()
+        summary = str(opts.get("code-summary", a.kv.pop("code-summary", env.get("code_summary") or "Code"))).strip().strip("\"'")
+    elif "cell-code" in a.classes:  # a notebook's cell folds only when the cell itself sets code-fold
+        fold, summary = str(a.kv.pop("code-fold", "false")).lower(), a.kv.pop("code-summary", "Code")
+    else:
+        fold, summary = "false", ""
+    if fold in ("true", "show"):  # Quarto folds the code of a cell, never a plain code block
+        opened = ' open=""' if fold == "show" else ""
+        return f'<details{opened} class="code-fold">\n<summary>{html.escape(summary)}</summary>\n{code_block_html(body, lang, a, env)}</details>\n'
     return code_block_html(body, lang, a, env)
+
+
+def numbered_lines(
+    code: str,  # Highlighted code: escaped text and spans, which may run over several lines
+    cid: str,  # The id of the block, such as `cb1`
+) -> str:  # The code with each line in a span of its own, with an id and an anchor
+    "Put each line of highlighted code in its own span, `cb1-1`, as Pandoc does for numbered lines."
+    out, carry = [], []
+    for n, line in enumerate(code.split("\n"), 1):
+        line = "".join(carry) + line
+        carry = []
+        for tag in re.findall(r"<span[^>]*>|</span>", line):
+            if tag == "</span>":
+                carry = carry[:-1]
+            else:
+                carry.append(tag)
+        line += "</span>" * len(carry)
+        out.append(f'<span id="{cid}-{n}"><a href="#{cid}-{n}"></a>{line}</span>')
+    return "\n".join(out)
 
 
 def code_block_html(
@@ -793,9 +1346,27 @@ def code_block_html(
     n[0] += 1
     cid = a.id or f"cb{n[0]}"
     code = highlight(body.rstrip("\n"), lang)
-    cls = " ".join(["sourceCode", *([lang] if lang else []), "code-with-copy", *[c for c in a.classes if c != "_cell"]])
+    page = "cell-code" not in a.classes  # a notebook's cell keeps its markup; the page's options are for the page's own code
+    lines = a.kv.get("code-line-numbers", env.get("code_line_numbers") if page else None)
+    lines = bool(lines) and str(lines).lower() not in ("false", "0", "none")
+    wrap = a.kv.get("code-overflow", env.get("code_overflow") if page else None)
+    wrap = [f"code-overflow-{wrap}"] if wrap in ("wrap", "scroll") else []
+    if lines:
+        code = numbered_lines(code, html.escape(cid))
+    cls = " ".join(
+        [
+            "sourceCode",
+            *(["numberSource"] if lines else []),
+            *([lang] if lang else []),
+            *(["number-lines"] if lines else []),
+            *wrap,
+            "code-with-copy",
+            *[c for c in a.classes if c != "_cell"],
+        ]
+    )
     copy = env.get("code_copy", True)
-    pre = f'<div class="sourceCode{(" " + extra) if extra else ""}" id="{html.escape(cid)}"><pre class="{html.escape(cls)}"><code class="sourceCode {html.escape(lang)}">{code}</code></pre></div>'
+    data = f' data-code-overflow="{html.escape(a.kv["code-overflow"])}"' if a.kv.get("code-overflow") else ""
+    pre = f'<div class="sourceCode{(" " + extra) if extra else ""}" id="{html.escape(cid)}"{data}><pre class="{html.escape(cls)}"><code class="sourceCode {html.escape(lang)}">{code}</code></pre></div>'
     if copy:
         pre = f'<div class="code-copy-outer-scaffold">{pre}<button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>'
     if a.kv.get("filename"):
@@ -882,14 +1453,23 @@ def make_parser(
         for name in ("math_block", "math_block_label"):
             md.add_render_rule(name, math_block)
     md.block.ruler.before("fence", "fenced_div", fenced_div, {"alt": ["paragraph", "reference", "blockquote", "list"]})
+    md.block.ruler.before("table", "table_caption", table_caption)  # before deflist, which reads `: text` as a definition
+    md.inline.ruler.before("strikethrough", "subscript", sub_sup("~", "sub"))
+    md.inline.ruler.before("strikethrough", "superscript", sub_sup("^", "sup"))
     md.core.ruler.after("block", "heading_attrs", heading_attrs)
     md.core.ruler.after("heading_attrs", "quote_attr_values", quote_attr_values)
     md.core.ruler.after("quote_attr_values", "links_with_spaces", links_with_spaces)
     rules = Rules(md)
+    md.core.ruler.push("conditions", rules.conditions)  # first: what is hidden gets no id, no place in the contents and no search entry
+    md.core.ruler.push("table_captions", rules.table_captions)
+    md.core.ruler.push("list_types", rules.list_types)
+    md.core.ruler.push("escaped_spaces", rules.escaped_spaces)
+    md.core.ruler.push("video_sources", rules.video_sources)
     if smart:
         md.core.ruler.push("typography", rules.typography)  # before ids: Pandoc makes ids from the smart text
     md.core.ruler.push("ids", rules.ids)
     md.core.ruler.push("title", rules.title)
+    md.core.ruler.push("layouts", rules.layouts)  # while the blocks are still divs and paragraphs
     md.core.ruler.push("margins", rules.margins)  # before callouts and tabsets, which turn titles into raw HTML
     md.core.ruler.push("callouts", rules.callouts)
     md.core.ruler.push("tabsets", rules.tabsets)
@@ -911,16 +1491,55 @@ def make_parser(
         "fence": fence,
         "code_block": code_block,
         "footnote_ref": footnote_ref,
+        "table_caption_open": table_caption_open,
+        "table_caption_close": table_caption_close,
     }
     for k, f in render.items():
         md.add_render_rule(k, f)
     return md
 
 
+def page_options(
+    m: dict,  # A page's merged options
+) -> dict:  # What the Markdown rules read from them, as keys of `env`; only the options that the page sets
+    "Read the page options that change the Markdown: code, figures, tables, callouts, headings, and the options for `when-meta`."
+    out: dict = {"meta": m}
+    keys = {
+        "tbl-cap-location": "tbl_cap_location",
+        "code-line-numbers": "code_line_numbers",
+        "code-fold": "code_fold",
+        "code-summary": "code_summary",
+        "code-overflow": "code_overflow",
+        "fig-align": "fig_align",
+        "callout-appearance": "callout_appearance",
+        "callout-icon": "callout_icon",
+        "anchor-sections": "anchor_sections",
+        "number-depth": "number_depth",
+    }
+    for k, name in keys.items():
+        if m.get(k) is not None:
+            out[name] = m[k]
+    if "code_fold" in out:
+        out["code_fold"] = str(out["code_fold"]).lower()
+    if "anchor_sections" in out:
+        out["anchor_sections"] = out["anchor_sections"] is not False and str(out["anchor_sections"]).lower() != "false"
+    if "number_depth" in out:
+        try:
+            if isinstance(out["number_depth"], bool):
+                raise ValueError("number-depth is a number")
+            out["number_depth"] = int(out["number_depth"])
+        except (TypeError, ValueError):
+            del out["number_depth"]
+    return out
+
+
 def render(
     text: str,  # Markdown, without its front matter
-    env: dict,  # In: `title`, `link`, `symbols`, `code_copy`, `number_sections`. Out: `headings`, `search`, `math`, ...
+    env: dict,  # In: `title`, `link`, `symbols`, `code_copy`, `number_sections`, and `page_options`. Out: `headings`, `search`, `math`, ...
     extensions: str = "",  # Pandoc's reader with extensions, from `from:` in the config
 ) -> str:  # The HTML of the body
     "Render a page's Markdown to HTML, filling `env` with what the layout needs."
+    text, types = letter_lists(text)
+    if types:
+        env["_list_types"] = types
     return make_parser(extensions).render(text, env)

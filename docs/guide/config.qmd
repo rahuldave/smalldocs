@@ -30,8 +30,8 @@ smalldocs merges the options in this order, and a later value wins:
 `metadata-files` is a list of more YAML files, with paths from the folder of the project. smalldocs
 merges them into `_smalldocs.yml`, and a key in `_smalldocs.yml` wins over the same key in these files.
 
-If smalldocs does not read an option, the build gives a warning. With `smalldocs render --strict`, a
-warning makes the build fail.
+If smalldocs does not read an option, the build gives a warning. See
+[Options that smalldocs does not read](#options-that-smalldocs-does-not-read).
 
 Each table below gives the default of each option, which is what smalldocs does when you do not set it.
 The smallest config is a `_smalldocs.yml` with no keys. Then smalldocs builds every page in the
@@ -97,15 +97,36 @@ and it never copies the source of that page into the site.
 | `repo-url`, `repo-subdir` | The repository of the site, and the folder of the site in it | None |
 | `repo-branch` | The branch for the `edit` and `source` links | `main` |
 | `repo-actions` | Links under the table of contents: `edit`, `source`, `issue`. They need `repo-url` | None |
-| `navbar` | `left`, `right`, `tools`, `title`, `logo`, `background`, `search`. An entry is a page, or `href` and `text`, with an `icon`. `menu` makes a dropdown | No navbar. The sidebar then shows the title of the site |
+| `navbar` | `left`, `right`, `tools`, `title`, `logo`, `background`, `search`. An entry is a page, or `href` and `text`, with an `icon`. `url` is another name for `href`. `menu` makes a dropdown. See [Links in the navigation](#links-in-the-navigation) | No navbar. The sidebar then shows the title of the site |
+| `navbar.collapse-below` | The width of the window below which the navbar folds into a menu button: `sm`, `md`, `lg`, `xl` or `xxl` | `lg` |
+| `navbar.collapse` | `false` keeps the navbar open at every width, with no menu button | `true` |
+| `navbar.toggle-position` | The side of the menu button on a narrow screen: `left` or `right` | After the title |
+| `navbar.tools-collapse` | `false` keeps the tools out of the folded menu, so they show at every width | The tools are in the folded menu |
+| `navbar.pinned` | `false` hides the navbar while the reader scrolls down. The navbar comes back when the reader scrolls up | The navbar stays on the screen |
+| `navbar.logo`, `sidebar.logo` | A path to an image, or `path` and `alt`. Or `light` and `dark`, each a path or `path` and `alt`. With `light` and `dark`, the page shows the image of its mode. `website.logo` sets both | None, or the logo of a theme extension |
+| `navbar.logo-alt`, `sidebar.logo-alt` | The text of the logo for a screen reader | Empty |
+| `navbar.logo-href`, `sidebar.logo-href` | The link of the logo. In the navbar, the title of the site has the same link | The home page |
 | `sidebar` | `contents`, `style`, `title`, `logo`, `search`, `tools`, `collapse-level`. A list gives several sidebars | No sidebar |
+| `sidebar.background`, `sidebar.foreground` | The colour of the sidebar, and the colour of its links. Give the name of a colour of Bootstrap, such as `light` or `primary`, or a CSS colour, such as `#f4f4f4` | The colours of the theme |
+| `sidebar.border` | `true` draws a line at the right of the sidebar. `false` removes the line | A line for a `docked` sidebar only |
+| `sidebar.alignment` | The alignment of the title, the logo and the tools, when there is no navbar: `left`, `center` or `right` | `left` |
+| `sidebar.header`, `sidebar.footer` | Markdown above and below the entries of the sidebar. The value can be the path of a Markdown file | None |
+| `sidebar.pinned` | With no navbar, `false` hides the top bar of a narrow screen while the reader scrolls down | The bar stays on the screen |
 | `sidebar.style` | `floating` sits beside the text, and `docked` is a full-height panel at the left edge | `floating` |
 | `sidebar.collapse-level` | The sections above this level start open. With `2`, the top-level sections start open, and the sections inside them start closed. A section that holds the current page is always open | `2` |
 | `page-navigation` | Links to the previous page and the next page of the sidebar | Off |
 | `page-footer` | One text, or `left`, `center` and `right`. Each part is Markdown or a list of entries | None |
-| `search` | The search box. `false` turns search off | On |
+| `page-footer.background`, `page-footer.foreground` | The colour of the footer, and the colour of its text. The values are as for `sidebar.background` | The colours of the theme |
+| `page-footer.border` | `false` removes the line above the footer | A line |
+| `search` | The search box. `false` turns search off. See [Search](#search) | On |
 | `favicon` | The icon in the browser tab | None |
-| `open-graph` | The Open Graph tags, which give the title and the picture that a link to the page shows in other apps | Off |
+| `open-graph` | The Open Graph tags, which give the title and the picture that a link to the page shows in other apps. `true`, or `locale` and `site-name` | Off |
+| `twitter-card` | The Twitter card tags, which do the same for Twitter. `true`, or `card-style`, `creator`, `site`, `title`, `description` and `image` | Off |
+| `google-analytics` | The tracking id of Google Analytics, such as `G-ABC123`. Or `tracking-id`, with `anonymize-ip: true` and `storage: none` | None |
+| `back-to-top-navigation` | A Back to top link at the bottom of the window. It shows when the reader scrolls up | Off |
+| `other-links`, `code-links` | Lists of links under the table of contents. An entry has `text`, `href`, `icon`, `rel` and `target`. In `code-links`, the entry `repo` links to `repo-url` | None |
+| `draft-mode`, `drafts` | What a build does with a draft, and a list of pages that are drafts. See [Drafts](#drafts) | `gone`, and no list |
+| `comments` | A service for comments on each page: giscus, utterances or Hypothesis. See [Comments](#comments) | None |
 | `bread-crumbs` | The breadcrumbs, the path of the page above its title. `false` hides them | On |
 
 The `contents` of a sidebar takes these entries:
@@ -126,6 +147,75 @@ sidebar:
     - text: "---"                    # a line
 ```
 
+## Links in the navigation
+
+An entry of the navbar, a menu, the tools, the sidebar or the footer can set these attributes of its
+link:
+
+```yaml
+navbar:
+  left:
+    - text: Forum
+      href: https://forum.example.com
+      target: _blank                 # open the link in a new tab
+      rel: noopener
+      aria-label: The forum          # the text for a screen reader
+      id: forum-link
+```
+
+## Search
+
+The search box is in the navbar. With no navbar, it is in the sidebar. These options change it:
+
+```yaml
+website:
+  search:
+    location: sidebar                # navbar or sidebar
+    type: overlay                    # textbox, or overlay: an icon that opens the box
+    limit: 10                        # the number of results; 20 if you set none
+    keyboard-shortcut: [f, /, s]     # the keys that go to the box
+```
+
+The key `/` goes to the search box when you set no `keyboard-shortcut`. Quarto uses `f`, `/` and `s`;
+write `keyboard-shortcut: [f, /, s]` to get the same keys. Ctrl-K and Cmd-K also go to the box. smalldocs does not read `algolia` and the other options of Quarto for search.
+
+## Drafts
+
+A draft is a page that is not ready. A page with `draft: true` is a draft, and so is each page in
+`website.drafts`. `website.draft-mode` sets what a build does with a draft:
+
+- `gone`, the default, leaves the draft out of the site.
+- `unlinked` builds the draft, but the sidebar, the navbar, the listings, the search, the sitemap and
+  the feeds leave it out. A reader with the address can open it.
+- `visible` builds the draft as any other page.
+
+```yaml
+website:
+  draft-mode: unlinked
+  drafts: [posts/next-post.qmd]
+```
+
+## Comments
+
+`comments` adds a service for comments to each page. Set it in `website` or in the options of a page.
+`comments: false` in the front matter of a page turns comments off on that page.
+
+```yaml
+website:
+  comments:
+    giscus:
+      repo: me/my-repo
+      repo-id: R_kgDOABCDEF
+      category: Announcements
+      category-id: DIC_kwDOABCDEF
+```
+
+- **giscus** keeps comments in GitHub Discussions. It takes `repo`, `repo-id`, `category`,
+  `category-id`, `mapping`, `reactions-enabled`, `loading`, `input-position`, `language`, and `theme`,
+  which is a name or `light` and `dark`. The giscus website gives the ids.
+- **utterances** keeps comments in GitHub issues. It takes `repo`, `label`, `theme` and `issue-term`.
+- **hypothesis** lets readers write notes on the text. Give `true`, or the options of Hypothesis.
+
 ## The options of a page
 
 Write these options at the top level of `_smalldocs.yml` or of a `_metadata.yml` file. A page can also
@@ -138,23 +228,78 @@ project. It reads `order` only from the front matter of a page.
 | `css` | Your stylesheets, after the stylesheet of the theme | None |
 | `toc` | The table of contents at the right of the page | Off |
 | `toc-depth` | The deepest level of heading in the table of contents | `3` |
+| `toc-location` | `right`, `left`, `body`, `left-body` or `right-body`. `left` puts the table in the sidebar, under the entries. `body` puts the table under the title. `left-body` and `right-body` show it in two places | `right` |
+| `toc-expand` | The number of levels of the table that show. A lower level opens when the reader comes to its section. `true` shows every level, and `false` shows only the top level | Every level shows |
 | `reference-location` | `margin` puts each footnote in the margin, beside the text that cites it. See [Writing pages](markdown.qmd) | `document`: the end of the page |
 | `fig-cap-location` | `margin` puts the caption of each figure in the margin. `cap-location` does the same | `bottom` |
+| `fig-align` | `left`, `right` or `center`: where each figure goes. See [Figures](markdown.qmd#figures) | `center`, which keeps the figure at the left of the column, with its picture in the centre of the figure |
+| `tbl-cap-location` | `top`, `bottom` or `margin`: where the caption of each table goes | `top` |
 | `toc-title` | The heading above the table of contents | `On this page` |
 | `number-sections` | Numbers before the headings | Off |
+| `number-depth` | The deepest level of heading that gets a number. With `2`, a `###` heading has no number | Every level |
+| `anchor-sections` | The link that shows beside a heading when the pointer is on it. `false` removes it | On |
 | `code-copy` | The copy button on code | On |
+| `code-line-numbers` | Numbers before the lines of each code block | Off |
+| `code-overflow` | `wrap` wraps a long line of code onto the next line. `scroll` scrolls it to the side | `scroll` |
+| `code-fold` | `true` folds the code of each cell, and `show` folds it but starts open. See [Writing pages](markdown.qmd#line-numbers-long-lines-and-folded-code). The code options of a page do not apply to the cells of a notebook | `false` |
+| `code-summary` | The words on the line of a folded cell | `Code` |
+| `callout-appearance` | The style of each callout: `default`, `simple` or `minimal` | `default` |
+| `callout-icon` | `false` removes the icon of each callout | `true` |
 | `from` | Turns off a part of the Markdown. `markdown-smart` keeps quotes and dashes as you type them. `markdown-tex_math_dollars` reads each `$` as a dollar. `markdown-smart-tex_math_dollars` does both | `markdown`, with every part on |
 | `page-layout` | `article`, `full` or `custom` | `article` |
 | `link-external-newwindow` | Open links to other sites in a new tab | Off |
+| `link-external-icon` | An icon after each link to another site | Off |
+| `link-external-filter` | A regular expression, which is a pattern of text, for the addresses that are not other sites, such as `^https://example\.com/` | Only a link to the same host is not another site |
+| `smooth-scroll` | A link to a heading of the page scrolls smoothly to it | Off |
+| `mainfont`, `monofont`, `fontsize`, `linestretch`, `linkcolor`, `backgroundcolor`, `fontcolor`, `max-width` | The fonts, the colours and the width of the text. See [Themes](themes.qmd#fonts-and-colours-from-options) | The values of the theme |
+| `pagetitle` | The title in the browser tab, in place of the title of the page | The title of the page |
+| `title-prefix` | The text after the title in the browser tab, in place of the title of the site | The title of the site |
+| `keywords` | A list of words for the `keywords` meta tag. The title block shows them too | None |
+| `license` | A Reuse section at the end of the page. A Creative Commons name, such as `CC BY` or `CC BY-SA 4.0`, links to its licence. Or give text, or `text` and `url` | None |
+| `copyright` | A Copyright section at the end of the page. Give text, or `holder` and `year` | None |
 | `include-in-header`, `include-before-body`, `include-after-body` | Files, or `text:` entries, to put into each page | None |
 | `echo`, `output`, `include`, `execute` | `false` hides the code or the output of every cell, in a notebook or in a page. `execute: {echo: false}` works too | `true`: the code and the output show |
 | `title` | The title of the page | A level-one heading (`#`) at the very top of the page. Otherwise the name of the file, with a space for each `-` and `_` |
 | `subtitle`, `description`, `author`, `date`, `categories`, `image` | The title block, which is the title, subtitle, author and date at the top of the page. Also what a [listing](listings.qmd) shows | None |
 | `date-format` | How the title block writes `date`, such as `YYYY-MM-DD`, `long` or `short` | `MMMM D, YYYY`, such as `October 12, 2026` |
-| `draft` | `true` leaves the page out of the site | `false` |
+| `draft` | `true` makes the page a draft. See [Drafts](#drafts) | `false` |
 | `order` | The place of a page among the pages that a glob of the sidebar finds. A listing has its own `sort` | None. The page comes after the pages that have an `order` |
 | `listing` | A list of other pages. See [Listings](listings.qmd) | None |
 | `title-block-banner` | A band of the primary colour behind the title | Off |
+
+## Options that smalldocs does not read
+
+smalldocs gives a warning for each key of the config that it does not read. It checks the keys inside
+each section too, down to each entry of the navbar and the sidebar. So a key with a typing error does
+not go unseen:
+
+```
+warning: unknown key website.sidebar.stylee
+warning: unknown key website.navbar.left[0].colour
+```
+
+In a `_quarto.yml`, each option under `format.html` that smalldocs does not read gives a warning too.
+Under `execute`, smalldocs reads `echo`, `output` and `include`. The other keys there are for running
+code, so each gives the warning below.
+
+Front matter and a `_metadata.yml` file can hold keys of your own, such as `version: 2`. A
+[shortcode](markdown.qmd#shortcodes) such as `meta` can read them, so smalldocs gives no warning for
+them. It gives a warning only for an option of Quarto that it does not read, such as `lightbox`:
+
+```
+warning: guide/intro.qmd: lightbox is not read by smalldocs
+```
+
+Some options of Quarto tell it how to run the code of a page. They are `jupyter`, `engine`, `knitr`,
+`freeze`, `cache`, `execute-dir`, `df-print`, `keep-ipynb`, `ipynb-filters` and
+`ipynb-shell-interactivity`. smalldocs runs no code, so the warning for each of them says so:
+
+```
+warning: freeze is ignored: smalldocs runs no code
+```
+
+A warning does not stop the build. With `smalldocs render --strict`, the build ends with the exit code 1
+when it gives a warning. Use `--strict` in the recipe that checks a project before a commit.
 
 ## The options of smalldocs
 

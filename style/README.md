@@ -42,5 +42,5 @@ Use each term in this meaning, and define it on the first page where a reader me
 
 ## Headings that other pages link to
 
-No page links to a heading of another page yet. If you add such a link, add the heading here, so that
-nobody changes its text.
+Many pages link to a heading of another page, such as `config.qmd#search`. Before you change the text
+of a heading, search `docs/` for its id, which comes from the text, and fix the links.

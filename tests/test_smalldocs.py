@@ -743,6 +743,117 @@ def test_margin_content_and_wide_columns(tmp_path: Path) -> None:
     assert any("reference-location: block is not read" in w for w in s.warnings)
 
 
+def test_notebook_cell_options_for_figures_tables_and_columns() -> None:
+    "`fig-cap`, `fig-alt`, `fig-align`, `tbl-cap`, `column` and `layout-ncol` work; each cell still has one cell-code and each output one cell-output."
+    png = {"output_type": "display_data", "data": {"image/png": "iVBORw0KGgo=", "text/plain": "<Figure>"}, "metadata": {}}
+    tbl = {"output_type": "execute_result", "data": {"text/html": "<table><tr><td>1</td></tr></table>"}, "metadata": {}}
+    cells = [
+        ("#| label: fig-one\n#| fig-cap: A caption\n#| fig-alt: Alt text\n#| fig-align: left\nplot()", [png]),
+        ("#| tbl-cap: A table\ndf", [tbl]),
+        ("#| column: margin\nplot()", [png]),
+        ("#| layout-ncol: 2\n#| fig-cap: [One, Two]\nplot(); plot()", [png, png]),
+        ("plain()", [png]),
+    ]
+    nb = {"nbformat": 4, "metadata": {}, "cells": [{"cell_type": "code", "source": c, "outputs": o, "metadata": {}} for c, o in cells]}
+    _, body = notebook.to_markdown(json.dumps(nb))
+    out = md(body)
+    assert out.count("cell-code") == 5 and out.count("cell-output ") == 6
+    assert '<div class="quarto-figure quarto-figure-left">' in out and '<img alt="Alt text" src="data:image/png' in out
+    assert "<figcaption>A caption</figcaption>" in out and "<figcaption>One</figcaption>" in out and "<figcaption>Two</figcaption>" in out
+    assert '<table>\n<caption>A table</caption>' in out
+    assert '<div class="column-margin">\n<div class="cell-output' in out and 'layout-ncol="2"' in out and "column-margin column-margin" not in out
+    plain = out[out.index('id="cell-4"'):]
+    assert "quarto-figure" not in plain and '<img src="data:image/png;base64,iVBORw0KGgo=" class="img-fluid">' in plain
+    assert "quarto-layout-panel" in out
+
+
+def test_notebook_cells_fold_and_number_only_when_they_ask() -> None:
+    "A cell's own `code-fold`, `code-summary`, `code-line-numbers` and `code-overflow` reach its code; other cells are as before."
+    cells = ["#| code-fold: true\n#| code-summary: Show it\nx = 1", "#| code-line-numbers: true\n#| code-overflow: wrap\nx = 1\ny = 2", "plain = 1"]
+    nb = {"nbformat": 4, "metadata": {}, "cells": [{"cell_type": "code", "source": c, "outputs": [], "metadata": {}} for c in cells]}
+    out = md(notebook.to_markdown(json.dumps(nb))[1])
+    assert out.count("cell-code") == 3 and out.count("<details") == 1 and "<summary>Show it</summary>" in out
+    assert "number-lines" in out and "code-overflow-wrap" in out
+    plain = out[out.index('id="cell-2"'):]
+    assert "<details" not in plain and "number-lines" not in plain and "code-overflow" not in plain
+    page = md("```{.python .cell-code}\nx = 1\n```\n", code_fold="true", code_line_numbers="true")
+    assert "<details" not in page and "number-lines" not in page  # the page's options never reach a notebook's cells
+
+
+def test_no_key_is_ignored_silently(tmp_path: Path) -> None:
+    "A key smalldocs does not read is a warning, down to nested keys and list entries; front matter warns only for Quarto's options."
+    cfg = """
+    project:
+      type: website
+      execute-dir: project
+    website:
+      title: T
+      issue-url: https://x
+      navbar:
+        weird: 1
+        logo: {path: logo.png, alt: Home}
+        left:
+          - href: index.md
+            target: _blank
+            bogus: 2
+      sidebar:
+        - contents:
+            - section: S
+              contents: [{href: index.md, nope: 3}]
+      open-graph: {image: x.png}
+    format:
+      html:
+        highlight-style: github
+        freeze: auto
+    execute:
+      echo: false
+      cache: true
+    """
+    site = write(tmp_path, {
+        "_quarto.yml": cfg,
+        "index.md": "---\ntitle: Hi\ncode-tools: true\njupyter: python3\nmy-own-key: 1\nlisting: {contents: '*.md', zzz: 1}\n---\n# Hi\n",
+        "sub/_metadata.yml": "abstract: An abstract\n",
+        "sub/a.md": "# A\n",
+        "logo.png": "png\n",
+    })  # fmt: skip
+    s = build(site, quiet=True)
+    w = "\n".join(s.warnings)
+    for line in [
+        "project.execute-dir is ignored: smalldocs runs no code", "unknown key website.issue-url", "unknown key website.navbar.weird",
+        "unknown key website.navbar.left[0].bogus", "unknown key website.sidebar[0].contents[0].contents[0].nope",
+        "unknown key website.open-graph.image", "format.html.highlight-style is ignored", "index.md: code-tools is not read by smalldocs",
+        "index.md: jupyter is ignored: smalldocs runs no code", "index.md: listing.zzz is not read by smalldocs",
+        "sub/_metadata.yml: abstract is not read by smalldocs", "execute.cache is ignored: smalldocs runs no code",
+        "format.html.freeze is ignored: smalldocs runs no code",
+    ]:  # fmt: skip
+        assert line in w, line
+    assert "my-own-key" not in w and "target" not in w and "logo" not in w
+    assert '<img src="logo.png" alt="Home"' in (s.out / "index.html").read_text()
+
+
+def test_review_findings_for_0_3_0(tmp_path: Path) -> None:
+    "Lists, superscripts and notebooks keep what they rendered before; odd values give warnings, not crashes."
+    assert md("<pre>\n\na. alpha\nb. beta\n</pre>\n").count("a. alpha") == 1
+    assert "a. code" in md("1. Step\n\n        a. code\n") and "<ol type" not in md("1. Step\n\n        a. code\n")
+    two = md("1. one\n2. two\n\na. x\nb. y\n")
+    assert two.count("<ol") == 2 and '<ol type="a">' in two
+    assert md("A^[1]B^[2]\n").count('class="footnote-ref"') == 2
+    assert 'fig-align' not in md("![](x.png){fig-align=left}\n")
+    svg = {"output_type": "display_data", "data": {"image/svg+xml": "\n<svg></svg>\n"}, "metadata": {}}
+    nb = {"nbformat": 4, "metadata": {}, "cells": [{"cell_type": "code", "source": "x", "outputs": [svg], "metadata": {}}]}
+    assert "<div class=\"cell-output cell-output-display\">\n\n<svg></svg>\n\n</div>" in notebook.to_markdown(json.dumps(nb))[1]
+    cfg = SITE_YML.replace("website:\n", "website:\n  open-graph: true\n  sidebar:\n    background: [a]\n    alignment: {x: 1}\n    header: '[home](index.md)'\n    contents: [index.md, sub/p.md]\n")
+    site = write(tmp_path, {"_smalldocs.yml": cfg + "backgroundcolor: '#fdf6e3'\nmax-width: 900px\n", "index.md": "# Home\n", "sub/p.md": "# P\n",
+                            "sub/_metadata.yml": "abstract: x\n", "sub/q.md": "# Q\n"})  # fmt: skip
+    s = build(site, quiet=True)
+    p = (s.out / "sub/p.html").read_text()
+    assert '<meta property="og:title" content="P">' in p and 'href="../index.html">home</a>' in p
+    assert "html:not(.quarto-dark) { --bs-body-bg: #fdf6e3;" in p and "#quarto-content.quarto-container { --sd-body-width: 900px; }" in p
+    w = "\n".join(s.warnings)
+    assert "sidebar.background: ['a'] is not used" in w and "sidebar.alignment" in w
+    assert w.count("sub/_metadata.yml: abstract is not read") == 1
+
+
 def test_shortcodes(tmp_path: Path) -> None:
     "`include`, `meta`, `var` and `env` are replaced; code blocks and escaped shortcodes are left alone."
     write(

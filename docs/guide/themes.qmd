@@ -194,6 +194,30 @@ The stylesheet of smalldocs lays out the navbar, the sidebar, the table of conte
 the listings. It uses only those variables. So each part of the page gets the colours of the theme,
 in the light theme and in the dark theme.
 
+## Fonts and colours from options
+
+These options of a page change the fonts, the colours and the width of the theme. Set them at the top
+level of `_smalldocs.yml`, in a `_metadata.yml` file, or in front matter:
+
+```yaml
+mainfont: "Georgia, serif"   # the font of the text
+monofont: "Menlo, monospace" # the font of code
+fontsize: 16px               # the size of 1rem; 17px if you set none
+linestretch: 1.6             # the height of a line of text
+linkcolor: "#1a5fb4"         # the colour of links
+backgroundcolor: "#fdfdf8"   # the colour of the page
+fontcolor: "#222222"         # the colour of the text
+max-width: 900px             # the width of the text; 760px if you set none
+```
+
+smalldocs writes each value into a CSS variable of Bootstrap or of smalldocs, after its own stylesheet
+and before your `css`. Write `linkcolor`, `backgroundcolor` and `fontcolor` as a hex colour such as
+`#1a5fb4`, or as `rgb()`. Bootstrap needs the red, green and blue parts of the colour of links. The
+build leaves out a value with `<`, `>`, `{`, `}`, `;` or a backslash, and gives a warning.
+
+The colours apply to the light theme and to the dark theme. With two themes, set the colours in your
+own CSS instead, under `html.quarto-dark` for the dark theme.
+
 ## Your own CSS
 
 ```yaml

@@ -17,8 +17,8 @@ from urllib.parse import quote, unquote
 import yaml
 
 from . import extensions, layout, listing, shortcodes
-from .config import PAGE_EXTS, BuildError, Project, as_list, dir_metadata, filter_paths, glob_match, html_format, load, merge
-from .markdown import render, split_front_matter
+from .config import PAGE_EXTS, BuildError, Project, as_list, check_page, dir_metadata, filter_paths, glob_match, html_format, load, merge, read_yaml
+from .markdown import page_options, render, split_front_matter
 from .notebook import to_markdown
 
 ASSETS = Path(__file__).parent / "assets"
@@ -50,6 +50,7 @@ class Page:
         return parse_date(self.meta.get("date"), self.mtime)
 
     mtime: float = 0.0  # When the source last changed
+    draft: bool = False  # Whether it is a draft that `draft-mode` keeps: `visible` or `unlinked`
 
 
 def parse_date(
@@ -124,6 +125,7 @@ class Site:
         self.broken: list[tuple[str, str]] = []
         self.symbols: dict[str, str] = {}
         self._themes: list[ThemeFile] | None = None
+        self._metadata_checked: set[PurePosixPath] = set()  # the folders whose _metadata.yml has been checked
 
     # ------------------------------------------------------------ messages
 
@@ -196,7 +198,17 @@ class Site:
                 front, body = split_front_matter(text)
         except (yaml.YAMLError, ValueError, UnicodeDecodeError) as e:
             raise BuildError(f"{src}: {e}") from e
-        opts = merge(merge(self.project.html_options(), dir_metadata(self.project, Path(src))), front)
+        folder = dir_metadata(self.project, Path(src))
+        for w in check_page(front, str(src)):
+            self.warn(w)
+        for d in [PurePosixPath(*src.parts[:k]) for k in range(1, len(src.parts))]:  # each _metadata.yml above the page, once
+            f = self.root / d / "_metadata.yml"
+            if f.is_file() and d not in self._metadata_checked:
+                self._metadata_checked.add(d)
+                meta = read_yaml(f)
+                for w in check_page(meta if isinstance(meta, dict) else {}, f"{d.as_posix()}/_metadata.yml"):
+                    self.warn(w)
+        opts = merge(merge(self.project.html_options(), folder), front)
         html = html_format(front.get("format"))[1]
         if isinstance(html, dict):
             opts = merge(opts, html)
@@ -327,6 +339,7 @@ class Site:
             "cell_defaults": cell_defaults(m),
             "reference_location": m.get("reference-location"),
             "fig_cap_location": m.get("fig-cap-location") or m.get("cap-location"),
+            **page_options(m),
         }
         for key, values in (("reference-location", ("document", "margin")), ("fig-cap-location", ("bottom", "margin")), ("cap-location", ("bottom", "margin"))):
             if m.get(key) is not None and m[key] not in values:
@@ -339,6 +352,34 @@ class Site:
         page.env = env
         if env.get("unrun"):
             self.warn(f"{page.src}: {len(env['unrun'])} executable cell(s) shown but not run; smalldocs runs no code")
+
+    def draft_mode(self) -> str:  # `gone`, `unlinked` or `visible`
+        "Read `website.draft-mode`: `gone` leaves drafts out, `unlinked` builds them with no links to them, `visible` builds them as other pages."
+        mode = self.project.website.get("draft-mode") or "gone"
+        if mode not in ("gone", "unlinked", "visible"):
+            self.warn(f"website.draft-mode: {mode} is not read; smalldocs reads gone, unlinked and visible")
+            return "gone"
+        return mode
+
+    def is_draft(
+        self,
+        page: Page,  # A page that has been read
+    ) -> bool:  # Whether the page is a draft
+        "Say whether a page is a draft: `draft: true` in its options, or its path in `website.drafts`."
+        if page.meta.get("draft") is True:
+            return True
+        for d in as_list(self.project.website.get("drafts")):
+            d = str(d).lstrip("/")
+            if str(page.src) == d or (is_glob(d) and glob_match(str(page.src), d)):
+                return True
+        return False
+
+    def hidden(
+        self,
+        page: Page,  # A page of the site
+    ) -> bool:  # Whether the navigation, listings, search, the sitemap and feeds leave the page out
+        "Say whether a page is an unlinked draft, which is built but which nothing lists."
+        return page.draft and self.draft_mode() == "unlinked"
 
     def check_output(self) -> None:
         "Refuse an output folder that a build must not empty: the project, a folder above it, or a folder that is not a built site."
@@ -365,10 +406,13 @@ class Site:
             build_from_config(self.project)
         self.run_scripts("pre-render", sources)
         sources = self.discover()  # pre-render may write pages, as apidocs.py does
+        mode = self.draft_mode()
         for src in sources:
             page = self.read(src)
-            if page.meta.get("draft") is True:
-                continue
+            if self.is_draft(page):
+                if mode == "gone":
+                    continue
+                page.draft = True
             self.pages[src] = page
         if not self.pages:
             raise BuildError(f"no pages to render in {self.root}")
@@ -540,7 +584,7 @@ class Site:
         "Write `search.json`: one entry for each section of each page, as Quarto's search reads."
         entries = []
         for page in self.pages.values():
-            if page.meta.get("search") is False:
+            if page.meta.get("search") is False or self.hidden(page):
                 continue
             for sec in page.env.get("search", []):
                 text = re.sub(r"<[^>]+>", " ", sec["text"])
@@ -556,6 +600,8 @@ class Site:
         base = base.rstrip("/") + "/"
         rows = []
         for page in self.pages.values():
+            if self.hidden(page):
+                continue
             mod = dt.datetime.fromtimestamp(page.mtime, dt.UTC).strftime("%Y-%m-%dT%H:%M:%SZ")
             rows.append(f"  <url>\n    <loc>{html.escape(base + quote(str(page.out)))}</loc>\n    <lastmod>{mod}</lastmod>\n  </url>")
         xml = '<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n' + "\n".join(rows) + "\n</urlset>\n"

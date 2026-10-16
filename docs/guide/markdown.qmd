@@ -10,7 +10,8 @@ Markdown. It also reads some additions to Markdown, which this page describes:
 - front matter, the options of the page at its top
 - attributes, which give an id, classes or a width to a heading, a link or a picture
 - divs, which are blocks with their own classes, and the callouts and tabs made from them
-- figures, maths, diagrams and raw HTML
+- lists with letters, figures, table captions, maths, diagrams and raw HTML
+- content that only some builds show
 - shortcodes, which put other text into the page
 
 Each section below shows the source of a feature, and then the result.
@@ -57,11 +58,44 @@ Footnotes get numbers[^1]. Text can be ~~struck out~~, and `code` keeps its own 
 
 [^1]: A footnote goes to the end of the page.
 
+A subscript goes between tildes, and a superscript goes between carets. So `H~2~O` shows H~2~O, and
+`x^2^` shows x^2^. A subscript or a superscript cannot hold a space. To put a space in one, write a
+backslash before the space, as in `P~a\ b~`. Two tildes on each side still strike text out.
+
 Term
 : A definition list gives each term its definition.
 
 - [x] A task list
 - [ ] with boxes
+
+## Lists
+
+A numbered list can count with letters or with roman numerals. Write each item with a letter or a numeral,
+and then a period or a parenthesis:
+
+```markdown
+a. One
+b. Two
+
+i) First
+ii) Second
+
+(c) A list can start at a letter other than a.
+(d) And it goes on from there.
+```
+
+a. One
+b. Two
+
+i) First
+ii) Second
+
+(c) A list can start at a letter other than a.
+(d) And it goes on from there.
+
+A capital letter with a period needs two spaces after it, as in `A.  Text`. With one space, the line is
+text, so a name such as "B. Smith" at the start of a line stays as it is. The same rule holds for the
+capital roman numerals `I.`, `V.` and `X.`.
 
 ## Headings and attributes
 
@@ -146,11 +180,20 @@ An important callout. A caution callout comes next.
 A caution with `appearance="simple"`.
 :::
 
+The attribute `appearance` takes `default`, `simple` or `minimal`, and `icon=false` removes the icon. To
+set them for each callout of a page, use the options `callout-appearance` and `callout-icon` in the front
+matter or in the config. The attributes of one callout still win over the options:
+
+```yaml
+callout-appearance: simple
+callout-icon: false
+```
+
 ## Tabs
 
 A tabset is a group of tabs. In a div with the class `panel-tabset`, each heading becomes a tab:
 
-::: {.panel-tabset}
+::: {.panel-tabset group="language"}
 ## Python
 
 ```python
@@ -168,6 +211,33 @@ for name in Ann Bo; do echo "Hello, $name!"; done
 ## Prose
 
 A tab can hold any Markdown.
+:::
+
+Tabsets with the same `group` attribute switch together. If you choose the tab "Shell" in one tabset,
+each other tabset of the group shows its tab "Shell" too. The browser keeps the choice for the next page
+that has the group. Click a tab below, and then look at the tabset above it:
+
+```markdown
+::: {.panel-tabset group="language"}
+## Python
+...
+## Shell
+...
+:::
+```
+
+::: {.panel-tabset group="language"}
+## Python
+
+```python
+print("Hello from a tabset of the group language.")
+```
+
+## Shell
+
+```bash
+echo "Hello from a tabset of the group language."
+```
 :::
 
 ## Code
@@ -212,6 +282,56 @@ A cell can start with option lines that begin with `#|`. smalldocs removes these
 cell for `#| echo: false` or `#| include: false`. To hide every cell of a page, set `echo: false` in its
 front matter.
 
+### Line numbers, long lines and folded code
+
+To number the lines of a code block, give it the attribute `code-line-numbers="true"`. To number the lines
+of every block of a page, set the option `code-line-numbers: true`. A link to a line, such as `#cb1-2`,
+goes to that line:
+
+```{.python code-line-numbers="true"}
+def area(width: float, height: float) -> float:
+    "Give the area of a rectangle."
+    return width * height
+```
+
+A long line scrolls to the side. To wrap it onto the next line, set `code-overflow: wrap` for the page,
+or give one block the attribute `code-overflow="wrap"`:
+
+```{.python code-overflow="wrap"}
+message = "This line is too long for the column of text, so it wraps onto the next line and does not scroll to the side."
+```
+
+To fold the code of a cell, set `code-fold: true`. The page then shows a line with the word "Code", and
+the code opens when you click the line. With `code-fold: show`, the code starts open. `code-summary`
+gives other words for the line. A cell can set both options for itself in its `#|` lines. smalldocs folds
+only cells, and not other code blocks:
+
+````markdown
+```{python}
+#| code-fold: true
+#| code-summary: "Show the code"
+import math
+
+print(math.pi)
+```
+````
+
+The folded cell looks like this:
+
+<details class="code-fold">
+<summary>Show the code</summary>
+
+```python
+import math
+
+print(math.pi)
+```
+
+</details>
+
+A cell of a notebook takes these options only from its own `#|` lines. The options of the page do not
+apply to it. See [Folded code and line numbers](notebooks.ipynb#folded-code-and-line-numbers).
+
 ## Raw HTML
 
 HTML in the Markdown goes into the page unchanged. A block marked `{=html}` also goes in unchanged:
@@ -227,6 +347,41 @@ caption:
 
 ![The smalldocs mark, drawn as an SVG.](../images/mark.svg){width=120px}
 
+A figure starts at the left of the column, and its picture is in the centre of the figure, over the
+caption. Quarto puts the whole figure in the centre of the column. The attribute `fig-align` puts the
+figure at the `left` or the `right`. The option `fig-align` does the same for each figure of a page.
+
+A screen reader reads the alt text of a picture. The attribute `fig-alt` gives an alt text that differs from the caption:
+
+```markdown
+![The mark at the right.](../images/mark.svg){width=80px fig-align="right" fig-alt="A small logo."}
+```
+
+![The mark at the right.](../images/mark.svg){width=80px fig-align="right" fig-alt="A small logo."}
+
+### Figures side by side
+
+A div with `layout-ncol` puts its blocks in columns. Each block, such as a figure or a paragraph, goes in
+a cell of its own. `layout-nrow` gives the number of rows. `layout` gives the width of each cell in each
+row. So `layout="[[1,1],[1]]"` makes two cells in the first row and one wide cell in the second.
+smalldocs does not read a negative width, which Quarto reads as an empty space.
+
+On a phone, the cells go one under the other:
+
+```markdown
+::: {layout-ncol=2}
+![Left](../images/mark.svg){width=60px}
+
+![Right](../images/mark.svg){width=60px}
+:::
+```
+
+::: {layout-ncol=2}
+![Left](../images/mark.svg){width=60px}
+
+![Right](../images/mark.svg){width=60px}
+:::
+
 ## Tables
 
 A table has a row of headings, a row of dashes, and a row for each line of the table. A `|` goes
@@ -239,6 +394,67 @@ between the cells:
 | `\|` in a cell | `\\|` | A backslash before it |
 
 smalldocs does not read the grid tables of Pandoc, which are drawn with `+` and `-`.
+
+### Table captions
+
+A paragraph that starts with `: ` or `Table: ` is the caption of the table directly before it or directly
+after it. Attributes in braces at the end of the caption belong to the table. The classes `.striped`,
+`.hover`, `.bordered` and `.sm` give the Bootstrap styles of the same names:
+
+```markdown
+| Shortcode | Kind |
+|---|---|
+| `kbd` | Inline |
+| `video` | Block |
+
+: Two shortcodes. {#tbl-shortcodes .striped}
+```
+
+| Shortcode | Kind |
+|---|---|
+| `kbd` | Inline |
+| `video` | Block |
+
+: Two shortcodes. {#tbl-shortcodes .striped}
+
+A caption with an id, such as `#tbl-shortcodes`, puts the table in a figure with that id. A link to
+`#tbl-shortcodes` goes to the table. smalldocs does not number tables. The caption goes above the table.
+The option `tbl-cap-location` moves it to the `bottom`, or into the `margin`. The attribute
+`tbl-cap-location` in the braces does the same for one table.
+
+## Content for some builds only
+
+smalldocs shows or leaves out a div or a span with the class `.content-visible` or `.content-hidden`, by
+these attributes:
+
+| Attribute | Holds when |
+|---|---|
+| `when-format="html"` | The page is built as HTML. smalldocs builds only HTML, so `html`, `html:js` and `html5` hold, and other formats, such as `pdf`, do not |
+| `when-meta="key"` | The option of the page with that key is true. A key such as `book.draft` reads a nested option |
+| `when-profile="name"` | The environment variable `QUARTO_PROFILE`, a list of names with commas, has the name |
+| `unless-format`, `unless-meta`, `unless-profile` | The same test does not hold |
+
+smalldocs shows a `.content-visible` div when all its attributes hold. It leaves out a `.content-hidden`
+div when all its attributes hold. Content that it leaves out is not in the HTML, and the search box does not
+find it:
+
+```markdown
+::: {.content-visible when-format="html"}
+smalldocs shows this paragraph.
+:::
+
+::: {.content-visible when-format="pdf"}
+smalldocs leaves this paragraph out.
+:::
+```
+
+::: {.content-visible when-format="html"}
+smalldocs shows this paragraph.
+:::
+
+::: {.content-visible when-format="pdf"}
+smalldocs leaves this paragraph out.
+:::
 
 ## The margin and wide content
 
@@ -340,6 +556,10 @@ replaces these shortcodes everywhere except in code blocks:
 | `{{</* meta title */>}}` | An option of the page: {{< meta title >}} |
 | `{{</* var version */>}}` | A value from `_variables.yml`, a YAML map of names to values at the root of the project |
 | `{{</* env HOME */>}}` | An environment variable |
+| `{{</* kbd Shift-Ctrl-P mac=Shift-Command-P */>}}` | Keys to press: {{< kbd Shift-Ctrl-P mac=Shift-Command-P >}}. `mac`, `win` and `linux` give the keys on each system, which show when the pointer is on the keys |
+| `{{</* video https://www.youtube.com/watch?v=ID */>}}` | A video. A YouTube, Vimeo or Brightcove address becomes a player from that site. A file becomes a `<video>` with controls, and smalldocs copies the file into the site. `title`, `width`, `height`, `aspect-ratio` and `start` set the video |
+| `{{</* lipsum 2 */>}}` | Two paragraphs of placeholder text |
+| `{{</* placeholder 120 40 */>}}` | A grey box of 120 by 40 pixels, in place of a picture: {{< placeholder 120 40 >}} |
 
 To show a shortcode as it is, put `/*` and `*/` inside its braces. The left column of the table does
 so in its source.

@@ -127,7 +127,7 @@ def gather(
         pats.append(target)
     found = []
     for src, p in site.pages.items():
-        if p is page:
+        if p is page or site.hidden(p):
             continue
         if any(glob_match(str(src), pat) for pat in pats):
             found.append(p)
