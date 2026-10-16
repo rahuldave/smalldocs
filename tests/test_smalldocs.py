@@ -674,6 +674,75 @@ def test_a_site_without_extensions_is_unchanged(tmp_path: Path) -> None:
     assert tree(a) == tree(b) and not a.warnings and not b.warnings
 
 
+def test_side_notes_with_reference_location_margin() -> None:
+    "Each footnote goes in the margin before the block that cites it first, with Quarto's markup; a note that a note cites goes with it."
+    text = "Intro.\n\nA[^1] b[^1] c[^x].\n\n- d[^y]\n\n[^1]: One.\n\n    Two.\n[^x]: X cites[^y].\n[^y]: Y.\n"
+    env = {"reference_location": "margin"}
+    out = md(text, **env)
+    assert out.startswith('<p>Intro.</p>\n<div class="no-row-height column-margin column-container">\n<div id="fn1">\n<p><sup>1</sup>\u00a0One.</p>\n<p>Two.</p>\n</div>')
+    assert out.index('<div id="fn2">') < out.index('<div id="fn3">') < out.index("<p>A<a")
+    assert '<a href="#fn1" class="footnote-ref" id="fnref1" role="doc-noteref"><sup>1</sup></a>' in out and 'id="fnref1:1"' in out
+    assert "footnotes" not in out.replace("footnote-ref", "") and "footnote-backref" not in out and out.count('id="fn3"') == 1
+    assert '<section class="footnotes">' in md(text) and '<sup class="footnote-ref"><a href="#fn1" id="fnref1">[1]</a></sup>' in md(text)
+
+
+def test_side_notes_from_captions_titles_tabs_and_headings() -> None:
+    "No footnote is lost: notes cited in a caption, a callout title, a tab or a heading go in the margin, each in its place."
+    text = """
+    ![Cap[^cap]](x.png)
+
+    ::: {.callout-tip}
+    ## Tip[^tip]
+    Body.
+    :::
+
+    ::: {.panel-tabset}
+    ## One[^tab]
+    First.
+
+    ## Two
+    Second.
+    :::
+
+    ## Heading[^head]
+
+    After.
+
+    [^cap]: In a caption.
+    [^tip]: In a title.
+    [^tab]: In a tab.
+    [^head]: In a heading.
+    """
+    out = md(text, reference_location="margin")
+    for n, note in enumerate(["In a caption.", "In a title.", "In a tab.", "In a heading."], 1):
+        assert f'<div id="fn{n}">\n<p><sup>{n}</sup>\u00a0{note}</p>' in out, note
+    assert out.index('id="fn2"') < out.index('<div class="callout') and out.index('id="fn3"') < out.index('<div class="panel-tabset')
+    assert out.index("<h2") < out.index('id="fn4"') < out.index("<p>After.</p>") and out.index('<section id="heading"') < out.index('id="fn4"')
+    nested = md("::: {.column-margin}\n![In the margin](x.png)\n:::\n", fig_cap_location="margin")
+    assert "margin-caption" not in nested and "<figcaption>In the margin</figcaption>" in nested
+
+
+def test_margin_content_and_wide_columns(tmp_path: Path) -> None:
+    "Margin blocks, asides, margin captions and the column classes, as Quarto writes them; the page gets a margin column."
+    out = md("A [side]{.aside} b.\n\n![Cap](x.png)\n\n![M](m.png){.column-margin .border}\n\n::: {.column-page}\n![Wide](w.png)\n:::\n", fig_cap_location="margin")
+    assert '<span class="aside margin-aside">side</span>' in out
+    assert '<figure class="figure">\n<figcaption class="margin-caption">Cap</figcaption>\n<p><img alt="Cap"' in out
+    assert '<div class="quarto-figure quarto-figure-center column-margin">' in out and 'class="border img-fluid figure-img"' in out
+    assert "<figcaption>M</figcaption>" in out and "<figcaption>Wide</figcaption>" in out and out.count("margin-caption") == 1
+    assert "fig-cap-location" not in md("![C](x.png){fig-cap-location=margin}") and "margin-caption" in md("![C](x.png){fig-cap-location=margin}")
+    site = write(tmp_path, {
+        "_smalldocs.yml": "project:\n  type: website\nreference-location: block\n",
+        "index.md": "# Hi\n\nText.\n\n::: {.column-margin}\nNote.\n:::\n",
+        "plain.md": "# Plain\n\nText.\n",
+        "raw.md": "# Raw\n\n<div class=\"column-margin\">A raw note.</div>\n\nText.\n",
+    })  # fmt: skip
+    s = build(site, quiet=True)
+    assert 'class="quarto-container page-columns page-rows-contents page-layout-article has-margin"' in (s.out / "index.html").read_text()
+    assert "has-margin" not in (s.out / "plain.html").read_text()
+    assert "has-margin" in (s.out / "raw.html").read_text()
+    assert any("reference-location: block is not read" in w for w in s.warnings)
+
+
 def test_shortcodes(tmp_path: Path) -> None:
     "`include`, `meta`, `var` and `env` are replaced; code blocks and escaped shortcodes are left alone."
     write(

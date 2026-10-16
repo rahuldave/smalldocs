@@ -38,7 +38,7 @@ HTML_OPTIONS = {
     "title-block-banner", "grid", "lang", "fig-align", "code-fold", "code-tools", "html-math-method", "mainfont",
     "monofont", "fontsize", "linestretch", "linkcolor", "backgroundcolor", "fontcolor", "max-width", "callout-appearance",
     "callout-icon", "date-format", "author", "date", "title-prefix", "pagetitle", "description", "keywords",
-    "citations-hover", "footnotes-hover", "reference-location", "search", "comments", "license", "copyright",
+    "citations-hover", "footnotes-hover", "reference-location", "fig-cap-location", "cap-location", "search", "comments", "license", "copyright",
     "execute", "jupyter", "echo", "warning", "freeze", "minimal", "embed-resources", "self-contained", "df-print",
 }  # fmt: skip
 

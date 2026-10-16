@@ -1,0 +1,35 @@
+---
+title: smalldocs 0.2.0
+subtitle: Themes from git repositories, and notes in the margin
+date: 2026-10-16
+author: Rahul Dave
+categories: [release]
+image: ../images/mark.svg
+---
+
+A site can now use a theme from a git repository. `smalldocs add org/repo` copies the theme into the
+folder `_extensions/` of the project, and `theme: <name>` uses it. The same folder can hold a theme for
+Quarto, so one repository serves both tools. `smalldocs themes` lists the themes and where each came
+from. See [Themes](../guide/themes.qmd#a-theme-from-a-git-repository).
+
+[smalldocs-tufte](https://github.com/rahuldave/smalldocs-tufte) is the first such theme. It gives a
+site the look of Tufte CSS, in a light mode and a dark mode. Its
+[demo](https://rahuldave.com/smalldocs-tufte/) shows it.
+
+A page can now put content in the margin, as Quarto does:
+
+- `reference-location: margin` puts each footnote beside the paragraph that cites it.
+- A div with the class `.column-margin`, or a span with the class `.aside`, goes in the margin.
+- `fig-cap-location: margin` puts the caption of a figure beside it.
+- The classes `.column-page`, `.column-screen` and `.column-body-outset` make content wider than the
+  text.
+
+See [The margin and wide content](../guide/markdown.qmd#the-margin-and-wide-content).
+
+Other changes:
+
+- A site with a light theme and a dark theme starts in the mode that the browser prefers. The page
+  loads the right theme before it shows anything, so it does not flash the other theme first.
+- A theme file named `x.min.css` keeps its name in the site.
+- A theme can set the size of the text with the variable `--sd-root-font-size`.
+- In a `_quarto.yml`, `format: <name>-html` is read as `html`.

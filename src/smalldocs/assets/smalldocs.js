@@ -46,6 +46,33 @@
   } else markDark();
   window.addEventListener("load", markDark);
 
+  // ---- margin notes: beside their block on a wide screen, after it on a narrow one
+  const narrow = window.matchMedia ? window.matchMedia("(max-width: 991.98px)") : null;
+  // a note after a heading stays there: it belongs to the heading
+  const notes = $$(".column-container").map((n) => [n, n.nextElementSibling]).filter(([n, b]) => b && !/^H[1-6]$/.test((n.previousElementSibling || {}).tagName || ""));
+  const placeNotes = () => notes.forEach(([n, b]) => (narrow && narrow.matches ? b.after(n) : b.before(n)));
+  if (notes.length && narrow) { placeNotes(); if (narrow.addEventListener) narrow.addEventListener("change", placeNotes); }
+
+  // ---- hide the sidebar or the table of contents while margin or wide content passes under it, as Quarto does
+  const wide = $$(".column-margin, .margin-caption, .margin-aside, div.aside, [class*='column-page'], [class*='column-screen'], [class*='column-body-outset']");
+  const panels = $$("#quarto-margin-sidebar, #quarto-sidebar");
+  if (wide.length && panels.length) {
+    const hit = (a, b) => a.width && b.width && a.left < b.right && b.left < a.right && a.top < b.bottom && b.top < a.bottom;
+    let queued = false;
+    const check = () => {
+      queued = false;
+      panels.forEach((p) => {
+        p.classList.remove("sd-overlapped");
+        const r = p.getBoundingClientRect();
+        p.classList.toggle("sd-overlapped", wide.some((w) => !p.contains(w) && hit(r, w.getBoundingClientRect())));
+      });
+    };
+    const queue = () => { if (!queued) { queued = true; requestAnimationFrame(check); } };
+    window.addEventListener("scroll", queue, { passive: true });
+    window.addEventListener("resize", queue);
+    queue();
+  }
+
   // ---- the sidebar on narrow screens
   const sidebar = $("#quarto-sidebar"), glass = $("#quarto-sidebar-glass");
   const toggleSidebar = (open) => {

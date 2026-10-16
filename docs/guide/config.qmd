@@ -138,6 +138,8 @@ project. It reads `order` only from the front matter of a page.
 | `css` | Your stylesheets, after the stylesheet of the theme | None |
 | `toc` | The table of contents at the right of the page | Off |
 | `toc-depth` | The deepest level of heading in the table of contents | `3` |
+| `reference-location` | `margin` puts each footnote in the margin, beside the text that cites it. See [Writing pages](markdown.qmd) | `document`: the end of the page |
+| `fig-cap-location` | `margin` puts the caption of each figure in the margin. `cap-location` does the same | `bottom` |
 | `toc-title` | The heading above the table of contents | `On this page` |
 | `number-sections` | Numbers before the headings | Off |
 | `code-copy` | The copy button on code | On |

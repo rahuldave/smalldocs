@@ -240,6 +240,65 @@ between the cells:
 
 smalldocs does not read the grid tables of Pandoc, which are drawn with `+` and `-`.
 
+## The margin and wide content
+
+The margin is the column at the right of the text, where the table of contents is. A note in the
+margin stands beside the text that it belongs to. smalldocs reads the classes of Quarto for it.
+
+::: {.column-margin}
+This note is in a `.column-margin` div. It stands beside the paragraph below it.
+:::
+
+A div with the class `.column-margin` goes in the margin. It starts level with the next paragraph,
+and it can hold any Markdown:
+
+```markdown
+::: {.column-margin}
+A note in the margin.
+:::
+```
+
+A span with the class `.aside` goes in the margin, level with its line. Write it as
+`[a short note]{.aside}`, for example [a note from a span]{.aside} in this paragraph.
+
+### Footnotes in the margin
+
+To put each footnote in the margin, set `reference-location` in the config or in the front matter:
+
+```yaml
+reference-location: margin
+```
+
+Each footnote then goes beside the paragraph that cites it first, and not to the end of the page. The
+links to the footnotes keep their anchors, `#fn1` and `#fnref1`, as in Quarto.
+
+### Captions in the margin
+
+To put the caption of each figure in the margin, set `fig-cap-location: margin`. For one figure,
+give the attribute `fig-cap-location=margin` to the picture. A figure with the
+class `.column-margin` goes in the margin itself, with its caption under it.
+
+### Content wider than the text
+
+A div with one of these classes is wider than the text:
+
+| Class | Width |
+|---|---|
+| `.column-body-outset` | A little wider than the text, on both sides |
+| `.column-page` | From a little left of the text to the right side of the margin |
+| `.column-page-inset` | A little narrower than `.column-page` |
+| `.column-screen` | The whole width of the window |
+| `.column-screen-inset` | The width of the window, less a small space at each side |
+| `.column-screen-inset-shaded` | The same, with a shaded background |
+
+Each class except `.column-page-inset` and `.column-screen-inset-shaded` also has a `-left` and a
+`-right` form, which is wide on one side only. A figure in such a div fills its width if the figure
+has `width=100%`.
+
+On a narrow screen, the content of the margin goes into the text, after the paragraph it belongs to.
+Content for a wide column takes the width of the text. If margin or wide content passes under the
+sidebar or the table of contents, that panel is hidden until the content has passed.
+
 ## Maths
 
 Inline maths goes between dollars, as in $e^{i\pi} + 1 = 0$. Display maths goes between double dollars:

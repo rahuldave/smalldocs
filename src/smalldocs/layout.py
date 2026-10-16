@@ -780,7 +780,7 @@ class Layout:
             cls += ["nav-sidebar", self.sidebar.get("style", "floating")]
         if self.nav.navbar is not None:
             cls.append("nav-fixed")
-        if not has_toc and not self.page.env.get("margin"):
+        if not has_toc and not self.page.env.get("margin") and not self.page.env.get("margin_notes"):
             cls.append("fullcontent")
         if self.page.env.get("listing"):
             cls.append("listing")
@@ -797,7 +797,7 @@ class Layout:
         header = self.navbar() + self.secondary_nav()
         content_cls = f"quarto-container page-columns page-rows-contents page-layout-{layout_name}"
         content_cls += " has-sidebar" if self.sidebar else ""
-        content_cls += " has-margin" if margin else ""
+        content_cls += " has-margin" if margin or page.env.get("margin_notes") else ""
         main = Main(
             *self.title_block(),
             Safe(page.html),

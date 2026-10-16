@@ -16,6 +16,7 @@ from mdit_py_plugins.attrs import attrs_plugin
 from mdit_py_plugins.deflist import deflist_plugin
 from mdit_py_plugins.dollarmath import dollarmath_plugin
 from mdit_py_plugins.footnote import footnote_plugin
+from mdit_py_plugins.footnote.index import render_footnote_ref as FOOTNOTE_REF
 from mdit_py_plugins.tasklists import tasklists_plugin
 
 from .highlight import highlight
@@ -45,6 +46,9 @@ class Attrs:
         for k, v in self.kv.items():
             out += f' {html.escape(k)}="{html.escape(v)}"'
         return out
+
+
+MARGIN_HTML = re.compile(r"""class=["'][^"']*\b(column-margin|aside)\b""")  # raw HTML that puts content in the margin
 
 
 def parse_attrs(
@@ -391,12 +395,99 @@ class Rules:
     ) -> None:  # Nothing; the tokens are marked in place
         "An image alone in its paragraph, with alt text, becomes a figure with a caption, as Pandoc's implicit figures."
         toks = state.tokens
+        wide: list[bool] = []  # for each open div, whether it is wide or in the margin; a figure in it keeps its caption below
         for i in range(len(toks) - 2):
+            if toks[i].type == "div_open":
+                a = (toks[i].meta or {}).get("attrs")
+                wide.append(any(c.startswith(("column-page", "column-screen", "column-body-outset", "column-margin")) or c == "aside" for c in (a.classes if a else [])))
+            elif toks[i].type == "div_close" and wide:
+                wide.pop()
             if toks[i].type == "paragraph_open" and toks[i + 1].type == "inline" and toks[i + 2].type == "paragraph_close":
                 kids = [c for c in toks[i + 1].children or [] if not (c.type == "text" and not c.content.strip())]
                 if len(kids) == 1 and kids[0].type == "image" and kids[0].children:
-                    toks[i].meta = {**(toks[i].meta or {}), "figure": kids[0]}
-                    kids[0].meta = {**(kids[0].meta or {}), "figure": True}
+                    img = kids[0]
+                    classes = (img.attrGet("class") or "").split()
+                    cols = [c for c in classes if c.startswith("column-")]
+                    if cols:
+                        rest = [c for c in classes if c not in cols]
+                        img.attrSet("class", " ".join(rest)) if rest else img.attrs.pop("class")
+                    where = img.attrs.pop("fig-cap-location", None) or state.env.get("fig_cap_location")
+                    margin_cap = where == "margin" and not cols and not any(wide)
+                    if margin_cap or "column-margin" in cols:
+                        state.env["margin_notes"] = True
+                    toks[i].meta = {**(toks[i].meta or {}), "figure": img, "columns": cols, "margin_caption": margin_cap}
+                    img.meta = {**(img.meta or {}), "figure": True}
+
+    def margins(
+        self,
+        state: StateCore,  # The core parser's state
+    ) -> None:  # Nothing; the tokens and `env` are changed in place
+        "Note margin content; with `reference-location: margin`, put each footnote in the margin beside the block that cites it."
+        env, toks = state.env, state.tokens
+        for t in toks:
+            a = (t.meta or {}).get("attrs") if t.type == "div_open" else None
+            if a and ("column-margin" in a.classes or "aside" in a.classes):
+                env["margin_notes"] = True
+            if t.type == "html_block" and MARGIN_HTML.search(t.content):
+                env["margin_notes"] = True
+            for c in (t.children or []) if t.type == "inline" else []:
+                if c.type == "html_inline" and MARGIN_HTML.search(c.content):
+                    env["margin_notes"] = True
+                if c.type == "span_open" and "aside" in (c.attrGet("class") or "").split():
+                    c.attrSet("class", c.attrGet("class") + " margin-aside")
+                    env["margin_notes"] = True
+        if env.get("reference_location") != "margin":
+            return
+        start = next((i for i, t in enumerate(toks) if t.type == "footnote_block_open"), None)
+        if start is None:
+            return
+        end = next(i for i in range(start, len(toks)) if toks[i].type == "footnote_block_close")
+        bodies: dict[int, list[Token]] = {}
+        k = start + 1
+        while k < end:
+            j = next(m for m in range(k, end) if toks[m].type == "footnote_close")
+            bodies[toks[k].meta["id"]] = [t for t in toks[k + 1 : j] if t.type != "footnote_anchor"]
+            k = j + 1
+        del toks[start : end + 1]
+
+        def refs(tokens: list[Token]) -> list[int]:  # The footnotes that some tokens cite, in order, also in the caption of an image
+            out = []
+            for t in tokens:
+                for c in t.children or []:
+                    out += [c.meta["id"]] if c.type == "footnote_ref" else refs([c])
+            return out
+
+        placed: set[int] = set()
+        notes: dict[int, list[int]] = {}  # the index of a top-level block, and the footnotes it cites first
+        top = 0
+        for i, t in enumerate(toks):
+            if t.level == 0 and t.nesting >= 0:
+                top = i
+            for fid in refs([t]):
+                todo = [fid]
+                while todo:  # a footnote that a footnote cites goes in the same place
+                    f = todo.pop(0)
+                    if f not in placed and f in bodies:
+                        placed.add(f)
+                        notes.setdefault(top, []).append(f)
+                        todo += refs(bodies[f])
+        rest = [f for f in bodies if f not in placed]
+        if rest:  # a footnote cited only where the rule cannot see, such as raw HTML: at the end of the page, not lost
+            notes.setdefault(len(toks), []).extend(rest)
+        for i in sorted(notes, reverse=True):
+            at = i + 3 if i < len(toks) and toks[i].type == "heading_open" else i  # after a heading, so the note stays in its section
+            new = [raw('<div class="no-row-height column-margin column-container">\n')]
+            for fid in notes[i]:
+                body = bodies[fid]
+                first = next((t for t in body if t.type == "inline"), None)
+                if first is not None:
+                    mark = Token("html_inline", "", 0)
+                    mark.content = f"<sup>{fid + 1}</sup>\u00a0"
+                    first.children = [mark, *(first.children or [])]
+                new += [raw(f'<div id="fn{fid + 1}">\n'), *body, raw("</div>\n")]
+            new.append(raw("</div>\n"))
+            toks[at:at] = new  # before the block, so the note starts level with it
+        env["margin_notes"] = True
 
     def sections(
         self,
@@ -512,10 +603,13 @@ def paragraph_open(
     env: dict,  # The render environment
 ) -> str:  # The opening tag of the paragraph, or of the figure
     "Open a paragraph, or the figure that wraps a lone image."
-    fig = (tokens[idx].meta or {}).get("figure")
+    meta = tokens[idx].meta or {}
+    fig = meta.get("figure")
     if fig is None:
         return self.renderToken(tokens, idx, options, env)
-    return '<div class="quarto-figure quarto-figure-center">\n<figure class="figure">\n<p>'
+    cols = "".join(f" {c}" for c in meta.get("columns", []))
+    cap = f'<figcaption class="margin-caption">{self.renderInline(fig.children or [], options, env)}</figcaption>\n' if meta.get("margin_caption") else ""
+    return f'<div class="quarto-figure quarto-figure-center{cols}">\n<figure class="figure">\n{cap}<p>'
 
 
 def paragraph_close(
@@ -530,6 +624,8 @@ def paragraph_close(
     fig = (open_.meta or {}).get("figure") if open_ is not None else None
     if fig is None:
         return self.renderToken(tokens, idx, options, env)
+    if open_.meta.get("margin_caption"):
+        return "</p>\n</figure>\n</div>\n"
     cap = self.renderInline(fig.children or [], options, env)
     return f"</p>\n<figcaption>{cap}</figcaption>\n</figure>\n</div>\n"
 
@@ -751,6 +847,21 @@ def math_block(
     return f'<p><span class="math display">{math_renderer(tokens[idx].content.strip(), {"display_mode": True})}</span></p>\n'
 
 
+def footnote_ref(
+    self: RendererHTML,  # The renderer
+    tokens: Sequence[Token],  # The tokens of the page
+    idx: int,  # The index of the token to render
+    options: OptionsDict,  # The parser's options
+    env: dict,  # The render environment
+) -> str:  # The link to the footnote
+    "Link to a footnote: markdown-it's markup at the end of the page, Quarto's with `reference-location: margin`."
+    meta = tokens[idx].meta
+    if env.get("reference_location") != "margin":
+        return FOOTNOTE_REF(self, tokens, idx, options, env)
+    n, sub = meta["id"] + 1, meta.get("subId", 0)
+    return f'<a href="#fn{n}" class="footnote-ref" id="fnref{n}{f":{sub}" if sub else ""}" role="doc-noteref"><sup>{n}</sup></a>'
+
+
 def make_parser(
     extensions: str = "",  # Pandoc's reader with extensions, such as `markdown-tex_math_dollars-smart`
 ) -> MarkdownIt:  # The parser, with every rule in place
@@ -779,6 +890,7 @@ def make_parser(
         md.core.ruler.push("typography", rules.typography)  # before ids: Pandoc makes ids from the smart text
     md.core.ruler.push("ids", rules.ids)
     md.core.ruler.push("title", rules.title)
+    md.core.ruler.push("margins", rules.margins)  # before callouts and tabsets, which turn titles into raw HTML
     md.core.ruler.push("callouts", rules.callouts)
     md.core.ruler.push("tabsets", rules.tabsets)
     md.core.ruler.push("figures", rules.figures)
@@ -798,6 +910,7 @@ def make_parser(
         "table_close": table_close,
         "fence": fence,
         "code_block": code_block,
+        "footnote_ref": footnote_ref,
     }
     for k, f in render.items():
         md.add_render_rule(k, f)

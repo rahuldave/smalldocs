@@ -5,6 +5,7 @@
   --sd-margin-width: 240px;
   --sd-body-width: 760px;
   --sd-gap: 2.5rem;
+  --sd-outset: 2rem;
   --sd-code-bg: rgba(var(--bs-emphasis-color-rgb), .045);
   --sd-border: var(--bs-border-color);
   --sd-muted: var(--bs-secondary-color);
@@ -64,8 +65,13 @@ body { min-height: 100vh; display: flex; flex-direction: column; }
   grid-template-columns: [body] minmax(0, var(--sd-body-width));
   justify-content: center;
   column-gap: var(--sd-gap);
-  padding: 0 1.5rem;
+  padding: 0 var(--sd-pad);
+  overflow-x: clip;
+  /* the widths beside the body, so that wide content can reach the margin or the edges of the window */
+  --sd-pad: 1.5rem; --sd-left: 0px; --sd-right: 0px;
 }
+#quarto-content.has-sidebar { --sd-left: calc(var(--sd-sidebar-width) + var(--sd-gap)); }
+#quarto-content.has-margin { --sd-right: calc(var(--sd-margin-width) + var(--sd-gap)); }
 #quarto-content.has-margin { grid-template-columns: [body] minmax(0, var(--sd-body-width)) [margin] var(--sd-margin-width); }
 #quarto-content.has-sidebar { grid-template-columns: [sidebar] var(--sd-sidebar-width) [body] minmax(0, var(--sd-body-width)); }
 #quarto-content.has-sidebar.has-margin {
@@ -80,7 +86,13 @@ body.listing #quarto-content { --sd-body-width: 1000px; }
 body.docked #quarto-content { --sd-body-width: 900px; --sd-sidebar-width: 250px; }
 
 #quarto-sidebar { grid-column: sidebar; grid-row: 1; }
-main.content { grid-column: body; grid-row: 1; padding-top: 1.5rem; padding-bottom: 2rem; min-width: 0; }
+main.content {
+  grid-column: body; grid-row: 1; padding-top: 1.5rem; padding-bottom: 2rem; min-width: 0;
+  /* from the body to each edge of the window */
+  --sd-to-left: calc(var(--sd-pad) + max(0px, (100vw - 2 * var(--sd-pad) - var(--sd-left) - var(--sd-body-width) - var(--sd-right)) / 2) + var(--sd-left));
+  --sd-to-right: calc(var(--sd-pad) + max(0px, (100vw - 2 * var(--sd-pad) - var(--sd-left) - var(--sd-body-width) - var(--sd-right)) / 2) + var(--sd-right));
+}
+.page-layout-full main.content { --sd-to-left: calc(var(--sd-pad) + var(--sd-left)); --sd-to-right: calc(var(--sd-pad) + var(--sd-right)); }
 #quarto-margin-sidebar { grid-column: margin; grid-row: 1; }
 
 /* ---------------------------------------------------------------- sidebar */
@@ -189,7 +201,46 @@ main.content table { font-size: .95rem; }
 /* A table too wide for the page scrolls in its own box, and the page does not. */
 .sd-table { overflow-x: auto; }
 main.content blockquote { border-left: 4px solid var(--sd-border); padding: .25rem 1rem; color: var(--sd-muted); }
-.column-margin { float: right; clear: right; width: 30%; margin: 0 0 1rem 1rem; font-size: .875rem; color: var(--sd-muted); }
+/* ---------------------------------------------------------------- the margin and wide content, as Quarto's column classes */
+
+.column-margin, .margin-caption, .margin-aside, div.aside { font-size: .875rem; line-height: 1.4; color: var(--sd-muted); position: relative; }
+@media (min-width: 992px) {
+  /* With no margin column, such as margin content in raw HTML, a note floats at the right of the text. */
+  .column-margin, .margin-caption, .margin-aside, div.aside { float: right; clear: right; width: 30%; margin: 0 0 1rem 1rem; }
+  /* A note floats into the margin column, level with the block it stands before; notes stack and do not overlap. */
+  #quarto-content.has-margin :is(.column-margin, .margin-caption, .margin-aside, div.aside) {
+    width: var(--sd-margin-width); margin: 0 calc(-1 * (var(--sd-margin-width) + var(--sd-gap))) 1rem 0;
+  }
+  /* margin content inside margin content stays where it is */
+  #quarto-content .column-margin :is(.column-margin, .margin-caption, .margin-aside, div.aside) { float: none; width: auto; margin: 0 0 .5rem; }
+  span.margin-aside { display: block; }
+}
+.column-margin > :last-child, .column-container > div > :last-child { margin-bottom: 0; }
+.column-container > div + div { margin-top: .75rem; }
+.column-margin .quarto-figure, .column-margin figure { margin: 0; }
+.quarto-figure .margin-caption { margin-top: 0; text-align: left; }
+.quarto-figure figure:has(> .margin-caption) { display: block; }
+[class*="column-page"] .figure, [class*="column-screen"] .figure, [class*="column-body-outset"] .figure, .quarto-figure[class*="column-"] .figure { display: block; }
+.footnote-ref { text-decoration: none; }
+.column-body-outset { margin-left: calc(-1 * var(--sd-outset)); margin-right: calc(-1 * var(--sd-outset)); }
+.column-body-outset-left { margin-left: calc(-1 * var(--sd-outset)); }
+.column-body-outset-right { margin-right: calc(-1 * var(--sd-outset)); }
+.column-page, .column-page-inset { margin-left: calc(-1 * var(--sd-outset)); margin-right: calc(-1 * max(var(--sd-right), var(--sd-outset))); }
+.column-page-inset { margin-left: calc(-.5 * var(--sd-outset)); margin-right: calc(-1 * max(var(--sd-right) - var(--sd-gap), var(--sd-outset) / 2)); }
+.column-page-left { margin-left: calc(-1 * var(--sd-outset)); }
+.column-page-right, .column-page-inset-right { margin-right: calc(-1 * max(var(--sd-right), var(--sd-outset))); }
+.column-page-inset-left { margin-left: calc(-.5 * var(--sd-outset)); }
+.column-screen { margin-left: calc(-1 * var(--sd-to-left)); margin-right: calc(-1 * var(--sd-to-right)); }
+.column-screen-left { margin-left: calc(-1 * var(--sd-to-left)); }
+.column-screen-right { margin-right: calc(-1 * var(--sd-to-right)); }
+.column-screen-inset { margin-left: calc(var(--sd-pad) - var(--sd-to-left)); margin-right: calc(var(--sd-pad) - var(--sd-to-right)); }
+.column-screen-inset-left { margin-left: calc(var(--sd-pad) - var(--sd-to-left)); }
+.column-screen-inset-right { margin-right: calc(var(--sd-pad) - var(--sd-to-right)); }
+.column-screen-inset-shaded { margin-left: calc(var(--sd-pad) - var(--sd-to-left)); margin-right: calc(var(--sd-pad) - var(--sd-to-right)); padding: 1rem; background: var(--bs-tertiary-bg); }
+/* wide content starts below the margin notes above it, so that it does not cover them */
+[class*="column-page"], [class*="column-screen"], [class*="column-body-outset"] { position: relative; z-index: 2; clear: right; }
+/* smalldocs.js hides a sidebar or the table of contents while wide or margin content passes under it */
+.sd-overlapped { opacity: 0; pointer-events: none; transition: opacity .15s; }
 dt { font-weight: 600; }
 dd { margin-left: 1.5rem; }
 .task-list-item { list-style: none; }
@@ -385,7 +436,15 @@ html[data-scheme="alternate"] .quarto-color-scheme-toggle .bi::before { content:
   .quarto-post { grid-template-columns: 1fr; gap: .5rem; }
   .quarto-post .thumbnail { order: -1; }
   .quarto-listing-cols-3, .quarto-listing-cols-4, .quarto-listing-cols-5, .quarto-listing-cols-6 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .column-margin { float: none; width: auto; margin: 1rem 0; }
+  #quarto-content, #quarto-content.has-sidebar, #quarto-content.has-margin { --sd-pad: 1rem; --sd-left: 0px; --sd-right: 0px; }
+  main.content, .page-layout-full main.content { --sd-to-left: var(--sd-pad); --sd-to-right: var(--sd-pad); --sd-outset: 0px; }
+  .column-margin, .margin-caption, .margin-aside, div.aside { float: none; width: auto; margin: .75rem 0 1rem; padding-left: .75rem; border-left: 2px solid var(--sd-border); }
+  span.margin-aside { display: inline; margin: 0; padding: 0; border: 0; float: none; }
+  span.margin-aside::before { content: "("; }
+  span.margin-aside::after { content: ")"; }
+  .quarto-figure figure:has(> .margin-caption) { display: flex; flex-direction: column; }
+  .quarto-figure .margin-caption { order: 1; margin: .5rem 0 0; padding: 0; border: 0; }
+  .column-margin .column-margin, .column-margin .margin-aside, .column-container > div { border: 0; padding: 0; }
   .smalldocs-search input { min-width: 0; width: 100%; }
 }
 @media (max-width: 575.98px) {

@@ -325,7 +325,12 @@ class Site:
             "number_sections": bool(m.get("number-sections")),
             "external_new_window": bool(m.get("link-external-newwindow")),
             "cell_defaults": cell_defaults(m),
+            "reference_location": m.get("reference-location"),
+            "fig_cap_location": m.get("fig-cap-location") or m.get("cap-location"),
         }
+        for key, values in (("reference-location", ("document", "margin")), ("fig-cap-location", ("bottom", "margin")), ("cap-location", ("bottom", "margin"))):
+            if m.get(key) is not None and m[key] not in values:
+                self.warn(f"{page.src}: {key}: {m[key]} is not read; smalldocs reads {' and '.join(values)}")
         title = page.front.get("title")
         if isinstance(title, str) and re.search(r"[*_`\[<$\\&]", title):
             env["title_html"] = layout.inline_md(title, self, page)
