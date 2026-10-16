@@ -1,6 +1,6 @@
 [project]
 name = "smalldocs"
-version = "0.3.0"
+version = "0.3.1"
 description = "Quarto-like websites from a _quarto.yml project, in pure Python: pages, API reference and listings"
 readme = "README.md"
 license = "MIT"
@@ -23,6 +23,7 @@ classifiers = [
 
 [project.urls]
 Homepage = "https://github.com/rahuldave/smalldocs"
+Documentation = "https://docs.smallish.dev/"
 
 [project.scripts]
 smalldocs = "smalldocs.cli:main"

@@ -523,6 +523,8 @@ $$
 \int_0^1 x^2 \, dx = \frac{1}{3}
 $$
 
+Double dollars inside a sentence also give display maths, on a line of its own, as in Quarto.
+
 KaTeX, a JavaScript library, draws the maths. smalldocs loads KaTeX only on pages that have maths.
 
 smalldocs reads a dollar as the start of maths when it has no digit before it and no space after it.

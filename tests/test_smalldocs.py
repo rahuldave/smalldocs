@@ -854,6 +854,13 @@ def test_review_findings_for_0_3_0(tmp_path: Path) -> None:
     assert w.count("sub/_metadata.yml: abstract is not read") == 1
 
 
+def test_double_dollars_are_display_maths_everywhere() -> None:
+    "`$$...$$` is display maths on its own line, over lines, and inside a sentence, as Pandoc reads it; `$...$` stays inline."
+    assert md("$$x = 1$$\n") == md("$$\nx = 1\n$$\n") == '<p><span class="math display">\\[x = 1\\]</span></p>\n'
+    assert md("Text $$x = 1$$ more.\n") == '<p>Text <span class="math display">\\[x = 1\\]</span> more.</p>\n'
+    assert md("Inline $x$ here.\n") == '<p>Inline <span class="math inline">\\(x\\)</span> here.</p>\n'
+
+
 def test_shortcodes(tmp_path: Path) -> None:
     "`include`, `meta`, `var` and `env` are replaced; code blocks and escaped shortcodes are left alone."
     write(

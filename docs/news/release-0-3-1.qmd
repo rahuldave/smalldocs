@@ -1,0 +1,14 @@
+---
+title: smalldocs 0.3.1
+subtitle: Double dollars in a sentence are display maths
+date: 2026-10-16
+author: Rahul Dave
+categories: [release]
+image: ../images/mark.svg
+---
+
+Maths between double dollars inside a sentence, such as `Text $$x = 1$$ more text.`, is now display maths
+on a line of its own, as in Quarto. Before, smalldocs drew it as inline maths. Double dollars on a line of
+their own were already right. See [Maths](../guide/markdown.qmd#maths).
+
+The documentation has moved to [docs.smallish.dev](https://docs.smallish.dev/).

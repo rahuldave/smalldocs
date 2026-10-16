@@ -1406,6 +1406,18 @@ def math_inline(
     return f'<span class="math inline">{math_renderer(tokens[idx].content.strip(), {})}</span>'
 
 
+def math_display(
+    self: RendererHTML,  # The renderer
+    tokens: Sequence[Token],  # The tokens of the page
+    idx: int,  # The index of the token to render
+    options: OptionsDict,  # The parser's options
+    env: dict,  # The render environment
+) -> str:  # The maths, in a span of display maths
+    "Render `$$...$$` inside a paragraph as display maths, on a line of its own, as Pandoc does."
+    env["math"] = True
+    return f'<span class="math display">{math_renderer(tokens[idx].content.strip(), {"display_mode": True})}</span>'
+
+
 def math_block(
     self: RendererHTML,  # The renderer
     tokens: Sequence[Token],  # The tokens of the page
@@ -1448,8 +1460,8 @@ def make_parser(
     md.use(attrs_plugin, spans=True)
     if "tex_math_dollars" not in off:
         md.use(dollarmath_plugin, allow_space=False, allow_digits=False, double_inline=True)
-        for name in ("math_inline", "math_inline_double"):
-            md.add_render_rule(name, math_inline)
+        md.add_render_rule("math_inline", math_inline)
+        md.add_render_rule("math_inline_double", math_display)  # `$$x$$` inside a sentence is display maths, as in Pandoc
         for name in ("math_block", "math_block_label"):
             md.add_render_rule(name, math_block)
     md.block.ruler.before("fence", "fenced_div", fenced_div, {"alt": ["paragraph", "reference", "blockquote", "list"]})
