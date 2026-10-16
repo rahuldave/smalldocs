@@ -1,11 +1,12 @@
 project:
   type: website
   output-dir: _site
+  resources: [CNAME]
 
 website:
   title: smalldocs
   description: Quarto-like websites in pure Python
-  site-url: https://rahuldave.com/smalldocs/
+  site-url: https://docs.smallish.dev/
   repo-url: https://github.com/rahuldave/smalldocs
   repo-actions: [source, issue]
   page-navigation: true
