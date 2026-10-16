@@ -47,6 +47,9 @@ body { min-height: 100vh; display: flex; flex-direction: column; }
   --bs-navbar-brand-hover-color: var(--bs-emphasis-color);
 }
 .navbar-brand-container { margin-right: 1rem; }
+/* A sidebar's own title beside the logo: two links on one row, with the logo's own gap */
+.sd-brand-split { display: flex; align-items: center; min-width: 0; }
+.sd-brand-split .navbar-brand-logo { margin-right: 0; }
 .navbar-title { font-weight: 500; }
 .navbar-logo { max-height: 32px; margin-right: .5rem; }
 .navbar .nav-link .menu-text { white-space: nowrap; }

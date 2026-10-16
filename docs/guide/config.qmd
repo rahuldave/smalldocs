@@ -105,8 +105,8 @@ and it never copies the source of that page into the site.
 | `navbar.pinned` | `false` hides the navbar while the reader scrolls down. The navbar comes back when the reader scrolls up | The navbar stays on the screen |
 | `navbar.logo`, `sidebar.logo` | A path to an image, or `path` and `alt`. Or `light` and `dark`, each a path or `path` and `alt`. With `light` and `dark`, the page shows the image of its mode. `website.logo` sets both | None, or the logo of a theme extension |
 | `navbar.logo-alt`, `sidebar.logo-alt` | The text of the logo for a screen reader | Empty |
-| `navbar.logo-href`, `sidebar.logo-href` | The link of the logo. In the navbar, the title of the site has the same link | The home page |
-| `sidebar` | `contents`, `style`, `title`, `logo`, `search`, `tools`, `collapse-level`. A list gives several sidebars | No sidebar |
+| `navbar.logo-href`, `sidebar.logo-href` | The link of the logo. In the navbar, the title of the site has the same link, unless the title is a sidebar's own title (see `sidebar`) | The home page |
+| `sidebar` | `contents`, `style`, `title`, `logo`, `search`, `tools`, `collapse-level`. A list gives several sidebars. With several, a page shows its own sidebar's `title` in the navbar, or at the top of the sidebar when there is no navbar, and the title links to that sidebar's first page. The logo keeps its own link: `logo-href`, or the home page. `navbar.title: false` or `""` hides the title | No sidebar |
 | `sidebar.background`, `sidebar.foreground` | The colour of the sidebar, and the colour of its links. Give the name of a colour of Bootstrap, such as `light` or `primary`, or a CSS colour, such as `#f4f4f4` | The colours of the theme |
 | `sidebar.border` | `true` draws a line at the right of the sidebar. `false` removes the line | A line for a `docked` sidebar only |
 | `sidebar.alignment` | The alignment of the title, the logo and the tools, when there is no navbar: `left`, `center` or `right` | `left` |

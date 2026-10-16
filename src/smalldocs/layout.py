@@ -806,12 +806,25 @@ class Layout:
         logo = self.logo_html(nb.get("logo") or self.web.get("logo"), str(nb.get("logo-alt") or ""), "navbar-logo")
         if logo:
             brand.append(Safe(logo))
+        own = self.sidebar_title() if title is not False and title != "" else None
+        if own:
+            title = own[0]
         if title is not False and title:
             brand.append(Span(title, cls="navbar-title"))
         if nb.get("logo-href"):
             home = self.href(str(nb["logo-href"]))
         else:
             home = self.site.resolve("/index.qmd", self.page, record=False) if self.site.find_page(PurePosixPath("index.qmd")) else self.offset() or "./"
+        if own:
+            # The sidebar's title goes to its first page; the logo, in a link of its own, still goes to the site's root
+            title_link = A(brand[-1], cls="navbar-brand", href=own[1])
+            # The logo's link no longer holds the title, so it needs a name of its own when the image has no alt text
+            name = {} if nb.get("logo-alt") else {"aria_label": str(nb.get("title") or self.web.get("title") or "Home")}
+            brand_html = [A(brand[0], cls="navbar-brand navbar-brand-logo", href=home, **name), title_link] if logo else [title_link]
+            brand_cls = "navbar-brand-container sd-brand-split mx-auto"
+        else:
+            brand_html = [A(*brand, cls="navbar-brand", href=home)]
+            brand_cls = "navbar-brand-container mx-auto"
         tools = [
             Li(A(I(cls=f"bi bi-{t.get('icon', 'link')}", role="img"), cls="nav-link", href=self.href(str(t.get("href") or t.get("url") or "")), **self.tool_attrs(t)), cls="nav-item compact")
             for t in as_list(nb.get("tools"))
@@ -835,7 +848,7 @@ class Layout:
         return [
             Nav(
                 Div(
-                    Div(A(*brand, cls="navbar-brand", href=home), cls="navbar-brand-container mx-auto"),
+                    Div(*brand_html, cls=brand_cls),
                     *body,
                     *out_tools,
                     cls="navbar-container container-fluid",
@@ -844,6 +857,20 @@ class Layout:
                 **theme,
             )
         ]
+
+    def sidebar_title(self) -> tuple[str, str] | None:  # The title of the page's sidebar and the link to its first page, or None
+        "Find the title of the page's own sidebar, in a site with several sidebars; a site with one keeps the site's title."
+        sb = self.sidebar
+        if len(self.nav.sidebars) < 2 or not sb or not isinstance(sb.get("title"), str) or not sb["title"]:
+            return None
+        if not any(i.contains(self.page) for i in sb["items"]):
+            return None
+        first = next((p for i in sb["items"] for p in i.pages()), None)
+        if first is None:
+            return None
+        from .site import rel
+
+        return sb["title"], rel(first.out, self.page)
 
     def search_box(self) -> Div:  # The search box
         "Make the search box; `smalldocs.js` fills the results. `search.type: overlay` shows an icon that opens the box."
@@ -979,7 +1006,8 @@ class Layout:
             if logo:
                 bits.append(A(Safe(logo), href=self.href(str(sb["logo-href"])) if sb.get("logo-href") else home, cls="sidebar-logo-link"))
             if title:
-                bits.append(Div(A(title, href=home), cls="sidebar-title mb-0 py-0"))
+                own = self.sidebar_title()
+                bits.append(Div(A(title, href=own[1] if own else home), cls="sidebar-title mb-0 py-0"))
             tools = []
             if len(self.site.theme_files()) > 1:
                 tools.append(A(I(cls="bi"), cls="quarto-color-scheme-toggle sidebar-tool px-1", href="", title="Toggle dark mode", onclick="window.smalldocsToggleScheme(); return false;"))

@@ -481,3 +481,72 @@ def test_utterances_and_hypothesis(tmp_path: Path) -> None:
     head = h[: h.index("</head>")]
     assert '<script type="application/json" class="js-hypothesis-config">' in head and json.loads(re.search(r"js-hypothesis-config\">(.*?)</script>", head, re.S).group(1)) == {"theme": "clean", "openSidebar": True}
     assert '<script src="https://hypothes.is/embed.js" async></script>' in head
+
+
+# ---------------------------------------------------------------- the titles of several sidebars
+
+WALKS = """
+project: {type: website}
+website:
+  title: Site
+  NAVBAR
+  sidebar:
+    - title: First walk
+      contents: [index.qmd, a/one.qmd]
+    - title: Second walk
+      contents: [b/index.qmd, b/two.qmd]
+"""
+WALK_PAGES = {"a/one.qmd": "# One\n", "b/index.qmd": "# B\n", "b/two.qmd": "# Two\n", "logo.svg": "<svg/>"}
+
+
+def test_several_sidebars_put_their_titles_in_the_navbar(tmp_path: Path) -> None:
+    "In a site with several sidebars, the navbar shows the page's own sidebar title, linked to that sidebar's first page; the logo still links to the root."
+    site(tmp_path, WALKS.replace("NAVBAR", "navbar: {background: primary, logo: logo.svg}"), WALK_PAGES)
+    h = out(tmp_path, "b/two.html")
+    brand = re.search(r'<div class="navbar-brand-container sd-brand-split mx-auto">.*?</div>', h, re.S).group(0)
+    assert '<a class="navbar-brand navbar-brand-logo" href="../index.html" aria-label="Site"><img src="../logo.svg"' in brand
+    assert '<a class="navbar-brand" href="index.html"><span class="navbar-title">Second walk</span></a>' in brand
+    assert "Site</span>" not in brand
+    h = out(tmp_path, "a/one.html")
+    assert '<a class="navbar-brand" href="../index.html"><span class="navbar-title">First walk</span></a>' in h
+
+
+def test_several_sidebars_without_a_logo(tmp_path: Path) -> None:
+    "With no logo, the navbar's one link is the sidebar's title, to its first page."
+    site(tmp_path, WALKS.replace("NAVBAR", "navbar: {background: primary}"), WALK_PAGES)
+    brand = re.search(r'<div class="navbar-brand-container sd-brand-split mx-auto">.*?</div>', out(tmp_path, "b/two.html"), re.S).group(0)
+    assert brand == '<div class="navbar-brand-container sd-brand-split mx-auto"><a class="navbar-brand" href="index.html"><span class="navbar-title">Second walk</span></a></div>'
+
+
+def test_several_sidebars_link_their_own_title_without_a_navbar(tmp_path: Path) -> None:
+    "With no navbar, the sidebar's title links to the sidebar's first page, not to the root, in a site with several sidebars."
+    site(tmp_path, WALKS.replace("NAVBAR", ""), WALK_PAGES)
+    assert '<div class="sidebar-title mb-0 py-0"><a href="index.html">Second walk</a></div>' in out(tmp_path, "b/two.html")
+    assert '<div class="sidebar-title mb-0 py-0"><a href="../index.html">First walk</a></div>' in out(tmp_path, "a/one.html")
+
+
+def test_a_page_in_no_sidebar_keeps_the_site_title(tmp_path: Path) -> None:
+    "A page in none of the sidebars, or a sidebar with no title, keeps the site's title and its link to the root."
+    cfg = WALKS.replace("NAVBAR", "navbar: {background: primary}").replace("    - title: Second walk\n", "    - ")
+    site(tmp_path, cfg, {**WALK_PAGES, "c.qmd": "# C\n"})
+    assert '<a class="navbar-brand" href="index.html"><span class="navbar-title">Site</span></a>' in out(tmp_path, "c.html")
+    assert '<a class="navbar-brand" href="../index.html"><span class="navbar-title">Site</span></a>' in out(tmp_path, "b/two.html")
+
+
+def test_one_sidebar_keeps_the_site_title(tmp_path: Path) -> None:
+    "A site with one sidebar keeps the site's title in the navbar, in one link with the logo, as before."
+    cfg = "project: {type: website}\nwebsite:\n  title: Site\n  navbar: {logo: logo.svg}\n  sidebar:\n    title: Walk\n    contents: [index.qmd, b.qmd]\n"
+    site(tmp_path, cfg, {"b.qmd": "# B\n", "logo.svg": "<svg/>"})
+    h = out(tmp_path, "b.html")
+    assert re.search(r'<a class="navbar-brand" href="index.html"><img src="logo.svg"[^>]*><span class="navbar-title">Site</span></a>', h)
+
+
+def test_several_sidebars_logo_name_and_hidden_title(tmp_path: Path) -> None:
+    "The logo's own link is named by its alt text, else by the site's title; `navbar.title: \"\"` still hides the title."
+    site(tmp_path, WALKS.replace("NAVBAR", "navbar: {logo: logo.svg, logo-alt: Kit}"), WALK_PAGES)
+    assert '<a class="navbar-brand navbar-brand-logo" href="../index.html"><img src="../logo.svg" alt="Kit"' in out(tmp_path, "b/two.html")
+    write(tmp_path, {"_quarto.yml": WALKS.replace("NAVBAR", "navbar: {title: '', logo: logo.svg}")})
+    build(tmp_path, quiet=True)
+    h = out(tmp_path, "b/two.html")
+    assert "navbar-title" not in h and "sd-brand-split" not in h
+    assert ".sd-brand-split .navbar-brand-logo { margin-right: 0; }" in (tmp_path / "_site/site_libs/smalldocs.css").read_text(encoding="utf-8")
