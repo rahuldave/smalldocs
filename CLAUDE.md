@@ -16,8 +16,8 @@ reads the Markdown cells of the notebooks; it must pass before a commit.
 
 - **A project that builds with Quarto builds with smalldocs, with the same pages, the same anchors and the
   same links.** Heading ids follow Pandoc's algorithm (`markdown.pandoc_id`); links to `.qmd`/`.md`/`.ipynb`
-  become `.html`; links from `/` start at the root. Check a change against real sites (below).
-- **New features never change existing output.** A page, site or notebook that uses none of a new feature builds byte for byte as before. Check it against Rahul's sites before a release (see Checking a change).
+  become `.html`; links from `/` start at the root. Check a change with the tests and the example sites (below).
+- **New features never change existing output.** A page, site or notebook that uses none of a new feature builds byte for byte as before. Check it with the example sites before a release (see Checking a change).
 - **`_smalldocs.yml` is the config; read `_quarto.yml` unchanged.** `config.load` looks for `_smalldocs.yml`
   first (`Project.native`). There the page options and smalldocs' own options (`linkify`, `symbols`, `api`,
   `config.OWN_KEYS`) are top-level keys, and `format`, `smalldocs` and `filters` are warnings. In a
@@ -78,10 +78,25 @@ just build           # the wheel and sdist into dist/
 2. `uv run smalldocs api check --dir docs`: every function typed and documented.
 3. For anything in `layout.py`, `markdown.py` or `assets/`: build `docs/` and drive it in headless Chrome
    (Playwright, `channel="chrome"`): tabs, callouts, search, the dark toggle, listings, a phone width.
-4. Against real sites: copy a site into the scratchpad (never build in place: ProblemSolving's
-   `output-dir` is `../docs`, a folder of its repository), render it with Quarto and with smalldocs, and
-   compare the pages, the ids and the links. babykev needs its own Python for the API; run smalldocs
-   with `PYTHONPATH` set to `src` and to this project's site-packages.
+4. The example sites. Build them in the scratchpad, never in place. Use two copies of each, because each
+   build empties `_site`.
+   - The Tufte example. Copy `~/Projects/smalldocs-tufte/example` twice with `cp -Rp`, which keeps the
+     files' times that a listing records. In each copy, run
+     `smalldocs add ~/Projects/smalldocs-tufte --dir COPY --force`, which takes that repository's last
+     commit. Build one copy with `uvx --refresh --from smalldocs==X.Y.Z smalldocs render COPY --strict`,
+     where X.Y.Z is the last release. Without `--refresh`, uv may not know of the newest release.
+     Build the other with `uv run --project ~/Projects/smalldocs smalldocs render COPY --strict`. Compare every file. Only the version and the files in `site_libs` may differ.
+   - `docs/`. Build it with `uv run smalldocs render docs --strict`. It uses every feature, so its pages
+     change with a new feature, and `api/` and `search.json` change with the docstrings. Read what
+     changes and why.
+   - A new feature. Add a case to a copy of one of them, and look at it in Chrome.
+   - Quarto. For a change to ids, links or the page's markup, build a small `_quarto.yml` site with
+     Quarto (`/usr/local/bin/quarto`) and with smalldocs. Compare the ids and the links.
+   - The API pages. Only the tests check them against babykev's. Change what `api.py` writes only on
+     purpose.
+   - Rahul's other sites. Do not build ProblemSolving, babykev, nbinlineai, smallwikiapp or the class
+     repos. They are in production, and each has its own agent that builds and checks it. In the final
+     report, write two or three lines for each of them. Say what changed, and what to do or check.
 5. An adversarial review by an Opus subagent before each commit.
 
 ## Conventions
