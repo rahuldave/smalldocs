@@ -29,7 +29,7 @@ smalldocs api build --dir docs     # the API reference, from docstrings, types a
 smalldocs publish gh-pages docs    # push the site to the branch gh-pages
 ```
 
-The documentation is at [rahuldave.com/smalldocs](https://rahuldave.com/smalldocs/). smalldocs builds it from [`docs/`](docs/).
+The documentation is at [docs.smallish.dev](https://docs.smallish.dev/). smalldocs builds it from [`docs/`](docs/).
 
 ## What smalldocs reads
 
@@ -38,7 +38,7 @@ The documentation is at [rahuldave.com/smalldocs](https://rahuldave.com/smalldoc
   over `_smalldocs.yml`.
 - **The Markdown.** smalldocs reads CommonMark. It also reads front matter, tables, footnotes,
   attributes, divs, callouts, tabs, maths, diagrams, raw HTML and shortcodes. A `.qmd` page is Markdown
-  that uses them. [Writing pages](https://rahuldave.com/smalldocs/guide/markdown.html) describes each one.
+  that uses them. [Writing pages](https://docs.smallish.dev/guide/markdown.html) describes each one.
 - **Notebooks.** smalldocs shows the outputs that were saved in a notebook. The `#|` option lines at
   the top of a cell can hide its code or its output.
 - **Listings.** smalldocs makes listings as rows, cards or a table, with sorting, a filter, categories,
