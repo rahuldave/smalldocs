@@ -27,7 +27,7 @@ If the command finds anything, its exit code is 1.
 |---|---|
 | PDF, Word, slides, books, manuscripts | Websites only. A `book` is built as a website |
 | Runs `{python}`, `{r}` and `{ojs}` cells | Shows the code and runs nothing. A notebook shows its saved outputs |
-| Compiles `.scss` themes | Takes any Bootswatch theme and your CSS. See [Themes](themes.qmd) |
+| Compiles `.scss` themes | Takes any Bootswatch theme, your CSS, and the CSS of a theme extension. See [Themes](themes.qmd) |
 | Lua filters | Runs no Lua. The [linkify](config.qmd#linkify) of smalldocs does the work of `linkify.lua`, but links only names that look like code. See [Lua filters](config.qmd#lua-filters) |
 | Grid tables, citations, cross-references (`@fig-x`) | Does not read them. Write a pipe table, and a link to the id |
 | Every Pandoc extension | CommonMark, tables, footnotes, definition lists, task lists, attributes, divs, callouts, tabsets, maths, raw HTML, shortcodes |

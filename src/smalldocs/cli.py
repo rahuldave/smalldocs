@@ -1,4 +1,4 @@
-"The `smalldocs` command: render, preview, check, api and publish."
+"The `smalldocs` command: render, preview, check, api, publish, add and themes."
 
 import argparse
 import os
@@ -57,6 +57,25 @@ def cmd_publish(
     return publish(Path(args.dir), branch=args.branch, remote=args.remote, render=not args.no_render, message=args.message)
 
 
+def cmd_add(
+    args: argparse.Namespace,  # The parsed command line
+) -> int:  # The exit code
+    "Copy the extensions of a repository or a folder into the project's `_extensions/`."
+    from .extensions import add
+
+    add(args.source, Path(args.dir), force=args.force)
+    return 0
+
+
+def cmd_themes(
+    args: argparse.Namespace,  # The parsed command line
+) -> int:  # The exit code
+    "List the bundled themes and the project's extensions."
+    from .extensions import themes
+
+    return themes(Path(args.dir))
+
+
 def parser() -> argparse.ArgumentParser:  # The parser for every command
     "Describe the commands and their options."
     p = argparse.ArgumentParser(prog="smalldocs", description="Quarto-like websites from a _smalldocs.yml or _quarto.yml project, in pure Python.")
@@ -94,6 +113,16 @@ def parser() -> argparse.ArgumentParser:  # The parser for every command
     g.add_argument("--no-render", action="store_true", help="publish the output folder as it is")
     g.add_argument("--message", "-m", default="Built site", help="the commit message")
     g.set_defaults(func=cmd_publish)
+
+    d = sub.add_parser("add", help="copy the theme extensions of a git repository or a folder into _extensions/")
+    d.add_argument("source", help="org/repo (GitHub over ssh), org/repo@ref, a git URL, a local git repository, or a local folder")
+    d.add_argument("--dir", default=".", help="the project folder")
+    d.add_argument("--force", action="store_true", help="replace an extension that is already there, without asking")
+    d.set_defaults(func=cmd_add)
+
+    t = sub.add_parser("themes", help="list the bundled themes and the extensions in _extensions/")
+    t.add_argument("dir", nargs="?", default=".", help="the project folder")
+    t.set_defaults(func=cmd_themes)
     return p
 
 
@@ -104,6 +133,9 @@ def main(
     args = parser().parse_args(argv)
     try:
         return args.func(args)
+    except KeyboardInterrupt:
+        print("smalldocs: stopped", file=sys.stderr)
+        return 130
     except (ConfigError, BuildError) as e:
         print(f"smalldocs: {e}", file=sys.stderr)
         return 2

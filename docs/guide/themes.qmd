@@ -1,6 +1,6 @@
 ---
 title: Themes
-description: Any Bootswatch theme, a light theme and a dark theme together, and your own CSS.
+description: Any Bootswatch theme, a light theme and a dark theme together, themes from a git repository, and your own CSS.
 order: 7
 ---
 
@@ -26,14 +26,163 @@ The name `bootstrap` gives Bootstrap with no theme.
 
 ## A light theme and a dark theme
 
-If you give two themes, the navbar or the sidebar gets a toggle between them. The browser keeps the
-choice of the reader. This site uses two themes:
+If you give two themes, the navbar or the sidebar gets a toggle between them. This site uses two
+themes:
 
 ```yaml
 theme:
   light: cosmo
   dark: darkly
 ```
+
+On the first visit, the page starts in the mode that the browser prefers. The browser keeps the choice
+of the reader after a click on the toggle, and that choice wins on later visits. The page loads the
+right theme before it shows anything, so it does not flash the other theme first.
+
+## A theme from a git repository
+
+A theme extension is a theme in a folder of your project, `_extensions/<name>/`. You get it once from a
+git repository with `smalldocs add`, and the folder stays in your project. Quarto keeps its extensions
+in the same folder.
+
+First, add the theme. Give the repository as `org/repo` on GitHub:
+
+```bash
+smalldocs add rahuldave/smalldocs-tufte
+```
+
+The command clones the repository with `git clone --depth 1`, over ssh. So it can get a private
+repository that your own ssh key can read. It copies each folder of `_extensions/` in the repository
+into the `_extensions/` folder of your project, without `.git`. Then it prints the line to use:
+
+```yaml
+theme: tufte
+```
+
+The source can also be one of these:
+
+- `org/repo@v1.0`: a branch, a tag or a whole commit hash after `@`
+- a git URL, such as `git@gitlab.com:org/repo.git` or `https://github.com/org/repo.git`
+- a local git repository, or a bare one. smalldocs clones it, so it gets the files of a commit, and not
+  the changes that you did not commit
+- a local folder with an `_extensions/` folder, which is not a git repository. smalldocs copies its
+  files as they are
+
+If the folder of an extension is already in your project, the command asks before it replaces the
+folder. Give `--force` to replace it without a question.
+
+`theme` takes the name of the folder. The name works alone, or with a Bootswatch theme:
+
+```yaml
+theme: tufte              # the light and the dark CSS of the extension, and a toggle
+theme:
+  light: tufte            # the light CSS of the extension
+  dark: darkly            # a Bootswatch theme
+```
+
+smalldocs also looks in `_extensions/<org>/<name>/`, the other folder layout of Quarto. If two folders
+have the same name, or an extension has the name of a Bootswatch theme, the build stops with an error.
+If no theme has the name, the error lists the names you can use.
+
+In a `_quarto.yml`, a theme extension for both tools is often a custom format of Quarto. Give its name
+with `-html` in `format`:
+
+```yaml
+format:
+  tufte-html:
+    toc: true
+```
+
+Quarto uses the format of the extension. smalldocs reads the options under `tufte-html` as the options
+under `html`. If `_extensions/tufte/` has a `smalldocs.yml`, smalldocs also uses its theme.
+
+You can also write the theme of smalldocs under `smalldocs:`. Quarto reads `format.html.theme`, and
+smalldocs reads `smalldocs.theme`, so each tool gets its own theme:
+
+```yaml
+format:
+  html:
+    theme: [cosmo, _extensions/tufte/tufte.scss]
+smalldocs:
+  theme: tufte
+```
+
+### What the build copies
+
+The build copies the CSS of the theme into `_site/site_libs/themes/<name>/`. It also copies each file
+that the CSS uses through `url(...)` or `@import`, such as a font or an image. A file outside the folder
+of the extension is not copied, and the build gives a warning. The build does not copy the other files
+of the extension, and it never copies `_extensions/` itself into the site.
+
+If your site sets no logo, the site uses the logo of the theme. If it sets no favicon, the site uses
+the favicon of the theme. A favicon is the small picture in the tab of the browser.
+
+### See what is installed
+
+`smalldocs add` writes a file `.source` in the folder of each extension. The file holds the source as
+you gave it, the ref after `@`, and the commit that git cloned:
+
+```yaml
+source: rahuldave/smalldocs-tufte@v0.1.0
+ref: v0.1.0
+commit: 5f0c2a9e...
+```
+
+`smalldocs themes` lists the bundled themes, and each extension of the project with its source:
+
+```bash
+smalldocs themes
+```
+
+### Update a theme
+
+Run `smalldocs add` again with `--force`. To get the newest commit of the default branch, leave out the
+ref:
+
+```bash
+smalldocs add rahuldave/smalldocs-tufte --force
+```
+
+To get a release, give its tag, such as `@v0.2.0`. `smalldocs themes` prints the command that gets
+the same source again, and the command that gets the newest commit. Commit the folder `_extensions/` with your project, so that each build uses the
+same theme.
+
+## Make a theme for smalldocs and Quarto
+
+One repository can hold a theme for both tools. Each tool reads its own files in the same folder, and
+ignores the files of the other tool:
+
+```
+_extensions/tufte/
+  _extension.yml     # Quarto reads this
+  tufte.scss         # Quarto compiles this Sass
+  smalldocs.yml      # smalldocs reads this
+  tufte.css          # the light theme for smalldocs: all of Bootstrap 5.3, then your rules
+  tufte-dark.css     # the dark theme for smalldocs
+  et-book/           # fonts, which both CSS files use through url(...)
+  logo.svg
+```
+
+`smalldocs.yml` names the files:
+
+```yaml
+css:
+  light: tufte.css
+  dark: tufte-dark.css
+logo: logo.svg       # optional. The site uses it only when it sets no logo
+favicon: logo.svg    # optional. The site uses it only when it sets no favicon
+```
+
+`css` can also name one file, which smalldocs uses as a light theme. A file in `smalldocs.yml` must be
+inside the folder of the extension.
+
+smalldocs compiles no Sass. So each CSS file is a complete Bootstrap 5.3 stylesheet, as a Bootswatch
+file is. Make it from `tufte.scss` with a Sass compiler. Or put the CSS of Bootstrap first, and your
+own rules after it.
+
+The stylesheet of smalldocs loads after the theme. If a rule of your theme sets the same property on the
+same element as a rule of smalldocs, the rule of smalldocs wins. Start such a rule with `html`, as in
+`html h2`, so that it wins. The next section tells you which variables to set.
 
 ## How the page gets the colours of the theme
 
@@ -60,7 +209,11 @@ variables of Bootstrap to change the theme, or the variables of smalldocs to cha
   --bs-primary: #7a3e9d;     /* the colours of Bootstrap */
   --sd-body-width: 900px;    /* the width of the text */
   --sd-sidebar-width: 280px; /* the width of the sidebar */
+  --sd-root-font-size: 16px; /* the size of 1rem, which sets every size of text; 17px if you set none */
 }
 ```
 
 smalldocs does not compile a `.scss` file in `theme`. The build gives a warning about it.
+
+If the name of your CSS file ends in `.min.css`, the site keeps that name. A file `my.css` becomes
+`my.min.css` in `site_libs/themes/`.

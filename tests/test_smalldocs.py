@@ -8,6 +8,7 @@ import textwrap
 from pathlib import Path
 
 import pytest
+import yaml
 
 import smalldocs
 from smalldocs import notebook
@@ -489,6 +490,188 @@ def test_light_and_dark_themes(tmp_path: Path) -> None:
     html = (s.out / "index.html").read_text()
     assert "litera.min.css" in html and "darkly.min.css" in html and "quarto-color-scheme-toggle" in html
     assert (s.out / "site_libs/themes/darkly.min.css").exists()
+
+
+THEME_REPO = {
+    "_extensions/ac215/_extension.yml": "title: AC215\ncontributes:\n  formats:\n    html:\n      theme: [cosmo, ac215.scss]\n",
+    "_extensions/ac215/ac215.scss": "$primary: #a00;\n",
+    "_extensions/ac215/smalldocs.yml": "css: {light: ac215.css, dark: ac215-dark.css}\nlogo: logo.png\nfavicon: logo.png\n",
+    "_extensions/ac215/ac215.css": "@font-face{src:url('fonts/f.woff2?v=1')}\n@import \"more.css\";\n:root{--bs-primary:#a00}\n",
+    "_extensions/ac215/more.css": ".a{background:url(img/a.png)} .b{background:url(data:image/png;base64,x)} .c{background:url(../../x.txt)}\n",
+    "_extensions/ac215/ac215-dark.css": ":root{--bs-body-bg:#111}\n",
+    "_extensions/ac215/fonts/f.woff2": "font\n",
+    "_extensions/ac215/img/a.png": "png\n",
+    "_extensions/ac215/logo.png": "logo\n",
+    "_extensions/ac215/unused.css": "unused\n",
+}
+SITE_YML = "project:\n  type: website\nwebsite:\n  title: T\n  navbar:\n    left: [index.md]\n"
+
+
+def theme_repo(
+    root: Path,  # The folder to make the repository in
+) -> str:  # The commit
+    "Make a git repository that holds a theme extension, tagged v1."
+    write(root, THEME_REPO)
+    g = lambda *a: subprocess.run(["git", "-c", "user.email=t@t", "-c", "user.name=T", *a], cwd=root, check=True, capture_output=True, text=True).stdout  # noqa: E731
+    g("init", "-q", "-b", "main")
+    g("add", "-A")
+    g("commit", "-qm", "theme")
+    g("tag", "v1")
+    return g("rev-parse", "HEAD").strip()
+
+
+def test_add_from_a_folder_and_a_bare_repo(tmp_path: Path, capsys: pytest.CaptureFixture) -> None:
+    "`smalldocs add` copies the extensions without .git, writes .source, and asks before it replaces one."
+    from smalldocs.extensions import add, parse_source
+
+    commit = theme_repo(tmp_path / "repo")
+    subprocess.run(["git", "clone", "-q", "--bare", str(tmp_path / "repo"), str(tmp_path / "bare.git")], check=True)
+    site = write(tmp_path / "site", {"_smalldocs.yml": SITE_YML, "index.md": "# Hi\n"})
+    ext = site / "_extensions/ac215"
+
+    folder = write(tmp_path / "at@folder", THEME_REPO)
+    assert add(str(folder), site) == [ext]
+    assert (ext / "fonts/f.woff2").exists() and (ext / "ac215.scss").exists()
+    assert yaml.safe_load((ext / ".source").read_text()) == {"source": str(folder.resolve()), "ref": None, "commit": None}
+    out = capsys.readouterr().out
+    assert "Added _extensions/ac215" in out and "theme: ac215" in out
+
+    (ext / "mine.txt").write_text("edit\n")
+    with pytest.raises(BuildError, match="give --force"):
+        add(f"{tmp_path / 'bare.git'}@v1", site, ask=lambda q: None)
+    assert add(f"{tmp_path / 'bare.git'}@v1", site, ask=lambda q: False) == [] and (ext / "mine.txt").exists()
+    assert add(f"{tmp_path / 'bare.git'}@v1", site, ask=lambda q: True) == [ext] and not (ext / "mine.txt").exists()
+    assert add(f"{tmp_path / 'repo'}@v1", site, force=True) == [ext]
+    assert yaml.safe_load((ext / ".source").read_text())["commit"] == commit
+    assert main(["add", f"{tmp_path / 'bare.git'}@{commit}", "--dir", str(site), "--force"]) == 0
+    note = yaml.safe_load((ext / ".source").read_text())
+    assert note == {"source": f"{(tmp_path / 'bare.git').resolve()}@{commit}", "ref": commit, "commit": commit}
+    assert not (ext / ".git").exists() and not (site / "_extensions/.git").exists()
+
+    assert parse_source("org/repo@v2").url == "git@github.com:org/repo.git" and parse_source("org/repo@v2").ref == "v2"
+    assert parse_source("git@github.com:org/repo.git").ref is None
+    assert parse_source("git@github.com:org/repo.git@main").ref == "main"
+    assert parse_source("https://user@example.com/org/repo.git").ref is None
+    assert parse_source("https://example.com/org/repo.git@feature/x").ref == "feature/x"
+    assert main(["themes", str(site)]) == 0
+    out = capsys.readouterr().out
+    assert f"commit {commit[:7]}" in out and f"again:  smalldocs add {(tmp_path / 'bare.git').resolve()}@{commit} --force" in out
+    assert f"newest: smalldocs add {(tmp_path / 'bare.git').resolve()} --force" in out
+
+
+def test_add_and_themes_keep_to_their_folders(tmp_path: Path) -> None:
+    "A symbolic link cannot bring other files into the site, an org folder is not replaced, and a source cannot be an option of git."
+    from smalldocs.extensions import add, parse_source
+
+    secret = write(tmp_path / "secret", {"keys/_extension.yml": "title: K\n", "keys/key.env": "TOKEN=abc\n"})
+    evil = tmp_path / "evil"
+    evil.mkdir()
+    (evil / "_extensions").symlink_to(secret)
+    site = write(tmp_path / "site", {"_smalldocs.yml": SITE_YML, "index.md": "# Hi\n"})
+    with pytest.raises(BuildError, match="has no extension"):
+        add(str(evil), site)
+    with pytest.raises(ConfigError, match="cannot start with -"):
+        parse_source("-ux@h:x")
+
+    write(site, {"_extensions/acme/a/smalldocs.yml": "css: a.css\n", "_extensions/acme/a/a.css": "\n"})
+    with pytest.raises(BuildError, match="holds other extensions, _extensions/acme/a"):
+        add(str(write(tmp_path / "org", {"_extensions/acme/smalldocs.yml": "css: a.css\n"})), site, force=True)
+    assert (site / "_extensions/acme/a/a.css").exists()
+
+    write(site, {"_extensions/t/smalldocs.yml": "css: t.css\nlogo: .\n"})
+    (site / "_extensions/t/t.css").symlink_to(secret / "keys/key.env")
+    (site / "_smalldocs.yml").write_text(SITE_YML + "theme: t\n")
+    with pytest.raises(BuildError, match=r"'t\.css' is not a file in _extensions/t"):
+        build(site, quiet=True)
+    (site / "_extensions/t/t.css").unlink()
+    (site / "_extensions/t/t.css").write_text("body{}\n")
+    with pytest.raises(BuildError, match=r"logo '\.' is not a file"):
+        build(site, quiet=True)
+
+
+def test_theme_extensions(tmp_path: Path) -> None:
+    "`theme: ac215` gives both modes from `_extensions/`; it mixes with Bootswatch; a name found twice is an error."
+    site = write(tmp_path, {**THEME_REPO, "_smalldocs.yml": SITE_YML + "theme: ac215\n", "index.md": "# Hi\n", "a/b.md": "# B\n"})
+    s = build(site, quiet=True)
+    page = (s.out / "index.html").read_text()
+    assert 'href="site_libs/themes/ac215/ac215.css" data-mode="light"' in page and 'media="not all and (prefers-color-scheme: dark)"' in page
+    assert 'href="site_libs/themes/ac215/ac215-dark.css" data-mode="dark"' in page and 'media="(prefers-color-scheme: dark)"' in page
+    assert "quarto-color-scheme-toggle" in page and "matchMedia('(prefers-color-scheme: dark)')" in page
+    assert 'href="../site_libs/themes/ac215/ac215.css"' in (s.out / "a/b.html").read_text()
+    libs = s.out / "site_libs/themes/ac215"
+    assert sorted(p.relative_to(libs).as_posix() for p in libs.rglob("*") if p.is_file()) == [
+        "ac215-dark.css", "ac215.css", "fonts/f.woff2", "img/a.png", "logo.png", "more.css",
+    ]  # fmt: skip
+    assert not (s.out / "_extensions").exists() and not list(s.out.rglob("*.scss"))
+    assert any("../../x.txt is outside the extension" in w for w in s.warnings)
+    assert any("ac215.css is not a whole Bootstrap 5.3 stylesheet" in w for w in s.warnings)
+
+    (site / "_smalldocs.yml").write_text(SITE_YML + "theme:\n  light: ac215\n  dark: darkly\n")
+    page = (build(site, quiet=True).out / "index.html").read_text()
+    assert "themes/ac215/ac215.css" in page and "themes/darkly.min.css" in page and "ac215-dark.css" not in page
+
+    (site / "_quarto.yml").write_text("project:\n  type: website\nformat:\n  html:\n    theme: [cosmo, _extensions/ac215/ac215.scss]\nsmalldocs:\n  theme: ac215\n")
+    (site / "_smalldocs.yml").unlink()
+    s = build(site, quiet=True)
+    assert "themes/ac215/ac215-dark.css" in (s.out / "index.html").read_text() and not any("scss" in w for w in s.warnings)
+
+    (site / "_quarto.yml").write_text("project:\n  type: website\nformat:\n  ac215-html:\n    toc: true\n")
+    (site / "index.md").write_text("# Hi\n\n## One\n\n## Two\n")
+    s = build(site, quiet=True)
+    page = (s.out / "index.html").read_text()
+    assert "themes/ac215/ac215.css" in page and 'id="TOC"' in page and not any("format" in w for w in s.warnings)
+
+    write(site, {"_extensions/org/ac215/smalldocs.yml": "css: x.css\n", "_extensions/org/ac215/x.css": "\n"})
+    with pytest.raises(BuildError, match="_extensions/ac215 and _extensions/org/ac215: keep one"):
+        build(site, quiet=True)
+    (site / "_extensions/org/ac215").rename(site / "_extensions/org/flatly")
+    (site / "_quarto.yml").write_text("project:\n  type: website\nsmalldocs:\n  theme: flatly\n")
+    with pytest.raises(BuildError, match="Bootswatch theme and also _extensions/org/flatly"):
+        build(site, quiet=True)
+    (site / "_quarto.yml").write_text("project:\n  type: website\nsmalldocs:\n  theme: nosuch\n")
+    with pytest.raises(BuildError, match=r"use one of .*ac215.*cosmo"):
+        build(site, quiet=True)
+
+
+def test_theme_logo_and_favicon_only_when_the_site_has_none(tmp_path: Path) -> None:
+    "The theme's logo and favicon fill in for the site's; the site's own win."
+    site = write(tmp_path, {**THEME_REPO, "_smalldocs.yml": SITE_YML + "theme: ac215\n", "index.md": "# Hi\n", "me.png": "me\n"})
+    page = (build(site, quiet=True).out / "index.html").read_text()
+    assert '<img src="site_libs/themes/ac215/logo.png"' in page and '<link rel="icon" href="site_libs/themes/ac215/logo.png">' in page
+    (site / "_smalldocs.yml").write_text(SITE_YML.replace("  navbar:\n", "  favicon: me.png\n  navbar:\n    logo: me.png\n") + "theme: ac215\n")
+    s = build(site, quiet=True)
+    page = (s.out / "index.html").read_text()
+    assert '<img src="me.png"' in page and '<link rel="icon" href="me.png">' in page and "ac215/logo.png" not in page
+    assert not (s.out / "site_libs/themes/ac215/logo.png").exists()
+
+
+def test_min_css_theme_keeps_its_name(tmp_path: Path) -> None:
+    "A theme file named `x.min.css` is copied to `x.min.css`, the name the page links to."
+    s = build(write(tmp_path, {"_smalldocs.yml": "project:\n  type: website\ntheme: styles/x.min.css\n", "styles/x.min.css": "body{}\n", "index.md": "# Hi\n"}), quiet=True)
+    assert 'href="site_libs/themes/x.min.css"' in (s.out / "index.html").read_text()
+    assert sorted(p.name for p in (s.out / "site_libs/themes").iterdir()) == ["x.min.css"]
+
+
+def test_bootswatch_themes_are_whole_bootstrap_stylesheets() -> None:
+    "Each bundled theme passes the check that a theme extension must pass."
+    from smalldocs.extensions import ASSETS, bundled, is_bootstrap
+
+    for name in bundled():
+        assert is_bootstrap((ASSETS / "vendor/bootswatch" / f"{name}.min.css").read_text()), name
+    assert is_bootstrap((ASSETS / "vendor/bootstrap/bootstrap.min.css").read_text())
+    assert not is_bootstrap(":root{--bs-body-bg:#fff}")
+
+
+def test_a_site_without_extensions_is_unchanged(tmp_path: Path) -> None:
+    "One theme and no `_extensions/`: the same head as before themes came from extensions; a Quarto-only extension changes nothing."
+    files = {"_smalldocs.yml": SITE_YML + "theme: flatly\n", "index.md": "# Hi\n"}
+    a = build(write(tmp_path / "a", files), quiet=True)
+    b = build(write(tmp_path / "b", {**files, "_extensions/q/_extension.yml": "title: Q\n", "_extensions/q/q.scss": "\n"}), quiet=True)
+    page = (a.out / "index.html").read_text()
+    assert '<link rel="stylesheet" href="site_libs/themes/flatly.min.css" data-mode="light" class="quarto-color-scheme" id="quarto-bootstrap-light">' in page
+    assert "media=" not in page and "smalldocs-scheme" not in page and 'rel="icon"' not in page
+    tree = lambda s: {p.relative_to(s.out).as_posix(): p.read_bytes() for p in sorted(s.out.rglob("*")) if p.is_file()}  # noqa: E731
+    assert tree(a) == tree(b) and not a.warnings and not b.warnings
 
 
 def test_shortcodes(tmp_path: Path) -> None:

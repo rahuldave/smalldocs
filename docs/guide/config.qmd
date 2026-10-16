@@ -134,7 +134,7 @@ project. It reads `order` only from the front matter of a page.
 
 | Key | What it does | Default |
 |---|---|---|
-| `theme` | A Bootswatch name, or `light:` and `dark:` for two themes and a toggle. See [Themes](themes.qmd) | `cosmo` |
+| `theme` | A Bootswatch name, a CSS file, an extension in `_extensions/`, or `light:` and `dark:` for two themes and a toggle. See [Themes](themes.qmd) | `cosmo` |
 | `css` | Your stylesheets, after the stylesheet of the theme | None |
 | `toc` | The table of contents at the right of the page | Off |
 | `toc-depth` | The deepest level of heading in the table of contents | `3` |
@@ -220,6 +220,12 @@ smalldocs:
   api:
     packages: [mypkg]
 ```
+
+Under `smalldocs:`, `theme` names the theme that smalldocs uses, in place of `format.html.theme`. So
+Quarto can compile its Sass theme, and smalldocs can use the CSS of the same extension.
+
+smalldocs also reads a custom format of an extension, such as `format: tufte-html`, as `html`. See
+[Themes](themes.qmd).
 
 To move to `_smalldocs.yml`, rename the file. Move the keys of `format.html` and of `smalldocs:` to the
 top level. Then remove `format` and `filters`. If you write `format`, `smalldocs` or `filters` in

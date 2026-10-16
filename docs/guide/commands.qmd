@@ -71,10 +71,30 @@ The command refuses some branches, because they hold your source files:
 
 With `--no-render`, the command publishes the output folder as it is.
 
+## add
+
+```bash
+smalldocs add SOURCE [--dir DIR] [--force]
+```
+
+The command copies the theme extensions of a git repository into the folder `_extensions/` of the
+project. SOURCE is `org/repo` on GitHub, `org/repo@ref`, a git URL, a local git repository, or a local
+folder. The command clones over ssh, so a private repository works with your own key. If an extension
+is already there, the command asks before it replaces the extension. `--force` replaces it without a
+question. See [Themes](themes.qmd).
+
+## themes
+
+```bash
+smalldocs themes [DIR]
+```
+
+The command lists the bundled themes, and the extensions in `_extensions/` with the source of each.
+
 ## Exit codes
 
 | Code | Meaning |
 |---|---|
 | 0 | Done |
 | 1 | Done, with something to fix: `--strict` with warnings, or `check` and `api check` with findings |
-| 2 | Stopped: no `_smalldocs.yml` or `_quarto.yml`, a bad option, a failed script, or a port in use |
+| 2 | Stopped: no `_smalldocs.yml` or `_quarto.yml`, a bad option, a failed script, a port in use, or a failed clone |

@@ -93,9 +93,26 @@ class Project:
         base = {k: v for k, v in self.config.items() if k not in skip and k != "book"}
         if self.native:
             return base
-        fmt = self.config.get("format") or {}
-        html = fmt.get("html") if isinstance(fmt, dict) else None
+        html = html_format(self.config.get("format"))[1]
         return merge(base, html if isinstance(html, dict) else {})
+
+    @property
+    def format_extension(self) -> str | None:  # The name of a Quarto format extension, such as `tufte` for `tufte-html`
+        "Name the extension of a custom format, `format: <name>-html`, which can also give smalldocs its theme."
+        key = None if self.native else html_format(self.config.get("format"))[0]
+        return key.removesuffix("-html") if key and key != "html" else None
+
+
+def html_format(
+    fmt: object,  # The value of `format`, in `_quarto.yml` or in front matter
+) -> tuple[str | None, object]:  # The key that smalldocs reads, and its options; (None, None) when there is no HTML format
+    "Find the HTML format: `html`, or else the first custom format of an extension, `<name>-html`."
+    if isinstance(fmt, str):
+        fmt = {fmt: None}
+    if not isinstance(fmt, dict):
+        return None, None
+    key = "html" if "html" in fmt else next((k for k in fmt if isinstance(k, str) and k.endswith("-html")), None)
+    return key, fmt.get(key) if key else None
 
 
 def section(
@@ -244,10 +261,10 @@ def load(
     proj.warnings += [f"unknown key {k}" for k in check_keys(cfg, KNOWN, "") if not k.startswith("book")]
     fmt = cfg.get("format") or {}
     if isinstance(fmt, dict):
-        proj.warnings += [f"format {k} is not built: smalldocs makes only html" for k in fmt if k != "html"]
-        html = fmt.get("html") or {}
+        key, html = html_format(fmt)
+        proj.warnings += [f"format {k} is not built: smalldocs makes only html" for k in fmt if k != key]
         if isinstance(html, dict):
-            proj.warnings += [f"format.html.{k} is ignored" for k in html if k not in HTML_OPTIONS]
+            proj.warnings += [f"format.{key}.{k} is ignored" for k in html if k not in HTML_OPTIONS]
     for name in filter_paths(cfg):
         if name.strip() and name != "quarto" and Path(name).name != "linkify.lua":  # `quarto` marks where Quarto's own filters run
             proj.warnings.append(f"filter {name} is not run: smalldocs runs no Lua")

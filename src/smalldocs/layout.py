@@ -7,6 +7,7 @@ import re
 from dataclasses import dataclass, field
 from pathlib import PurePosixPath
 from typing import TYPE_CHECKING
+from urllib.parse import quote
 
 from fastcore.xml import (
     H1,
@@ -45,6 +46,14 @@ if TYPE_CHECKING:
 KATEX = "https://cdn.jsdelivr.net/npm/katex@0.16.11/dist"
 MERMAID = "https://cdn.jsdelivr.net/npm/mermaid@11.4.1/dist/mermaid.esm.min.mjs"
 DARK_BG = {"primary", "dark", "secondary", "success", "danger", "info", "black"}
+# Runs in the head, after the two theme links, before the page paints. A stored choice wins over the mode the browser prefers.
+SCHEME_SCRIPT = (
+    "(function(){var d=document.documentElement,s=null;try{s=localStorage.getItem('smalldocs-scheme')}catch(e){}"
+    "var alt=s?s==='alternate':!!(window.matchMedia&&matchMedia('(prefers-color-scheme: dark)').matches);"
+    "var ls=document.querySelectorAll('link.quarto-color-scheme');if(alt)d.dataset.scheme='alternate';"
+    "if(s)ls.forEach(function(l){var on=l.classList.contains('quarto-color-alternate')===alt;if(on)l.setAttribute('blocking','render');l.media=on?'all':'not all'});"
+    "var on=ls[alt?1:0];if(on&&on.dataset.mode==='dark')d.classList.add('quarto-dark')})();"
+)
 
 
 def as_list(
@@ -334,6 +343,16 @@ class Layout:
         "Make a link from the config start at the project root."
         return href if href.startswith("/") else "/" + href
 
+    def logo(
+        self,
+        own: str | None,  # The logo that the site sets, if any
+    ) -> str | None:  # The link to the logo: the site's, else the theme's, else None
+        "Find the logo: the site's own, or else the one its theme extension gives."
+        if own:
+            return self.site.resolve(self.root_rel(own), self.page)
+        extra = self.site.theme_extra("logo")
+        return self.offset() + quote(str(extra[1])) if extra else None
+
     def icon(
         self,
         name: str,  # A Bootstrap icon name, or empty
@@ -362,14 +381,17 @@ class Layout:
             items.append(Meta(name="author", content=a.get("name", "") if isinstance(a, dict) else str(a)))
         items.append(Title(full))
         fav = self.web.get("favicon")
+        theme_fav = site.theme_extra("favicon")
         if fav:
             items.append(Link(rel="icon", href=self.site.resolve(self.root_rel(fav), page)))
+        elif theme_fav:
+            items.append(Link(rel="icon", href=offset + quote(str(theme_fav[1]))))
         themes = site.theme_files()
-        for n, (name, mode) in enumerate(themes):
-            href = f"{offset}site_libs/themes/{name.rsplit('/', 1)[-1].rsplit('.', 1)[0].replace('.min', '')}.min.css"
-            attrs = {"rel": "stylesheet", "href": href, "data-mode": mode, "cls": f"quarto-color-scheme{' quarto-color-alternate' if n else ''}", "id": f"quarto-bootstrap-{mode}"}
-            if n:
-                attrs["disabled"] = True
+        for n, t in enumerate(themes):
+            attrs = {"rel": "stylesheet", "href": f"{offset}site_libs/{quote(t.href)}", "data-mode": t.mode, "cls": f"quarto-color-scheme{' quarto-color-alternate' if n else ''}", "id": f"quarto-bootstrap-{t.mode}"}
+            if len(themes) > 1:
+                # with no stored choice, the browser loads the mode it prefers before it paints; the script below reads a stored choice
+                attrs["media"] = "(prefers-color-scheme: dark)" if n else "not all and (prefers-color-scheme: dark)"
             items.append(Link(**attrs))
         items.append(Link(rel="stylesheet", href=f"{offset}site_libs/bootstrap-icons/bootstrap-icons.min.css"))
         items.append(Link(rel="stylesheet", href=f"{offset}site_libs/smalldocs.css"))
@@ -399,7 +421,7 @@ class Layout:
             items.append(Script(src=f"{offset}site_libs/fuse/fuse.min.js"))
         items.append(Script(src=f"{offset}site_libs/smalldocs.js", defer=True))
         if len(themes) > 1:
-            items.append(Script(Safe("try{if(localStorage.getItem('smalldocs-scheme')==='alternate'){document.documentElement.dataset.scheme='alternate'}}catch(e){}")))
+            items.append(Script(Safe(SCHEME_SCRIPT)))
         items += [Safe(t) for t in self.includes("include-in-header")]
         return Head(*items)
 
@@ -468,10 +490,10 @@ class Layout:
         nav_cls = f"navbar navbar-expand-lg bg-{bg}" if bg else "navbar navbar-expand-lg sd-navbar-default"
         theme = {"data_bs_theme": "dark"} if dark else ({"data_bs_theme": "light"} if bg == "light" else {})
         title = nb.get("title", self.web.get("title"))
-        logo = nb.get("logo") or self.web.get("logo")
+        logo = self.logo(nb.get("logo") or self.web.get("logo"))
         brand = []
         if logo:
-            brand.append(Safe(f'<img src="{html.escape(self.site.resolve(self.root_rel(logo), self.page))}" alt="" class="navbar-logo">'))
+            brand.append(Safe(f'<img src="{html.escape(logo)}" alt="" class="navbar-logo">'))
         if title is not False and title:
             brand.append(Span(title, cls="navbar-title"))
         home = self.site.resolve("/index.qmd", self.page, record=False) if self.site.find_page(PurePosixPath("index.qmd")) else self.offset() or "./"
@@ -551,11 +573,11 @@ class Layout:
         header = []
         if self.nav.navbar is None:
             title = sb.get("title", self.web.get("title"))
-            logo = sb.get("logo") or self.web.get("logo")
+            logo = self.logo(sb.get("logo") or self.web.get("logo"))
             home = self.offset() or "./"
             bits = []
             if logo:
-                bits.append(A(Safe(f'<img src="{html.escape(self.site.resolve(self.root_rel(logo), self.page))}" alt="" class="sidebar-logo img-fluid">'), href=home, cls="sidebar-logo-link"))
+                bits.append(A(Safe(f'<img src="{html.escape(logo)}" alt="" class="sidebar-logo img-fluid">'), href=home, cls="sidebar-logo-link"))
             if title:
                 bits.append(Div(A(title, href=home), cls="sidebar-title mb-0 py-0"))
             tools = []

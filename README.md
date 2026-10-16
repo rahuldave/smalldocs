@@ -9,7 +9,8 @@ smalldocs builds a website from a folder of Markdown pages and notebooks, in Pyt
 - reference pages, made from the code of a package
 - listings of posts, with categories and a feed
 
-The site can use any [Bootswatch](https://bootswatch.com) theme, in a light version and a dark version.
+The site can use any [Bootswatch](https://bootswatch.com) theme, in a light version and a dark version, or a theme from a
+git repository.
 
 smalldocs makes websites only. It does not make PDF files, Word files, slides or books, and it runs no
 code. It is one package from PyPI, and it needs no other programs.

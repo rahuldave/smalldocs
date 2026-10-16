@@ -29,7 +29,7 @@ html.quarto-dark {
   --sd-diff-hunk: #8b949e; --sd-diff-hunk-bg: rgba(56, 139, 253, .1);
 }
 
-html { font-size: 17px; scroll-padding-top: 80px; }
+html { font-size: var(--sd-root-font-size, 17px); scroll-padding-top: 80px; }
 body { min-height: 100vh; display: flex; flex-direction: column; }
 #quarto-content { flex: 1 0 auto; }
 

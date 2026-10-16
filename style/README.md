@@ -26,7 +26,8 @@ Use each term in this meaning, and define it on the first page where a reader me
 | front matter | The YAML block between two `---` lines at the top of a page |
 | option | A key in `_smalldocs.yml`, in a `_metadata.yml` file or in front matter |
 | glob | A path pattern with `*`, `?` or `**`, such as `guide/*.qmd` |
-| theme | A Bootswatch stylesheet, which sets the colours and the fonts of the site |
+| theme | A stylesheet that sets the colours and the fonts of the site: a Bootswatch theme, a CSS file, or a theme extension |
+| theme extension | A folder `_extensions/<name>/` with a `smalldocs.yml` that names the CSS of a theme |
 | navbar | The bar across the top of each page, with links to pages |
 | sidebar | The list of pages at the left of each page |
 | table of contents | The list of the headings of a page, at the right of the page |

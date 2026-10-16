@@ -28,18 +28,22 @@
     document.documentElement.classList.toggle("quarto-dark", dark);
     $$(".sd-navbar-default").forEach((n) => { n.dataset.bsTheme = dark ? "dark" : "light"; });
   };
-  const applyScheme = () => {
-    const alt = document.documentElement.dataset.scheme === "alternate";
-    $$("link.quarto-color-scheme").forEach((l) => { l.disabled = l.classList.contains("quarto-color-alternate") ? !alt : alt; });
+  // The head's script has set data-scheme from the stored choice, or else from the mode the browser prefers
+  const setScheme = (alt) => {
+    if (alt) document.documentElement.dataset.scheme = "alternate"; else delete document.documentElement.dataset.scheme;
+    $$("link.quarto-color-scheme").forEach((l) => { l.media = l.classList.contains("quarto-color-alternate") === alt ? "all" : "not all"; });
     setTimeout(markDark, 50);
   };
   window.smalldocsToggleScheme = () => {
     const alt = document.documentElement.dataset.scheme !== "alternate";
-    if (alt) document.documentElement.dataset.scheme = "alternate"; else delete document.documentElement.dataset.scheme;
     store.set("smalldocs-scheme", alt ? "alternate" : "default");
-    applyScheme();
+    setScheme(alt);
   };
-  if ($$("link.quarto-color-scheme").length > 1) applyScheme(); else markDark();
+  if ($$("link.quarto-color-scheme").length > 1) {
+    setScheme(document.documentElement.dataset.scheme === "alternate");
+    const prefers = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)");
+    if (prefers && prefers.addEventListener) prefers.addEventListener("change", (e) => { if (!store.get("smalldocs-scheme")) setScheme(e.matches); });
+  } else markDark();
   window.addEventListener("load", markDark);
 
   // ---- the sidebar on narrow screens

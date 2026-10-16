@@ -18,8 +18,8 @@ Each page of the site has a navbar at the top, a sidebar at the left and a table
 right. smalldocs also makes reference pages from your Python code, and pages that list other pages,
 such as a blog.
 
-The site can use any theme from [Bootswatch](https://bootswatch.com). A theme is a stylesheet that sets
-the colours and the fonts of the site.
+The site can use any theme from [Bootswatch](https://bootswatch.com), or a theme from a git repository. A
+theme is a stylesheet that sets the colours and the fonts of the site.
 
 smalldocs is one Python package, and it needs no other programs. Install it from PyPI:
 

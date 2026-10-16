@@ -16,8 +16,8 @@ from urllib.parse import quote, unquote
 
 import yaml
 
-from . import layout, listing, shortcodes
-from .config import PAGE_EXTS, BuildError, Project, as_list, dir_metadata, filter_paths, glob_match, load, merge
+from . import extensions, layout, listing, shortcodes
+from .config import PAGE_EXTS, BuildError, Project, as_list, dir_metadata, filter_paths, glob_match, html_format, load, merge
 from .markdown import render, split_front_matter
 from .notebook import to_markdown
 
@@ -93,6 +93,17 @@ def rel(
     return quote(r, safe="/:@!$,;~+&=")
 
 
+@dataclass
+class ThemeFile:
+    "One theme stylesheet of the site: where its CSS comes from, and where the site keeps it."
+
+    name: str  # The theme, as `theme` names it: a Bootswatch theme, a CSS file, or an extension
+    mode: str  # `light` or `dark`
+    src: Path  # The CSS file to copy
+    href: str  # Its path in `site_libs`, such as `themes/cosmo.min.css` or `themes/ac215/ac215.css`
+    ext: "extensions.Extension | None" = None  # The extension it comes from, if any
+
+
 class Site:
     "A project being built."
 
@@ -112,6 +123,7 @@ class Site:
         self.resources: set[PurePosixPath] = set()
         self.broken: list[tuple[str, str]] = []
         self.symbols: dict[str, str] = {}
+        self._themes: list[ThemeFile] | None = None
 
     # ------------------------------------------------------------ messages
 
@@ -185,9 +197,9 @@ class Site:
         except (yaml.YAMLError, ValueError, UnicodeDecodeError) as e:
             raise BuildError(f"{src}: {e}") from e
         opts = merge(merge(self.project.html_options(), dir_metadata(self.project, Path(src))), front)
-        fmt = front.get("format")
-        if isinstance(fmt, dict) and isinstance(fmt.get("html"), dict):
-            opts = merge(opts, fmt["html"])
+        html = html_format(front.get("format"))[1]
+        if isinstance(html, dict):
+            opts = merge(opts, html)
         cells = cell_defaults(opts)
         if src.suffix == ".ipynb" and cells:
             front, body = to_markdown(text, cells)
@@ -382,30 +394,75 @@ class Site:
 
     # ------------------------------------------------------------ files beside the pages
 
-    def theme_files(self) -> list[tuple[str, str]]:  # (name, mode) for each theme stylesheet the site uses
-        "Find the themes in `format.html.theme`: one name, a list, or `light:` and `dark:`."
-        theme = self.project.html_options().get("theme", "cosmo")
-        out = []
+    def theme_files(self) -> list["ThemeFile"]:  # One for each theme stylesheet the site uses: light first, then dark
+        "Find the themes in `theme`: one name, a list, or `light:` and `dark:`. A name is a Bootswatch theme, a CSS file, or an extension."
+        if self._themes is not None:
+            return self._themes
+        own = self.project.smalldocs.get("theme") if not self.project.native else None
+        fmt = self.project.format_extension
+        # `format: tufte-html` uses the theme of the extension `tufte`, when it has a smalldocs.yml
+        fmt_theme = fmt if fmt and fmt in extensions.find(self.root) else None
+        theme = own or self.project.html_options().get("theme") or fmt_theme or "cosmo"
 
-        def names(v: object) -> list[str]:
-            v = v if isinstance(v, list) else [v]
-            ns = [str(x) for x in v if x]
+        def first(v: object) -> str:  # The first name that is not Sass; smalldocs reads only one theme of a list
+            ns = [str(x) for x in (v if isinstance(v, list) else [v]) if x]
             for n in ns:
                 if n.endswith(".scss"):
                     self.warn(f"theme {n}: smalldocs compiles no Sass; use css: and the --bs-* variables")
-            return [n for n in ns if not n.endswith(".scss")]
+            return next((n for n in ns if not n.endswith(".scss")), "cosmo")
 
         if isinstance(theme, dict):
-            for mode in ("light", "dark"):
-                if theme.get(mode):
-                    out.append((names(theme[mode])[0] if names(theme[mode]) else "cosmo", mode))
+            wanted = [(first(theme[mode]), mode) for mode in ("light", "dark") if theme.get(mode)]
         else:
-            out.append(((names(theme) or ["cosmo"])[0], "light"))
-        known = {p.name.split(".")[0] for p in (ASSETS / "vendor" / "bootswatch").glob("*.min.css")} | {"default", "bootstrap", "none"}
-        for name, _ in out:
-            if name not in known and not (self.root / name).exists():
-                raise BuildError(f"theme {name!r} is not a Bootswatch theme: use one of {', '.join(sorted(known))}")
-        return out
+            name = first(theme)
+            ext = extensions.lookup(self.root, name) if not (self.root / name).is_file() else None
+            wanted = [(name, mode) for mode in ext.modes()] if ext else [(name, "light")]
+        self._themes = [self.theme_file(name, mode) for name, mode in wanted]
+        return self._themes
+
+    def theme_file(
+        self,
+        name: str,  # A name in `theme`: a CSS file, an extension, or a Bootswatch theme
+        mode: str,  # `light` or `dark`
+    ) -> "ThemeFile":  # Where its CSS comes from and goes to
+        "Find one theme's CSS: a file in the project, then an extension in `_extensions/`, then a Bootswatch theme."
+        vendor = ASSETS / "vendor"
+        if (self.root / name).is_file():
+            return ThemeFile(name, mode, self.root / name, f"themes/{extensions.css_name(name)}")
+        ext = extensions.lookup(self.root, name)
+        if ext is not None:
+            for k in ext.spec:
+                if k not in extensions.SPEC_KEYS:
+                    self.warn(f"{ext.where}/{extensions.SPEC}: unknown key {k}")
+            css = ext.css(mode)
+            if not extensions.is_bootstrap((ext.path / css).read_text(encoding="utf-8-sig", errors="replace")):
+                self.warn(f"{ext.where}/{css} is not a whole Bootstrap 5.3 stylesheet: the page loads no Bootstrap but the theme's")
+            return ThemeFile(name, mode, ext.path / css, f"themes/{name}/{css}", ext)
+        if name in extensions.PLAIN:
+            return ThemeFile(name, mode, vendor / "bootstrap" / "bootstrap.min.css", f"themes/{extensions.css_name(name)}")
+        if name in extensions.bundled():
+            return ThemeFile(name, mode, vendor / "bootswatch" / f"{name}.min.css", f"themes/{extensions.css_name(name)}")
+        names = sorted({*extensions.bundled(), *extensions.PLAIN, *extensions.find(self.root)})
+        raise BuildError(f"theme {name!r} is not a Bootswatch theme, a CSS file or an extension in _extensions/: use one of {', '.join(names)}")
+
+    def theme_extra(
+        self,
+        key: str,  # `logo` or `favicon`
+    ) -> tuple[Path, PurePosixPath] | None:  # The file, and its path in the output folder, such as `site_libs/themes/ac215/logo.png`; None when the site sets its own
+        "Find the theme's logo or favicon, which the site uses only when it sets none."
+        web = self.project.website
+        if key == "logo":
+            bars = [b for b in as_list(web.get("sidebar")) if isinstance(b, dict)]
+            nb = web.get("navbar")
+            if web.get("logo") or (isinstance(nb, dict) and nb.get("logo")) or any(b.get("logo") for b in bars):
+                return None
+        elif web.get(key):
+            return None
+        for t in self.theme_files():
+            if t.ext is not None and t.ext.spec.get(key):
+                rel = t.ext.file(key, t.ext.spec[key])
+                return t.ext.path / rel, PurePosixPath("site_libs/themes", t.name, rel)
+        return None
 
     def copy_assets(
         self,
@@ -417,15 +474,21 @@ class Site:
         shutil.copytree(vendor / "bootstrap", libs / "bootstrap", dirs_exist_ok=True, ignore=shutil.ignore_patterns("bootstrap.min.css", "LICENSE"))
         shutil.copytree(vendor / "bootstrap-icons", libs / "bootstrap-icons", dirs_exist_ok=True)
         shutil.copytree(vendor / "fuse", libs / "fuse", dirs_exist_ok=True, ignore=shutil.ignore_patterns("LICENSE"))
-        for name, _mode in self.theme_files():
-            dest = libs / "themes" / f"{Path(name).stem}.min.css"
+        for t in self.theme_files():
+            dest = libs / t.href
             dest.parent.mkdir(parents=True, exist_ok=True)
-            if (self.root / name).is_file():
-                shutil.copy(self.root / name, dest)
-            elif name in ("default", "bootstrap", "none"):
-                shutil.copy(vendor / "bootstrap" / "bootstrap.min.css", dest)
-            else:
-                shutil.copy(vendor / "bootswatch" / f"{name}.min.css", dest)
+            shutil.copy(t.src, dest)
+            if t.ext is not None:
+                top = t.ext.path.resolve()
+                for f in extensions.css_files(t.src, t.ext, self.warn):
+                    to = libs / "themes" / t.name / f.relative_to(top)
+                    to.parent.mkdir(parents=True, exist_ok=True)
+                    shutil.copy(f, to)
+        for key in ("logo", "favicon"):
+            extra = self.theme_extra(key)
+            if extra is not None:
+                (self.out / extra[1]).parent.mkdir(parents=True, exist_ok=True)
+                shutil.copy(extra[0], self.out / extra[1])
         for f in ("smalldocs.css", "smalldocs.js"):
             shutil.copy(ASSETS / f, libs / f)
         for css in layout.as_list(self.project.html_options().get("css")):
