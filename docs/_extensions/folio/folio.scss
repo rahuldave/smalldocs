@@ -252,7 +252,6 @@ html .quarto-title h1.title { font-size: clamp(2rem, 3.3vw, 2.6rem); line-height
 html .navbar-title { font-size: 2rem; }
 html main.content h2 { font-size: 1.5rem; }
 html .quarto-title .subtitle { max-width: 44ch; }
-html .quarto-title::before { content: "FIELD NOTES / SMALLDOCS"; display: block; font: 500 .6rem var(--bs-font-sans-serif); letter-spacing: .16em; color: var(--e-secondary); margin-bottom: 1.3rem; }
 @media (max-width:575.98px) { html .quarto-title h1.title { font-size: 2rem; } }
 
 /* Quarto's navbar has its own Bootstrap color mode. Keep the page palette. */

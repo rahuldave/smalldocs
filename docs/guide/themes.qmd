@@ -155,8 +155,12 @@ same theme.
 The [Elegant collection](https://rahuldave.com/elegant-themes/) compares themes on the same pages.
 It includes the original custom designs and their refinements, with source links and example sites.
 
+The [theme handbook](https://rahuldave.com/elegant-themes/theme-guide.html) describes each theme,
+its fonts and its colour modes. It also shows how to add optional labels above page titles.
+
 Folio, Atelier and Nocturne include light and dark modes. Their revised release is `v0.2.0`.
 The Reading themes are separate extensions that keep the native palette of a Bootswatch theme.
+The current default branches omit the fixed title labels. The pinned `v0.2.0` release still includes them.
 
 | Theme and example | Name in `theme:` | Modes |
 |---|---|---|
@@ -177,7 +181,7 @@ name, as in the commands below.
 Run the command in the folder with your `_smalldocs.yml`:
 
 ```bash
-smalldocs add rahuldave/smalldocs-folio@v0.2.0
+smalldocs add rahuldave/smalldocs-folio
 ```
 
 Set the theme, then render the site:
@@ -190,16 +194,16 @@ theme: folio
 smalldocs render
 ```
 
-The tag `@v0.2.0` selects a fixed release. Leave out the tag to get the newest commit of the default
-branch. The extension includes the compiled CSS and local fonts, so installation needs no Sass compiler.
+The command gets the newest commit of the default branch, including the title label cleanup.
+Add a tag to select a fixed release. The extension includes compiled CSS and local fonts, so installation needs no Sass compiler.
 
 ### Update the original Atelier
 
 The revised Atelier keeps the name `atelier`. Existing sites keep their installed copy until you
-replace it. To install the revised release:
+replace it. To install the current theme without the fixed title label:
 
 ```bash
-smalldocs add rahuldave/smalldocs-atelier@v0.2.0 --force
+smalldocs add rahuldave/smalldocs-atelier --force
 smalldocs render
 ```
 

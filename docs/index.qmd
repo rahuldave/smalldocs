@@ -24,6 +24,7 @@ A theme is a stylesheet that sets the colours and the fonts of the site. smalldo
 This site uses Folio, with serif text, a monospace font for code, and light and dark modes.
 [Choose and install a theme](guide/themes.qmd#themes-in-the-elegant-collection), or
 [compare the themes](https://rahuldave.com/elegant-themes/).
+The [theme handbook](https://rahuldave.com/elegant-themes/theme-guide.html) describes each design and its optional title labels.
 
 smalldocs is one Python package, and it needs no other programs. Install it from PyPI:
 
