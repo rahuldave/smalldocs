@@ -31,12 +31,10 @@ website:
       - section: Reference
         contents: api/*
   page-footer:
-    left: "smalldocs is MIT-licensed."
+    left: "A [smallish.dev](https://smallish.dev/) project. MIT-licensed."
     right: "Built with [smalldocs](https://github.com/rahuldave/smalldocs)."
 
-theme:
-  light: cosmo
-  dark: darkly
+theme: folio
 toc: true
 code-copy: true
 

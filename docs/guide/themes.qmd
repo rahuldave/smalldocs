@@ -1,6 +1,6 @@
 ---
 title: Themes
-description: Any Bootswatch theme, a light theme and a dark theme together, themes from a git repository, and your own CSS.
+description: Choose a theme, install a fixed release, update an older copy, and set light and dark modes.
 order: 7
 ---
 
@@ -26,8 +26,7 @@ The name `bootstrap` gives Bootstrap with no theme.
 
 ## A light theme and a dark theme
 
-If you give two themes, the navbar or the sidebar gets a toggle between them. This site uses two
-themes:
+If you give two themes, the navbar or the sidebar gets a toggle between them. For example:
 
 ```yaml
 theme:
@@ -38,6 +37,10 @@ theme:
 On the first visit, the page starts in the mode that the browser prefers. The browser keeps the choice
 of the reader after a click on the toggle, and that choice wins on later visits. The page loads the
 right theme before it shows anything, so it does not flash the other theme first.
+
+An extension can include both modes under one name. This site uses `theme: folio`, which selects the
+light and dark stylesheets of Folio. [The Elegant collection](#themes-in-the-elegant-collection) has
+installation examples.
 
 ## A theme from a git repository
 
@@ -146,6 +149,118 @@ smalldocs add rahuldave/smalldocs-tufte --force
 To get a release, give its tag, such as `@v0.2.0`. `smalldocs themes` prints the command that gets
 the same source again, and the command that gets the newest commit. Commit the folder `_extensions/` with your project, so that each build uses the
 same theme.
+
+## Themes in the Elegant collection
+
+The [Elegant collection](https://rahuldave.com/elegant-themes/) compares themes on the same pages.
+It includes the original custom designs and their refinements, with source links and example sites.
+
+Folio, Atelier and Nocturne include light and dark modes. Their revised release is `v0.2.0`.
+The Reading themes are separate extensions that keep the native palette of a Bootswatch theme.
+
+| Theme and example | Name in `theme:` | Modes |
+|---|---|---|
+| [Folio](https://rahuldave.com/smalldocs-folio/) | [`folio`](https://github.com/rahuldave/smalldocs-folio) | Light and dark |
+| [Atelier](https://rahuldave.com/smalldocs-atelier/) | [`atelier`](https://github.com/rahuldave/smalldocs-atelier) | Light and dark |
+| [Nocturne](https://rahuldave.com/smalldocs-nocturne/) | [`nocturne`](https://github.com/rahuldave/smalldocs-nocturne) | Light and dark |
+| [Zephyr Reading](https://rahuldave.com/smalldocs-zephyr-reading/) | [`zephyr-reading`](https://github.com/rahuldave/smalldocs-zephyr-reading) | Light |
+| [Simplex Reading](https://rahuldave.com/smalldocs-simplex-reading/) | [`simplex-reading`](https://github.com/rahuldave/smalldocs-simplex-reading) | Light |
+| [Pulse Reading](https://rahuldave.com/smalldocs-pulse-reading/) | [`pulse-reading`](https://github.com/rahuldave/smalldocs-pulse-reading) | Light |
+| [Litera Reading](https://rahuldave.com/smalldocs-litera-reading/) | [`litera-reading`](https://github.com/rahuldave/smalldocs-litera-reading) | Light |
+| [Darkly Reading](https://rahuldave.com/smalldocs-darkly-reading/) | [`darkly-reading`](https://github.com/rahuldave/smalldocs-darkly-reading) | Dark |
+
+The name links to the source repository. The install source is `rahuldave/smalldocs-` followed by the
+name, as in the commands below.
+
+### Install Folio
+
+Run the command in the folder with your `_smalldocs.yml`:
+
+```bash
+smalldocs add rahuldave/smalldocs-folio@v0.2.0
+```
+
+Set the theme, then render the site:
+
+```yaml
+theme: folio
+```
+
+```bash
+smalldocs render
+```
+
+The tag `@v0.2.0` selects a fixed release. Leave out the tag to get the newest commit of the default
+branch. The extension includes the compiled CSS and local fonts, so installation needs no Sass compiler.
+
+### Update the original Atelier
+
+The revised Atelier keeps the name `atelier`. Existing sites keep their installed copy until you
+replace it. To install the revised release:
+
+```bash
+smalldocs add rahuldave/smalldocs-atelier@v0.2.0 --force
+smalldocs render
+```
+
+Keep `theme: atelier`. The command replaces `_extensions/atelier/`. Keep any local theme changes in
+your own stylesheet before replacing that folder. Commit the updated extension with your project.
+
+Use `smalldocs themes` to see the installed source and commit. Folio and Nocturne use the same update
+commands, with their own repository names.
+
+The original custom designs remain at the tag `before-reading-redesign-2026-10-16`.
+To restore the original Atelier:
+
+```bash
+smalldocs add rahuldave/smalldocs-atelier@before-reading-redesign-2026-10-16 --force
+smalldocs render
+```
+
+The configuration name stays `atelier` for both versions.
+
+### Use a Reading theme
+
+The Reading extensions have separate names from the bundled themes. For example, `litera` selects the
+stock Bootswatch theme and `litera-reading` selects the refinement. Install the refinement first:
+
+```bash
+smalldocs add rahuldave/smalldocs-litera-reading
+```
+
+```yaml
+theme: litera-reading
+```
+
+You can pair a light Reading theme with Darkly Reading. Install both extensions:
+
+```bash
+smalldocs add rahuldave/smalldocs-litera-reading
+smalldocs add rahuldave/smalldocs-darkly-reading
+```
+
+```yaml
+theme:
+  light: litera-reading
+  dark: darkly-reading
+```
+
+The navbar or sidebar shows the mode toggle. A Reading extension has one native palette; Folio,
+Atelier and Nocturne have both modes in one extension.
+
+### Read the assessments and principles
+
+The collection has separate assessments for typography and visual design. Each scores themes out of
+100, with the same criteria before and after refinement. The scores come from a self-review of shared
+specimens.
+
+- [Typography assessment](https://rahuldave.com/elegant-themes/typography-report.html)
+- [Visual design assessment](https://rahuldave.com/elegant-themes/visual-design-report.html)
+- [Typography principles](https://rahuldave.com/elegant-themes/typography-guide.html)
+- [UI design principles](https://rahuldave.com/elegant-themes/ui-design-guide.html)
+
+The typography criteria draw on [Butterick's Practical Typography](https://practicaltypography.com/).
+The visual design criteria draw on [Refactoring UI](https://refactoringui.com/).
 
 ## Make a theme for smalldocs and Quarto
 
