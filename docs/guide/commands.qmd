@@ -91,6 +91,17 @@ smalldocs themes [DIR]
 
 The command lists the bundled themes, and the extensions in `_extensions/` with the source of each.
 
+## notebooks lint
+
+```bash
+smalldocs notebooks lint [DIR]
+```
+
+The command lists packages found in each notebook's imports and checks the Pyodide disallow list.
+It runs no notebook code and needs no JupyterLite installation.
+It exits with code 1 if a notebook fails lint.
+See [Run notebooks in the browser](browser-notebooks.qmd).
+
 ## Exit codes
 
 | Code | Meaning |

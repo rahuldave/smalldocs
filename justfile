@@ -28,9 +28,7 @@ style *args:
     set -e
     tmp=$(mktemp -d)
     trap 'rm -rf "$tmp"' EXIT
-    for nb in docs/guide/*.ipynb; do
-        python3 -c 'import json,sys; print("\n\n".join("".join(c["source"]) for c in json.load(open(sys.argv[1]))["cells"] if c["cell_type"] == "markdown"))' "$nb" > "$tmp/$(basename "$nb" .ipynb).md"
-    done
+    python3 -c 'import json,sys; from pathlib import Path; [(Path(sys.argv[1]) / (str(p).replace("/", "__") + ".md")).write_text("\n\n".join("".join(c["source"]) for c in json.loads(p.read_text())["cells"] if c["cell_type"] == "markdown")) for p in Path("docs/guide").rglob("*.ipynb")]' "$tmp"
     python3 style/check.py README.md docs/*.qmd docs/guide/*.qmd docs/news/*.qmd "$tmp"/*.md {{ args }}
 
 # Build the wheel and the sdist into dist/

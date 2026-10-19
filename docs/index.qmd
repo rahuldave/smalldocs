@@ -26,6 +26,9 @@ This site uses Folio, with serif text, a monospace font for code, and light and 
 [compare the themes](https://rahuldave.com/elegant-themes/).
 The [theme handbook](https://rahuldave.com/elegant-themes/theme-guide.html) describes each design and its optional title labels.
 
+Optional [browser notebooks](guide/browser-notebooks.qmd) let readers edit and run Python with JupyterLite and Pyodide.
+Try the [plot example](guide/browser-plot/index.ipynb) or the [data example](guide/browser-data/index.ipynb).
+
 smalldocs is one Python package, and it needs no other programs. Install it from PyPI:
 
 ```bash

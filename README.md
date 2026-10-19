@@ -40,7 +40,8 @@ The documentation is at [docs.smallish.dev](https://docs.smallish.dev/). smalldo
   attributes, divs, callouts, tabs, maths, diagrams, raw HTML and shortcodes. A `.qmd` page is Markdown
   that uses them. [Writing pages](https://docs.smallish.dev/guide/markdown.html) describes each one.
 - **Notebooks.** smalldocs shows the outputs that were saved in a notebook. The `#|` option lines at
-  the top of a cell can hide its code or its output.
+  the top of a cell can hide its code or its output. Optional
+  [browser notebooks](https://docs.smallish.dev/guide/browser-notebooks.html) add run and download buttons with JupyterLite and Pyodide.
 - **Listings.** smalldocs makes listings as rows, cards or a table, with sorting, a filter, categories,
   pages and an RSS feed.
 

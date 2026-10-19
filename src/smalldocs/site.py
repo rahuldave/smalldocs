@@ -419,6 +419,11 @@ class Site:
         self.load_symbols()
         for page in self.pages.values():
             self.render_page(page)
+        from . import browser
+
+        notebooks = browser.collect(self)
+        if notebooks:
+            browser.require_jupyterlite()  # fail before the previous output is emptied
         nav = layout.SiteNav(self)
         for page in self.pages.values():
             if page.meta.get("listing"):
@@ -433,6 +438,7 @@ class Site:
             dest.write_text(layout.page(self, nav, page), encoding="utf-8")
         self.copy_assets(nav)
         self.copy_resources()
+        browser.build(self, nav, notebooks)
         self.write_search()
         self.write_sitemap()
         listing.write_feeds(self)

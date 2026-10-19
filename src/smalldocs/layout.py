@@ -8,7 +8,7 @@ import re
 from dataclasses import dataclass, field
 from pathlib import PurePosixPath
 from typing import TYPE_CHECKING
-from urllib.parse import quote
+from urllib.parse import quote, urlencode
 
 from fastcore.xml import (
     H1,
@@ -510,6 +510,13 @@ class Layout:
             items.append(Link(**attrs))
         items.append(Link(rel="stylesheet", href=f"{offset}site_libs/bootstrap-icons/bootstrap-icons.min.css"))
         items.append(Link(rel="stylesheet", href=f"{offset}site_libs/smalldocs.css"))
+        if page.env.get("notebook_bundle") or page.env.get("notebook_loader"):
+            items.append(Link(rel="stylesheet", href=f"{offset}site_libs/notebooks.css"))
+        if page.env.get("notebook_loader"):
+            items += [
+                Script(src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js", defer=True),
+                Script(src=f"{offset}site_libs/notebook-loader.js", defer=True),
+            ]
         own_style = self.page_style()
         if own_style:
             items.append(Style(Safe(own_style), id="smalldocs-page-style"))
@@ -1342,6 +1349,21 @@ class Layout:
             out["data-external-filter"] = str(m["link-external-filter"])
         return out
 
+    def notebook_controls(self) -> list:  # Run and download links for an eligible notebook, else nothing
+        "Put the notebook's run and download controls in the active theme."
+        entry = self.page.env.get("notebook_bundle")
+        if not entry:
+            return []
+        offset = self.offset()
+        params = urlencode({"zip": quote(entry["zip"]), "path": entry["path"], "notebook": entry["notebook"]})
+        return [Div(
+            A(I(cls="bi bi-play-fill", aria_hidden="true"), "Run in browser", href=f"{offset}lab/loader.html?{params}",
+              target="_blank", rel="noopener", cls="sd-notebook-button sd-notebook-run"),
+            A(I(cls="bi bi-download", aria_hidden="true"), "Download and run", href=offset + quote(entry["zip"]),
+              download="", cls="sd-notebook-button", title=f"Download the bundle; run with uvx juv run {entry['notebook']}"),
+            cls="sd-notebook-controls", role="group", aria_label="Notebook controls",
+        )]
+
     def render(self) -> str:  # The whole HTML document
         "Put the page together."
         page, m = self.page, self.meta
@@ -1360,6 +1382,7 @@ class Layout:
         content_cls += " has-margin" if margin or page.env.get("margin_notes") else ""
         main = Main(
             *self.title_block(),
+            *self.notebook_controls(),
             *(self.toc(body=True, ids=not toc) if in_body else []),
             Safe(page.html),
             *self.back_to_top(),

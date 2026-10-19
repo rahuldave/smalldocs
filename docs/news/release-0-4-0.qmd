@@ -1,0 +1,24 @@
+---
+title: smalldocs 0.4.0
+subtitle: Run Python notebooks in the browser
+date: 2026-10-18
+author: Rahul Dave
+categories: [release]
+image: ../images/mark.svg
+---
+
+Python notebooks can now have **Run in browser** and **Download and run** buttons.
+JupyterLite supplies the editor, and Pyodide runs Python in the reader's browser.
+The buttons and the loading page use the fonts and colours of your site's theme.
+
+Install `smalldocs[notebooks]` and set `browser-notebooks: true` to turn on the feature.
+The build reads imports, checks the Pyodide package disallow list, and puts dependency metadata into a copied notebook.
+The source notebook stays unchanged, and the build runs no notebook code.
+
+The documentation includes two examples:
+
+- [A plot in the browser](../guide/browser-plot/index.ipynb) uses NumPy and Matplotlib to draw sine and cosine curves.
+- [Read data in the browser](../guide/browser-data/index.ipynb) reads a bundled CSV file with Pandas and draws a Seaborn plot.
+
+The [browser notebook guide](../guide/browser-notebooks.qmd) covers setup, lint, data files and downloads.
+Sites that leave the feature off keep their existing output.

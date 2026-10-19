@@ -61,7 +61,7 @@ KNOWN: dict = {
 # The files of the config, in the order smalldocs looks for them. The first two are smalldocs's own.
 CONFIG_FILES = ("_smalldocs.yml", "_smalldocs.yaml", "_quarto.yml", "_quarto.yaml")
 # The keys of smalldocs's own options: under `smalldocs:` in `_quarto.yml`, at the top level of `_smalldocs.yml`.
-OWN_KEYS = ("linkify", "symbols", "api")
+OWN_KEYS = ("linkify", "symbols", "api", "browser-notebooks")
 HTML_OPTIONS = {
     "theme", "css", "toc", "toc-depth", "toc-title", "toc-location", "toc-expand", "number-sections", "number-depth",
     "code-copy", "code-overflow", "code-fold", "code-summary", "code-line-numbers", "from", "page-layout",

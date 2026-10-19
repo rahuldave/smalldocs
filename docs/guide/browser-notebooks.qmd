@@ -1,0 +1,108 @@
+---
+title: Run notebooks in the browser
+description: Add run and download buttons to Python notebooks with JupyterLite and Pyodide.
+order: 5
+---
+
+Readers can open a Python notebook in their browser with **Run in browser**.
+JupyterLite supplies the notebook editor, and Pyodide runs Python in the browser.
+The buttons and the loading page use the fonts and colours of your site.
+
+Try the [plot example](browser-plot/index.ipynb) and the [data example](browser-data/index.ipynb).
+The data example includes a CSV file and installs Seaborn from its generated dependency list.
+
+## Turn on browser notebooks
+
+Install the optional notebook support:
+
+```bash
+pip install 'smalldocs[notebooks]'
+```
+
+For a local checkout, use `uv sync --extra notebooks`.
+
+Add this option to `_smalldocs.yml`:
+
+```yaml
+browser-notebooks: true
+```
+
+For `_quarto.yml`, put the option under `smalldocs`:
+
+```yaml
+smalldocs:
+  browser-notebooks: true
+```
+
+Build your site with `smalldocs render`.
+Each Python notebook that passes lint gets **Run in browser** and **Download and run** buttons.
+The build creates the JupyterLite site in `lab/` and the bundles in `site_libs/notebooks/`.
+Sites under a URL prefix use the same relative links.
+
+## Packages and lint
+
+smalldocs reads imports from the code cells and maps them to package names.
+For example, `sklearn` becomes `scikit-learn`, and `PIL` becomes `pillow`.
+Imports from the Python standard library do not need packages.
+
+The build puts the package list into a copy of the notebook as PEP 723 metadata.
+PEP 723 is a format for declaring Python dependencies in a comment block.
+The source notebook stays unchanged.
+When you run the copy in JupyterLite, its first code cell installs those packages.
+
+Run the lint command on its own:
+
+```bash
+smalldocs notebooks lint docs
+```
+
+The lint checks for Python code and packages on a disallow list.
+The list contains `torch`, `pytorch`, `pymc`, `pymc3`, `theano`, `theano-pymc` and `lxml`.
+A notebook with one of those packages gets no run or download buttons.
+The command reports each result and exits with code 1 if a notebook fails lint.
+
+Lint does not execute the notebook or install its packages.
+The check does not promise that every package or operation works in Pyodide.
+Run the notebook yourself after you build the site.
+
+To leave one notebook out, add this key to its front matter, the YAML cell at the start:
+
+```yaml
+browser-runnable: false
+```
+
+The same key works in the folder's `_metadata.yml`.
+It can turn the runner off, but it cannot bypass the disallow list.
+
+## Include data files
+
+Keep each notebook in its own folder, with its files in `assets/` or `data/`:
+
+```text
+example/
+  index.ipynb
+  data/
+    measurements.csv
+```
+
+The bundle includes images, CSV, TSV, JSON, text, NumPy arrays, pickle files and Python files in those folders.
+Nested folders keep their paths, so `pandas.read_csv("data/measurements.csv")` reads the same file in JupyterLite.
+The data example shows that layout.
+
+Turning on browser notebooks publishes the notebook copies and their bundled files.
+The notebook copies include hidden code cells.
+
+## Open or download a notebook
+
+Choose **Run in browser** to open a notebook in a new tab.
+Use **Run > Run All Cells** in JupyterLite to install the packages and run the code.
+Opening the runner again replaces that browser copy with the site's notebook.
+Download your edits from JupyterLite before you reopen it.
+
+Choose **Download and run** to save a ZIP file with the notebook and data.
+Extract the ZIP, then run the notebook with `uvx juv run index.ipynb`.
+`juv` reads the generated dependency metadata and installs the packages for desktop Python.
+
+The build runs no notebook code.
+Readers need an internet connection to download the browser's Python runtime and packages.
+Serve the site over HTTPS, or use `smalldocs preview` on localhost.

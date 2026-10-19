@@ -30,6 +30,10 @@ website:
         contents: guide/*
       - section: Reference
         contents: api/*
+      - section: Notebook examples
+        contents:
+          - guide/browser-plot/index.ipynb
+          - guide/browser-data/index.ipynb
   page-footer:
     left: "A [smallish.dev](https://smallish.dev/) project. MIT-licensed."
     right: "Built with [smalldocs](https://github.com/rahuldave/smalldocs)."
@@ -39,6 +43,7 @@ toc: true
 code-copy: true
 
 linkify: true
+browser-notebooks: true
 api:
   packages: [smalldocs]
   root: ..

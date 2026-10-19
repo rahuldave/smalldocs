@@ -76,6 +76,35 @@ def cmd_themes(
     return themes(Path(args.dir))
 
 
+def cmd_notebooks(
+    args: argparse.Namespace,  # The parsed command line
+) -> int:  # 1 when any notebook fails lint, else 0
+    "List notebook imports and Pyodide disallow-list findings without running code."
+    import json
+
+    from . import browser
+    from .config import load
+    from .site import Site
+
+    site = Site(load(args.dir))
+    failed = False
+    for name in site.discover():
+        if name.suffix != ".ipynb":
+            continue
+        page = site.read(name)
+        if site.is_draft(page) and site.draft_mode() == "gone":
+            continue
+        if page.meta.get("browser-runnable") is False:
+            print(f"SKIP {name}: browser-runnable is false")
+            continue
+        notebook = json.loads((site.root / name).read_text(encoding="utf-8-sig"))
+        reasons = browser.lint(notebook)
+        failed |= bool(reasons)
+        message = "; ".join(reasons) if reasons else ", ".join(browser.dependencies(notebook)) or "standard library only"
+        print(f"{'FAIL' if reasons else 'PASS'} {name}: {message}")
+    return int(failed)
+
+
 def parser() -> argparse.ArgumentParser:  # The parser for every command
     "Describe the commands and their options."
     p = argparse.ArgumentParser(prog="smalldocs", description="Quarto-like websites from a _smalldocs.yml or _quarto.yml project, in pure Python.")
@@ -123,6 +152,11 @@ def parser() -> argparse.ArgumentParser:  # The parser for every command
     t = sub.add_parser("themes", help="list the bundled themes and the extensions in _extensions/")
     t.add_argument("dir", nargs="?", default=".", help="the project folder")
     t.set_defaults(func=cmd_themes)
+
+    n = sub.add_parser("notebooks", help="check notebook imports against the Pyodide disallow list")
+    n.add_argument("action", choices=["lint"], help="lint without executing notebooks or building JupyterLite")
+    n.add_argument("dir", nargs="?", default=".", help="the project folder")
+    n.set_defaults(func=cmd_notebooks)
     return p
 
 

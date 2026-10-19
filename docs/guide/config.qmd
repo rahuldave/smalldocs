@@ -87,6 +87,16 @@ rules of Quarto:
 Sometimes a page links to a page that is not built, for example a draft. smalldocs reports the link,
 and it never copies the source of that page into the site.
 
+## Browser notebooks
+
+`browser-notebooks: true` adds run and download buttons to Python notebooks that pass the Pyodide package lint.
+The option defaults to `false` and needs the optional `smalldocs[notebooks]` packages.
+Put it at the top level of `_smalldocs.yml`, or under `smalldocs` in `_quarto.yml`.
+See [Run notebooks in the browser](browser-notebooks.qmd) for setup, packages and data files.
+
+`browser-runnable: false` in a notebook's front matter or its folder's `_metadata.yml` leaves that notebook out.
+Notebook sources stay private unless you turn on browser notebooks.
+
 ## website
 
 | Key | What it does | Default |

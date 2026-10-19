@@ -6,7 +6,8 @@ The Codex review, browser, and attribution instructions below adapt the Claude-s
 smalldocs builds a Quarto-like website from a `_smalldocs.yml` or `_quarto.yml` project, in pure Python, and is published on
 PyPI as `smalldocs`. It exists so that Rahul's projects (babykev, smallwikiapp, nbinlineai, ProblemSolving,
 the timewalk class kits) can build their docs sites without Quarto, which is 600 MB of Pandoc, Deno, Sass
-and Typst. It makes websites only: no PDF, Word, slides or books, and it runs no code.
+and Typst. It makes websites only: no PDF, Word, slides or books. It runs no notebook code during a build.
+Optional browser notebooks run in the reader's browser with JupyterLite and Pyodide.
 
 The user documentation is the site in `docs/`, built by smalldocs itself. Keep it true when the behaviour
 changes. The README is a short front page.
@@ -23,7 +24,7 @@ reads the Markdown cells of the notebooks; it must pass before a commit.
 - **New features never change existing output.** A page, site or notebook that uses none of a new feature builds byte for byte as before. Check it with the example sites before a release (see Checking a change).
 - **`_smalldocs.yml` is the config; read `_quarto.yml` unchanged.** `config.load` looks for `_smalldocs.yml`
   first (`Project.native`). There the page options and smalldocs' own options (`linkify`, `symbols`, `api`,
-  `config.OWN_KEYS`) are top-level keys, and `format`, `smalldocs` and `filters` are warnings. In a
+  `browser-notebooks`, `config.OWN_KEYS`) are top-level keys, and `format`, `smalldocs` and `filters` are warnings. In a
   `_quarto.yml`, page options are under `format.html` and smalldocs' own settings under `smalldocs:`, which
   Quarto ignores. A key smalldocs does not read is a warning, never silent.
 - **Any Bootswatch theme, with no Sass.** `assets/smalldocs.css` uses only Bootstrap's `--bs-*` variables
@@ -33,8 +34,8 @@ reads the Markdown cells of the notebooks; it must pass before a commit.
   the project or above it, holds `.git`, or is not empty and has no `site_libs`. The API build deletes only
   pages listed in its manifest, `api/.smalldocs-api`, and `api.out` must be inside the site. Keep these
   guards; each has a test.
-- **Never publish a source.** A link to a page that is not built is reported, and its `.qmd` is never
-  copied. `resources` and `render` take one glob or a list (`config.as_list`); globs use `config.glob_match` (but `api.check` uses `glob_regex` from the root, so `*.py` is the root's files only)
+- **Never publish a source by default.** A link to a page that is not built is reported, and its `.qmd` is never
+  copied. `browser-notebooks: true` explicitly exports copies of the built notebooks that pass lint, with their assets and data. `resources` and `render` take one glob or a list (`config.as_list`); globs use `config.glob_match` (but `api.check` uses `glob_regex` from the root, so `*.py` is the root's files only)
   (as Quarto: with a `/`, `*` stays in one folder; with no `/`, the glob matches at any depth).
 - **`publish` never touches the working tree or the current branch.** It works in a temporary worktree,
   removes it in `finally`, deletes only a branch it made (a uuid name), skips hooks, and refuses to
@@ -52,6 +53,7 @@ reads the Markdown cells of the notebooks; it must pass before a commit.
 | `src/smalldocs/markdown.py` | markdown-it-py with mdit-py-plugins, and Pandoc's rules: heading attributes and ids, fenced divs, callouts, tabsets, figures, sections, typography, code, maths |
 | `src/smalldocs/highlight.py` | Pygments tokens to Pandoc's classes (`kw`, `st`, `co`, ...) |
 | `src/smalldocs/notebook.py` | `.ipynb` to Markdown with raw HTML outputs; nothing runs |
+| `src/smalldocs/browser.py` | Optional browser notebooks: import lint, PEP 723 metadata in copies, ZIP bundles and JupyterLite |
 | `src/smalldocs/shortcodes.py` | `include`, `meta`, `var`, `env`, `pagebreak`, `kbd`, `video`, `lipsum`, `placeholder` |
 | `src/smalldocs/site.py` | `Site`: discovery, pages, link rewriting (`resolve`), scripts, assets, resources, search.json, sitemap |
 | `src/smalldocs/layout.py` | `SiteNav` (sidebars, navbar, order, breadcrumbs) and `Layout` (the page, in Quarto's markup, with `fastcore.xml`) |
