@@ -58,6 +58,7 @@ reads the Markdown cells of the notebooks; it must pass before a commit.
 | `src/smalldocs/site.py` | `Site`: discovery, pages, link rewriting (`resolve`), scripts, assets, resources, search.json, sitemap |
 | `src/smalldocs/layout.py` | `SiteNav` (sidebars, navbar, order, breadcrumbs) and `Layout` (the page, in Quarto's markup, with `fastcore.xml`) |
 | `src/smalldocs/listing.py` | Listings (default, grid, table), categories, RSS |
+| `src/smalldocs/llms.py` | `website.llms-txt`: each built page to Markdown, `page.llms.md`, and the index `llms.txt`, in Python as Quarto does with Pandoc |
 | `src/smalldocs/api.py` | The API reference: inventory, Markdown, pages, `_symbols.json`, `check` |
 | `src/smalldocs/serve.py`, `publish.py`, `check.py`, `cli.py` | The commands |
 | `src/smalldocs/extensions.py` | Theme extensions: `smalldocs add`, `smalldocs themes`, and finding `_extensions/<name>/smalldocs.yml` |

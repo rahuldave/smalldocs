@@ -1,0 +1,107 @@
+---
+title: Pages for agents
+description: A Markdown copy of each page, and an index of them, for language models and coding agents.
+order: 6
+---
+
+A language model reads Markdown more easily than a web page. The navbar, the sidebar and the scripts of a
+page are noise to it. So smalldocs can write a Markdown copy of each page, and an index of the copies, the
+file `llms.txt`. A coding agent, such as Claude Code or Codex, can then read the site's documentation as
+plain text.
+
+smalldocs does this as Quarto does it, with the same option and the same file names. Quarto added the
+option in version 1.9.
+
+## Turn it on
+
+Set `llms-txt: true` under `website`. The key is the same in `_smalldocs.yml` and in `_quarto.yml`:
+
+```yaml
+website:
+  title: My project
+  description: What my project does
+  llms-txt: true
+```
+
+The option is off unless you set it. A site without it builds as before, and the option changes no HTML
+page.
+
+## What a build writes
+
+With the option on, a build writes two more kinds of file into the output folder:
+
+- **A Markdown copy of each page.** It goes beside the page, with `.llms.md` in place of `.html`. So
+  `guide/config.html` gets `guide/config.llms.md`.
+- **`llms.txt`**, at the top of the site. It has the title of the site, its description, and a list of
+  the pages, each with a link to its copy. With `site-url` set, the links are full addresses.
+
+This site turns the option on. Here are its files:
+
+- The index: [llms.txt](/llms.txt).
+- This page, [llms.qmd](https://github.com/rahuldave/smalldocs/blob/main/docs/guide/llms.qmd), and its
+  copy, [llms.llms.md](llms.llms.md).
+- The page on writing,
+  [markdown.qmd](https://github.com/rahuldave/smalldocs/blob/main/docs/guide/markdown.qmd), and its copy,
+  [markdown.llms.md](markdown.llms.md). It shows callouts, tabs, tables, maths and footnotes.
+- A notebook,
+  [notebooks.ipynb](https://github.com/rahuldave/smalldocs/blob/main/docs/guide/notebooks.ipynb), and its
+  copy, [notebooks.llms.md](notebooks.llms.md). The copy holds the code and the saved outputs.
+
+## What a copy holds
+
+A copy is made from the built page. So it holds what the reader sees, after includes, shortcodes and
+notebook outputs. It is GitHub-flavoured Markdown, the Markdown of GitHub's own pages.
+
+- The title of the page, its subtitle and its description come first.
+- The navbar, the sidebar, the breadcrumbs, the table of contents and the footer are left out.
+- A link to another page of the site goes to that page's copy. A link to another site stays as it is.
+- A callout is a quote. Its first line is its kind, such as `**NOTE:**` or `**TIP:**`.
+- Each tab of a tabset becomes a heading, followed by the tab's content.
+- Code keeps its language. A notebook's printed output is a code block with no language.
+- Maths is between dollars, `$...$` and `$$...$$`.
+- A table's caption follows the table.
+- Footnotes go to the end of the copy, under the heading Footnotes.
+- A picture is a Markdown image. A picture held inside the page, such as a notebook's plot, is not a file.
+  So the copy names it, as `[Image: its caption]`.
+
+## Content for agents only
+
+The format `llms-txt` lets a block be only in the copy, or only on the page:
+
+```markdown
+::: {.content-visible when-format="llms-txt"}
+Only the Markdown copy has this paragraph.
+:::
+
+::: {.content-hidden when-format="llms-txt"}
+Only the HTML page has this paragraph.
+:::
+```
+
+In the copy, a condition on `llms-txt` decides alone. On the HTML page, `llms-txt` is a format that does
+not hold, as `pdf` does not.
+
+## Drafts and the 404 page
+
+A draft that a build leaves out has no copy. A draft with `draft-mode: unlinked` is built, but it has no
+copy and no line in `llms.txt`. The 404 page has a copy, but no line in `llms.txt`, as in Quarto.
+
+## The copies are not pages
+
+The copies are written only into the output folder. smalldocs never reads the output folder as pages,
+and `smalldocs preview` does not watch it. So the next build does not read a copy as a page.
+
+A page may link to `llms.txt` or to a copy, as this page does. smalldocs keeps such a link as it is, and
+does not report it as broken.
+
+## How it differs from Quarto
+
+Quarto turns each built page into Markdown with Pandoc. smalldocs has no Pandoc, so it does the same in
+Python. The copies follow Quarto's rules, but a few details differ:
+
+- A definition list is each term in bold, followed by its definition.
+- A task list keeps its boxes, `[x]` and `[ ]`.
+- A figure's caption is the alt text of its picture.
+- A subscript or a superscript is plain text, so H~2~O is H2O.
+- A picture held inside the page is named, not copied into the Markdown.
+- A dollar sign in the text is written `\$`, so that it is not read as maths.

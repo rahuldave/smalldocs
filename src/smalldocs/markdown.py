@@ -495,6 +495,11 @@ def shown(
     visible, hidden = "content-visible" in classes, "content-hidden" in classes
     if not (visible or hidden):
         return None
+    if env.get("llms"):
+        # As Quarto's `llms-conditional-content.lua`: in the Markdown copy, a condition on `llms-txt` decides alone
+        when, unless = (kv.get(f"{k}-format", "").strip() == "llms-txt" for k in ("when", "unless"))
+        if when or unless:
+            return when if visible else unless
     met = True
     for k, v in kv.items():
         m = CONDITION.fullmatch(k)

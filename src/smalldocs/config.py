@@ -50,7 +50,7 @@ KNOWN: dict = {
         "keyboard-shortcut": None}, "open-graph": {"locale": None, "site-name": None}, "twitter-card": {"title": None, "description": None, "image": None,
         "card-style": None, "creator": None, "site": None}, "google-analytics": {"tracking-id": None, "anonymize-ip": None,
         "storage": None}, "comments": COMMENTS, "back-to-top-navigation": None, "bread-crumbs": None, "draft-mode": None,
-        "drafts": None, "other-links": ENTRY, "code-links": ENTRY,
+        "drafts": None, "other-links": ENTRY, "code-links": ENTRY, "llms-txt": None,
     },
     "execute": EXECUTE,
     "format": None,

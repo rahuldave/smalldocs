@@ -258,6 +258,8 @@ class Site:
                 self.broken.append((str(page.src) if page else self.project.file, f"{href} (outside the project)"))
             return href
         target = PurePosixPath(joined)
+        if self.llms_on() and self.find_page(target) is None and (joined == "llms.txt" or self.has_llms_copy(joined)):
+            return rel(target, page) + tail  # what `llms-txt` writes into the site
         found = self.find_page(target)
         if found is not None:
             dir_link = found.out.name == "index.html" and path.endswith("/")
@@ -323,14 +325,20 @@ class Site:
                 raise BuildError(f"{index}: {e}") from e
             self.symbols = {str(k): str(v) for k, v in symbols.items()} if isinstance(symbols, dict) else {}
 
+    def llms_on(self) -> bool:  # Whether `website.llms-txt` is on
+        "Say whether the site writes a Markdown copy of each page and `llms.txt`."
+        return self.project.website.get("llms-txt") is True
+
     def render_page(
         self,
         page: Page,  # The page to render
+        llms: bool = False,  # Render for the Markdown copy, where `when-format="llms-txt"` decides
     ) -> None:
         "Render one page's Markdown into HTML."
         m = page.meta
         env = {
             "title": page.front.get("title"),
+            "llms": llms,
             "link": lambda href, kind, page=page: self.resolve(href, page),
             "symbols": self.symbols,
             "code_copy": m.get("code-copy", True) is not False,
@@ -350,6 +358,8 @@ class Site:
             env["title_text"] = html.unescape(re.sub(r"<[^>]+>", "", env["title_html"]))
         page.html = render(page.body, env, str(m.get("from") or ""))
         page.env = env
+        if llms:
+            return
         if env.get("unrun"):
             self.warn(f"{page.src}: {len(env['unrun'])} executable cell(s) shown but not run; smalldocs runs no code")
 
@@ -428,6 +438,8 @@ class Site:
         for page in self.pages.values():
             if page.meta.get("listing"):
                 listing.expand(self, page)
+        # render the Markdown copies' own bodies now: a link is checked against the old output, as the pages' links were
+        llms_bodies = {src: self.llms_body(page) for src, page in self.pages.items() if self.llms_on() and not self.hidden(page) and "llms-txt" in page.body}
         if self.out.exists():
             for child in self.out.iterdir():
                 shutil.rmtree(child) if child.is_dir() and not child.is_symlink() else child.unlink()
@@ -435,12 +447,15 @@ class Site:
         for page in self.pages.values():
             dest = self.out / page.out
             dest.parent.mkdir(parents=True, exist_ok=True)
-            dest.write_text(layout.page(self, nav, page), encoding="utf-8")
+            dest.write_text(text := layout.page(self, nav, page), encoding="utf-8")
+            if self.llms_on() and not self.hidden(page):
+                dest.with_name(dest.name.removesuffix(".html") + ".llms.md").write_text(self.llms_copy(nav, page, text, llms_bodies.get(page.src)), encoding="utf-8")
         self.copy_assets(nav)
         self.copy_resources()
         browser.build(self, nav, notebooks)
         self.write_search()
         self.write_sitemap()
+        self.write_llms_txt()
         listing.write_feeds(self)
         self.run_scripts("post-render", sources)
         for src, href in self.broken:
@@ -597,6 +612,68 @@ class Site:
                 href = str(page.out) + (f"#{sec['id']}" if sec["id"] else "")
                 entries.append({"objectID": href, "href": href, "title": page.title, "section": sec["title"] if sec["id"] else "", "text": html.unescape(text)})
         (self.out / "search.json").write_text(json.dumps(entries, ensure_ascii=False), encoding="utf-8")
+
+    def has_llms_copy(
+        self,
+        path: str,  # A path from the root, such as `guide/intro.llms.md`
+    ) -> bool:  # Whether the build writes a Markdown copy at that path
+        "Say whether a path is the Markdown copy of a page that the build writes one for."
+        if not path.endswith(".llms.md"):
+            return False
+        found = self.find_page(PurePosixPath(path.removesuffix(".llms.md") + ".html"))
+        return found is not None and not self.hidden(found)
+
+    def llms_body(
+        self,
+        page: Page,  # A page with `when-format="llms-txt"` content
+    ) -> tuple[str, dict]:  # The body's HTML and its render environment, for the Markdown copy
+        "Render a page again for its Markdown copy, where `when-format=\"llms-txt\"` decides; the page itself is left as it was."
+        saved = page.html, page.env
+        try:
+            self.render_page(page, llms=True)
+            # keep what the steps after rendering added, such as a notebook's links; a listing is put in again
+            page.env = {k: v for k, v in {**saved[1], **page.env}.items() if k != "feeds"}
+            if page.meta.get("listing"):
+                listing.expand(self, page)
+            return page.html, page.env
+        finally:
+            page.html, page.env = saved
+
+    def llms_copy(
+        self,
+        nav: "layout.SiteNav",  # The site's navigation
+        page: Page,  # A page
+        text: str,  # Its HTML, as written
+        body: tuple[str, dict] | None = None,  # Its body for the copy, from `llms_body`, when it differs from the page's
+    ) -> str:  # Its Markdown copy
+        "Make a page's Markdown copy from its HTML, or from its own body when it has `when-format=\"llms-txt\"` content."
+        from . import llms
+
+        if body is None:
+            return llms.page_markdown(text)
+        saved = page.html, page.env
+        try:
+            page.html, page.env = body
+            return llms.page_markdown(layout.page(self, nav, page))
+        finally:
+            page.html, page.env = saved
+
+    def write_llms_txt(self) -> None:
+        "Write `llms.txt` when `website.llms-txt` is on: the site's title and description, and a link to each page's Markdown copy."
+        if not self.llms_on():
+            return
+        from . import llms
+
+        web = self.project.website
+        base = str(web.get("site-url") or "")
+        base = base if not base or base.endswith("/") else base + "/"
+        pages = []
+        for page in self.pages.values():
+            if self.hidden(page) or str(page.out) == "404.html":
+                continue
+            md = str(page.out.with_name(page.out.name.removesuffix(".html") + ".llms.md"))
+            pages.append((page.title, base + md))
+        (self.out / "llms.txt").write_text(llms.index(str(web.get("title") or ""), str(web.get("description") or ""), pages), encoding="utf-8")
 
     def write_sitemap(self) -> None:
         "Write `sitemap.xml` when `website.site-url` is set."

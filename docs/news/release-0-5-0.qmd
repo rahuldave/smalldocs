@@ -1,0 +1,20 @@
+---
+title: smalldocs 0.5.0
+subtitle: A Markdown copy of each page, for agents
+date: 2026-10-21
+author: Rahul Dave
+categories: [release]
+image: ../images/mark.svg
+---
+
+A site can now write a Markdown copy of each page, and an index of the copies, `llms.txt`. A language
+model or a coding agent reads the copies more easily than the HTML pages.
+
+Set `llms-txt: true` under `website`, in `_smalldocs.yml` or in `_quarto.yml`. smalldocs then writes
+`page.llms.md` beside each `page.html`, and `llms.txt` at the top of the site. It uses the option and the
+file names of Quarto 1.9.
+
+This site turns it on. Read its index, [llms.txt](/llms.txt), or the copy of a page, such as
+[Writing pages](../guide/markdown.llms.md). [Pages for agents](../guide/llms.qmd) says what a copy holds.
+
+A site that does not set the option builds as before. The option changes no HTML page.

@@ -104,6 +104,7 @@ Notebook sources stay private unless you turn on browser notebooks.
 | `title` | The name of the site, in the navbar and in the browser tab after the title of the page | None. The browser tab shows only the title of the page |
 | `description` | The summary of the site. The home page uses it when its front matter has no `description` | None |
 | `site-url` | The address of the site. smalldocs needs it for `sitemap.xml` and for feeds | None, and smalldocs writes no `sitemap.xml` |
+| `llms-txt` | `true` writes a Markdown copy of each page, `page.llms.md`, and the index `llms.txt`, for agents. See [Pages for agents](llms.qmd) | `false` |
 | `repo-url`, `repo-subdir` | The repository of the site, and the folder of the site in it | None |
 | `repo-branch` | The branch for the `edit` and `source` links | `main` |
 | `repo-actions` | Links under the table of contents: `edit`, `source`, `issue`. They need `repo-url` | None |
@@ -348,6 +349,8 @@ A build writes the pages, and these files, into the output folder:
 - `search.json`, the index of the search box. It has one entry for each section of each page, with the
   title of the section and its text. A page with `search: false` in its front matter is not in it.
 - `sitemap.xml`, the list of pages for search engines, when `site-url` is set.
+- `llms.txt` and a Markdown copy of each page, `page.llms.md`, when `llms-txt` is on. See
+  [Pages for agents](llms.qmd).
 - `site_libs`, the stylesheets and the scripts of the site.
 - A feed for each listing that asks for one, when `site-url` is set. See [Listings](listings.qmd).
 - A copy of each file that a page links to, such as an image, and of the files of `resources`, `css`

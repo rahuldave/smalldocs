@@ -73,6 +73,11 @@ exists. A notebook that does not set them renders as before.
 - [x] `layout="[[1,1],[1]]"` grids, done in step 2 (not yet: negative widths for spacers)
 - [ ] Equation labels, `$$...$$ {#eq-a}`
 
+## Since the audit
+
+- [x] `website.llms-txt` (Quarto 1.9): a Markdown copy of each page, `page.llms.md`, and `llms.txt`, with
+      `when-format="llms-txt"`
+
 ## Step 4: later
 
 - [ ] Code annotations, `# <1>`

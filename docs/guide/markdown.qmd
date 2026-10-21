@@ -430,6 +430,7 @@ these attributes:
 | Attribute | Holds when |
 |---|---|
 | `when-format="html"` | The page is built as HTML. smalldocs builds only HTML, so `html`, `html:js` and `html5` hold, and other formats, such as `pdf`, do not |
+| `when-format="llms-txt"` | The text is the Markdown copy of the page, with `llms-txt` on. See [Pages for agents](llms.qmd) |
 | `when-meta="key"` | The option of the page with that key is true. A key such as `book.draft` reads a nested option |
 | `when-profile="name"` | The environment variable `QUARTO_PROFILE`, a list of names with commas, has the name |
 | `unless-format`, `unless-meta`, `unless-profile` | The same test does not hold |

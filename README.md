@@ -44,6 +44,8 @@ The documentation is at [docs.smallish.dev](https://docs.smallish.dev/). smalldo
   [browser notebooks](https://docs.smallish.dev/guide/browser-notebooks.html) add run and download buttons with JupyterLite and Pyodide.
 - **Listings.** smalldocs makes listings as rows, cards or a table, with sorting, a filter, categories,
   pages and an RSS feed.
+- **Pages for agents.** With `llms-txt: true`, smalldocs writes a Markdown copy of each page and an
+  index, `llms.txt`, as Quarto does. See [Pages for agents](https://docs.smallish.dev/guide/llms.html).
 
 ## Licence
 

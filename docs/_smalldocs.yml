@@ -8,8 +8,10 @@ website:
   description: Quarto-like websites in pure Python
   site-url: https://docs.smallish.dev/
   repo-url: https://github.com/rahuldave/smalldocs
+  repo-subdir: docs
   repo-actions: [source, issue]
   page-navigation: true
+  llms-txt: true
   navbar:
     left:
       - href: index.qmd
