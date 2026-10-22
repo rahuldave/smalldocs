@@ -1,0 +1,16 @@
+---
+title: smalldocs 0.5.3
+subtitle: A fix for divs in list items
+date: 2026-10-22
+author: Rahul Dave
+categories: [release]
+image: ../images/mark.svg
+---
+
+This release fixes a div, such as a callout, inside a list item.
+
+When the div had no `:::` to end it, the list item ended it at the next line that was not indented.
+That line was lost from the page. Now the page keeps it, as Pandoc does.
+
+In a notebook, this showed when a callout in a list had no end before a code cell.
+The code cell lost its start, so a stray `:::` showed on the page. Now the cell shows as it should.

@@ -180,6 +180,7 @@ def fenced_div(
         depth += 1 if p else -1
         if depth == 0:
             break
+    closed = line < end and is_fence_line(text) == ""  # the div's closing fence, even outdented, as Pandoc reads it; any other line stays
     old_parent, old_max = state.parentType, state.lineMax
     state.parentType, state.lineMax = "div", line
     tok = state.push("div_open", "div", 1)
@@ -190,7 +191,7 @@ def fenced_div(
     close = state.push("div_close", "div", -1)
     close.block = True
     state.parentType, state.lineMax = old_parent, old_max
-    state.line = line + 1
+    state.line = line + 1 if closed else line
     return True
 
 

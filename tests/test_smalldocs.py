@@ -102,6 +102,17 @@ def test_fenced_divs_nest_with_fences_of_the_same_length() -> None:
     assert html.count("<div") == html.count("</div>") - html.count("code-copy") * 0
 
 
+
+def test_a_list_items_div_ends_at_an_outdented_line_and_keeps_it() -> None:
+    "A div in a list item that the next outdented line ends keeps that line; an outdented bare fence closes it, as in Pandoc."
+    assert md("- II\n\n  ::: {.a}\n  AA\n\nBB\n").endswith("</ul>\n<p>BB</p>\n")
+    closed = md("- item\n\n  ::: {.a}\n  text\n:::\n\nafter\n")
+    assert ":::" not in closed and closed.endswith("</ul>\n<p>after</p>\n")
+    cells = [{"cell_type": "markdown", "source": "- item\n\n  ::: {.callout-note}\n  inside", "metadata": {}},
+             {"cell_type": "code", "source": "x = 1", "outputs": [], "metadata": {}}]
+    out = md(notebook.to_markdown(json.dumps({"nbformat": 4, "metadata": {}, "cells": cells}))[1])
+    assert ":::" not in out and 'id="cell-1" class="cell"' in out
+
 def test_callouts() -> None:
     "Callouts take Quarto's markup, with a title from a first heading or from `title=`, and fold when asked."
     html = md(
