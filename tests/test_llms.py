@@ -499,3 +499,37 @@ def test_cells_ending_with_a_newline() -> None:
     q.feed('::: {.content-hidden when-format="llms-txt"}\nSolution:\n  \n\n')
     assert q.dropping
     assert q.feed(":::\n\nAfter.\n").strip() == "After." and not q.stack
+
+
+def test_html_line_before_a_fence_in_a_later_cell(tmp_path: Path) -> None:
+    "A raw HTML line right before a `:::` in a later cell ends the callout there, in the copy as on the page."
+    cells = ["::: {.callout-note}\nIntro", "<div>y</div>\n:::", "After"]
+    nb = {"nbformat": 4, "nbformat_minor": 5, "metadata": {}, "cells": [{"cell_type": "markdown", "metadata": {}, "source": c} for c in cells]}
+    md = copy_of(tmp_path, {"index.ipynb": json.dumps(nb)}, "index.llms.md")
+    assert ":::" not in md and md.index("</div>", md.index("<div>y</div>") + 1) < md.index("After")
+
+
+def test_later_cells_close_a_callout_only_at_its_own_fence(tmp_path: Path) -> None:
+    "A `:::` in code in HTML, or in a list item, of a later cell does not end the callout; the callout's own `:::` does."
+    cases = {
+        "<div>\n```\n:::\n```\n</div>\n:::": "<div>\n```\n:::\n```\n</div>",
+        "- <div>\n  :::\n:::": "- <div>\n  :::",
+        "1. <span>s</span>\n   :::\n\nMore\n:::": "1. <span>s</span>\n   :::\n\nMore",
+        "- x\n  :::\n:::": "- x\n  :::",
+    }
+    for n, (middle, inside) in enumerate(cases.items()):
+        cells = ["::: {.callout-note}\nIntro", middle, "After"]
+        nb = {"nbformat": 4, "nbformat_minor": 5, "metadata": {}, "cells": [{"cell_type": "markdown", "metadata": {}, "source": c} for c in cells]}
+        md = copy_of(tmp_path / str(n), {"index.ipynb": json.dumps(nb)}, "index.llms.md")
+        assert md.endswith(f'<div class="callout-note">\n\nIntro\n\n{inside}\n\n</div>\n\nAfter\n'), md
+
+
+def test_empty_cells_and_definitions_keep_divs_as_the_page(tmp_path: Path) -> None:
+    "An empty cell leaves a hidden div open, so its text stays hidden; a div left open in a definition ends with it."
+    for n, (cells, want) in enumerate([
+        (["Intro", '::: {.content-hidden when-format="llms-txt"}\nhidden start', "", "  ", "SECRET\n:::", "After"], "Intro\n\nAfter\n"),
+        (['Term\n:   ::: {.content-hidden when-format="llms-txt"}\n    x', "After one", "After two"], "Term\n\nAfter one\n\nAfter two\n"),
+    ]):  # fmt: skip
+        nb = {"nbformat": 4, "nbformat_minor": 5, "metadata": {}, "cells": [{"cell_type": "markdown", "metadata": {}, "source": c} for c in cells]}
+        md = copy_of(tmp_path / str(n), {"index.ipynb": json.dumps(nb)}, "index.llms.md")
+        assert md.endswith(want) and "SECRET" not in md and "hidden" not in md, md

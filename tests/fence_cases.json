@@ -1,0 +1,612 @@
+[
+ {
+  "md": "::: {.a}\nx\n:::\n",
+  "pandoc": "<div.a> <p> 'x' </p> </div>"
+ },
+ {
+  "md": "::: a\nx\n:::\n",
+  "pandoc": "<div.a> <p> 'x' </p> </div>"
+ },
+ {
+  "md": ":::{.a}\nx\n:::\n",
+  "pandoc": "<div.a> <p> 'x' </p> </div>"
+ },
+ {
+  "md": "::::: {.a}\nx\n:::::\n",
+  "pandoc": "<div.a> <p> 'x' </p> </div>"
+ },
+ {
+  "md": "::: {.a}\nx\n::::::\n",
+  "pandoc": "<div.a> <p> 'x' </p> </div>"
+ },
+ {
+  "md": "::: {.a}\nx\n",
+  "pandoc": "<div.a> <p> 'x' </p> </div>"
+ },
+ {
+  "md": "::: {.a}\n::: {.b}\nx\n:::\n:::\n",
+  "pandoc": "<div.a> <div.b> <p> 'x' </p> </div> </div>"
+ },
+ {
+  "md": "::: {.a}\n::: {.b}\nx\n:::\ny\n:::\nz\n",
+  "pandoc": "<div.a> <div.b> <p> 'x' </p> </div> <p> 'y' </p> </div> <p> 'z' </p>"
+ },
+ {
+  "md": "::: {.a}\n```\n:::\n```\n:::\n",
+  "pandoc": "<div.a> <pre> <code> ':::' </code> </pre> </div>"
+ },
+ {
+  "md": "::: {.a}\n~~~\n:::\n~~~\n:::\n",
+  "pandoc": "<div.a> <pre> <code> ':::' </code> </pre> </div>"
+ },
+ {
+  "md": "::: {.a}\n````\n```\n:::\n````\n:::\n",
+  "pandoc": "<div.a> <pre> <code> '``` :::' </code> </pre> </div>"
+ },
+ {
+  "md": "::: {.a}\n    :::\n:::\n",
+  "pandoc": "<div.a> <pre> <code> ':::' </code> </pre> </div>"
+ },
+ {
+  "md": "   ::: {.a}\n   x\n   :::\n",
+  "pandoc": "<p> '::: {.a} x :::' </p>",
+  "ours": "<div.a> <p> 'x' </p> </div>",
+  "why": "smalldocs reads more than Pandoc; pages that rely on it build today"
+ },
+ {
+  "md": "    ::: {.a}\n    x\n    :::\n",
+  "pandoc": "<pre> <code> '::: {.a} x :::' </code> </pre>"
+ },
+ {
+  "md": "para\n::: {.a}\nx\n:::\n",
+  "pandoc": "<p> 'para ::: {.a} x :::' </p>",
+  "ours": "<p> 'para' </p> <div.a> <p> 'x' </p> </div>",
+  "why": "smalldocs reads more than Pandoc; pages that rely on it build today"
+ },
+ {
+  "md": "::: {.a}\nx\n:::\npara\n",
+  "pandoc": "<div.a> <p> 'x' </p> </div> <p> 'para' </p>"
+ },
+ {
+  "md": "::: {.a}\n# H\n\nx\n:::\n",
+  "pandoc": "<div.a> <h1> 'H' </h1> <p> 'x' </p> </div>"
+ },
+ {
+  "md": "::: {.a} :::\nx\n:::\n",
+  "pandoc": "<div.a> <p> 'x' </p> </div>"
+ },
+ {
+  "md": ":::\nx\n",
+  "pandoc": "<p> '::: x' </p>"
+ },
+ {
+  "md": "::: {.a}\n\n:::\n",
+  "pandoc": "<div.a> </div>"
+ },
+ {
+  "md": "::: {.a}\n- l1\n- l2\n:::\n",
+  "pandoc": "<div.a> <ul> <li> 'l1' </li> <li> 'l2' </li> </ul> </div>"
+ },
+ {
+  "md": "::: {.a}\n> q\n:::\n",
+  "pandoc": "<div.a> <blockquote> <p> 'q' </p> </blockquote> </div>"
+ },
+ {
+  "md": "- ::: {.a}\n  x\n  :::\n",
+  "pandoc": "<ul> <li> <div.a> <p> 'x' </p> </div> </li> </ul>"
+ },
+ {
+  "md": "- item\n\n  ::: {.a}\n  x\n  :::\n",
+  "pandoc": "<ul> <li> <p> 'item' </p> <div.a> <p> 'x' </p> </div> </li> </ul>"
+ },
+ {
+  "md": "- item\n\n  ::: {.a}\n  x\n\nafter\n",
+  "pandoc": "<ul> <li> <p> 'item' </p> <div.a> <p> 'x' </p> </div> </li> </ul> <p> 'after' </p>"
+ },
+ {
+  "md": "- item\n\n  ::: {.a}\n  x\n:::\n\nafter\n",
+  "pandoc": "<ul> <li> <p> 'item' </p> <div.a> <p> 'x' </p> </div> </li> </ul> <p> 'after' </p>"
+ },
+ {
+  "md": "- item\n\n  ::: {.a}\n  ::: {.b}\n  x\n:::\n:::\n\nafter\n",
+  "pandoc": "<ul> <li> <p> 'item' </p> <div.a> <div.b> <p> 'x' </p> </div> </div> </li> </ul> <p> 'after' </p>"
+ },
+ {
+  "md": "- item\n\n  ::: {.a}\n  x\nlazy\n",
+  "pandoc": "<ul> <li> <p> 'item' </p> <div.a> <p> 'x lazy' </p> </div> </li> </ul>"
+ },
+ {
+  "md": "- item\n\n  ::: {.a}\n  x\n- next\n",
+  "pandoc": "<ul> <li> <p> 'item' </p> <div.a> 'x' </div> </li> <li> <p> 'next' </p> </li> </ul>",
+  "ours": "<ul> <li> <p> 'item' </p> <div.a> <p> 'x' </p> </div> </li> <li> <p> 'next' </p> </li> </ul>",
+  "why": "the same blocks; Pandoc and markdown-it differ on which text in a list, a definition or raw HTML gets a <p>"
+ },
+ {
+  "md": "- item\n\n  ::: {.a}\n  x\n\n- next\n",
+  "pandoc": "<ul> <li> <p> 'item' </p> <div.a> <p> 'x' </p> </div> </li> <li> <p> 'next' </p> </li> </ul>"
+ },
+ {
+  "md": "10. ::: {.a}\n    x\n    :::\n",
+  "pandoc": "<ol> <li> <div.a> <p> 'x' </p> </div> </li> </ol>"
+ },
+ {
+  "md": "1. ::: {.a}\n   x\n   :::\n",
+  "pandoc": "<ol> <li> <div.a> <p> 'x' </p> </div> </li> </ol>"
+ },
+ {
+  "md": "- a\n\n  - b\n\n    ::: {.a}\n    x\n    :::\n",
+  "pandoc": "<ul> <li> <p> 'a' </p> <ul> <li> <p> 'b' </p> <div.a> <p> 'x' </p> </div> </li> </ul> </li> </ul>"
+ },
+ {
+  "md": "- a\n\n  - b\n\n    ::: {.a}\n    x\n\n  CC\n\nDD\n",
+  "pandoc": "<ul> <li> <p> 'a' </p> <ul> <li> <p> 'b' </p> <div.a> <p> 'x' </p> </div> </li> </ul> <p> 'CC' </p> </li> </ul> <p> 'DD' </p>"
+ },
+ {
+  "md": "- a\n\n  - b\n\n    ::: {.a}\n    x\n    :::\n\n  CC\n",
+  "pandoc": "<ul> <li> <p> 'a' </p> <ul> <li> <p> 'b' </p> <div.a> <p> 'x' </p> </div> </li> </ul> <p> 'CC' </p> </li> </ul>"
+ },
+ {
+  "md": "- item\n\n  ::: {.a}\n  ```\n  :::\n  ```\n  :::\n",
+  "pandoc": "<ul> <li> <p> 'item' </p> <div.a> <pre> <code> ':::' </code> </pre> </div> </li> </ul>"
+ },
+ {
+  "md": "- item\n\n  ::: {.a}\n  x\n\n  y\n  :::\nz\n",
+  "pandoc": "<ul> <li> <p> 'item' </p> <div.a> <p> 'x' </p> <p> 'y' </p> </div> <p> 'z' </p> </li> </ul>",
+  "ours": "<ul> <li> <p> 'item' </p> <div.a> <p> 'x' </p> <p> 'y' </p> </div> </li> </ul> <p> 'z' </p>",
+  "why": "markdown-it's own rule for lists, quotes, footnotes, rules or raw HTML, not the fences"
+ },
+ {
+  "md": "- item\n\n  ::: {.a}\n  - inner\n  :::\n",
+  "pandoc": "<ul> <li> <p> 'item' </p> <div.a> <ul> <li> 'inner' </li> </ul> </div> </li> </ul>"
+ },
+ {
+  "md": "- item\n\n  ::: {.a}\n  x\n\n:::\n",
+  "pandoc": "<ul> <li> <p> 'item' </p> <div.a> <p> 'x' </p> </div> </li> </ul> <p> ':::' </p>"
+ },
+ {
+  "md": "- item\n\n  ::: {.a}\n  x\n  :::\n  :::\n",
+  "pandoc": "<ul> <li> <p> 'item' </p> <div.a> <p> 'x' </p> </div> <p> ':::' </p> </li> </ul>"
+ },
+ {
+  "md": "- item\n\n      ::: {.a}\n      x\n      :::\n",
+  "pandoc": "<ul> <li> <p> 'item' </p> <pre> <code> '::: {.a} x :::' </code> </pre> </li> </ul>"
+ },
+ {
+  "md": "> ::: {.a}\n> x\n> :::\n",
+  "pandoc": "<blockquote> <div.a> <p> 'x' </p> </div> </blockquote>"
+ },
+ {
+  "md": "> ::: {.a}\n> x\n",
+  "pandoc": "<blockquote> <div.a> <p> 'x' </p> </div> </blockquote>"
+ },
+ {
+  "md": "> ::: {.a}\n> x\nlazy\n",
+  "pandoc": "<blockquote> <div.a> <p> 'x lazy' </p> </div> </blockquote>"
+ },
+ {
+  "md": "> ::: {.a}\n> x\n\nafter\n",
+  "pandoc": "<blockquote> <div.a> <p> 'x' </p> </div> </blockquote> <p> 'after' </p>"
+ },
+ {
+  "md": "> ::: {.a}\n> x\n:::\n",
+  "pandoc": "<blockquote> <div.a> <p> 'x' </p> </div> </blockquote>"
+ },
+ {
+  "md": "> ::: {.a}\n> > ::: {.b}\n> > x\n> > :::\n> y\n> :::\n",
+  "pandoc": "<blockquote> <div.a> <blockquote> <div.b> <p> 'x' </p> </div> <p> 'y' </p> </blockquote> </div> </blockquote>",
+  "ours": "<blockquote> <div.a> <blockquote> <div.b> <p> 'x' </p> </div> </blockquote> <p> 'y' </p> </div> </blockquote>",
+  "why": "markdown-it's own rule for lists, quotes, footnotes, rules or raw HTML, not the fences"
+ },
+ {
+  "md": "> - ::: {.a}\n>   x\n>   :::\n",
+  "pandoc": "<blockquote> <ul> <li> <div.a> <p> 'x' </p> </div> </li> </ul> </blockquote>"
+ },
+ {
+  "md": "> 10. ::: {.a}\n>     x\n>     :::\n",
+  "pandoc": "<blockquote> <ol> <li> <div.a> <p> 'x' </p> </div> </li> </ol> </blockquote>"
+ },
+ {
+  "md": "::: {.a}\n- ::: {.b}\n  x\n  :::\n:::\n",
+  "pandoc": "<div.a> <ul> <li> <div.b> <p> 'x' </p> </div> </li> </ul> </div>"
+ },
+ {
+  "md": "::: {.a}\n- item\n:::\n",
+  "pandoc": "<div.a> <ul> <li> 'item' </li> </ul> </div>"
+ },
+ {
+  "md": "::: {.a}\n> x\n:::\nafter\n",
+  "pandoc": "<div.a> <blockquote> <p> 'x' </p> </blockquote> </div> <p> 'after' </p>"
+ },
+ {
+  "md": "::: {.a}\n- item\n\n  ::: {.b}\n  x\n:::\n:::\n",
+  "pandoc": "<div.a> <ul> <li> <p> 'item' </p> <div.b> 'x' </div> </li> </ul> </div> <p> ':::' </p>",
+  "ours": "<div.a> <ul> <li> <p> 'item' </p> <div.b> <p> 'x' </p> </div> </li> </ul> </div>",
+  "why": "Pandoc leaves a stray ::: here; smalldocs closes both divs"
+ },
+ {
+  "md": "::: {.a}\n- ```\n  :::\n  ```\n:::\n",
+  "pandoc": "<div.a> <ul> <li> <pre> <code> ':::' </code> </pre> </li> </ul> </div>"
+ },
+ {
+  "md": "::: {.a}\n> ::: {.b}\n> x\n> :::\n:::\n",
+  "pandoc": "<div.a> <blockquote> <div.b> <p> 'x' </p> </div> </blockquote> </div>"
+ },
+ {
+  "md": "::: {.a}\n1. ::: {.b}\n   x\n   :::\n2. y\n:::\n",
+  "pandoc": "<div.a> <ol> <li> <div.b> <p> 'x' </p> </div> </li> <li> 'y' </li> </ol> </div>"
+ },
+ {
+  "md": "::: {.a}\n- ::: {.b}\n  - ::: {.c}\n    x\n    :::\n  :::\n:::\n",
+  "pandoc": "<div.a> <ul> <li> <div.b> <ul> <li> <div.c> <p> 'x' </p> </div> </li> </ul> </div> </li> </ul> </div>"
+ },
+ {
+  "md": "::: {.a}\n- item\n- ::: {.b}\n  x\n  :::\n- z\n:::\nafter\n",
+  "pandoc": "<div.a> <ul> <li> 'item' </li> <li> <div.b> <p> 'x' </p> </div> </li> <li> 'z' </li> </ul> </div> <p> 'after' </p>"
+ },
+ {
+  "md": "- ::: {.a}\n  x\n  :::\n- ::: {.b}\n  y\n  :::\n",
+  "pandoc": "<ul> <li> <div.a> <p> 'x' </p> </div> </li> <li> <div.b> <p> 'y' </p> </div> </li> </ul>"
+ },
+ {
+  "md": "- ::: {.a}\n  x\n\n  y\n  :::\n\n  z\n",
+  "pandoc": "<ul> <li> <div.a> <p> 'x' </p> <p> 'y' </p> </div> 'z' </li> </ul>",
+  "ours": "<ul> <li> <div.a> <p> 'x' </p> <p> 'y' </p> </div> <p> 'z' </p> </li> </ul>",
+  "why": "the same blocks; Pandoc and markdown-it differ on which text in a list, a definition or raw HTML gets a <p>"
+ },
+ {
+  "md": "* ::: {.a}\n  x\n  :::\n",
+  "pandoc": "<ul> <li> <div.a> <p> 'x' </p> </div> </li> </ul>"
+ },
+ {
+  "md": "1) ::: {.a}\n   x\n   :::\n",
+  "pandoc": "<ol> <li> <div.a> <p> 'x' </p> </div> </li> </ol>"
+ },
+ {
+  "md": "- ::: {.a}\n  x\n",
+  "pandoc": "<ul> <li> <div.a> <p> 'x' </p> </div> </li> </ul>"
+ },
+ {
+  "md": "- ::: {.a}\n  x\n\nafter\n",
+  "pandoc": "<ul> <li> <div.a> <p> 'x' </p> </div> </li> </ul> <p> 'after' </p>"
+ },
+ {
+  "md": "> ::: {.a}\n> - ::: {.b}\n>   x\n>   :::\n> :::\n",
+  "pandoc": "<blockquote> <div.a> <ul> <li> <div.b> <p> 'x' </p> </div> </li> </ul> </div> </blockquote>"
+ },
+ {
+  "md": "::: {.a}\n---\n:::\n",
+  "pandoc": "<div.a> </div>"
+ },
+ {
+  "md": "::: {.a}\n- - -\n:::\n",
+  "pandoc": "<div.a> </div>"
+ },
+ {
+  "md": "::: {.a}\nx\n- :::\n:::\n",
+  "pandoc": "<div.a> <p> 'x - :::' </p> </div>",
+  "ours": "<div.a> <p> 'x' </p> <ul> <li> ':::' </li> </ul> </div>",
+  "why": "markdown-it's own rule for lists, quotes, footnotes, rules or raw HTML, not the fences"
+ },
+ {
+  "md": "- item\n\n  ::: {.a}\n  x\n\n  ::: {.b}\n  y\n  :::\n  :::\n\nafter\n",
+  "pandoc": "<ul> <li> <p> 'item' </p> <div.a> <p> 'x' </p> <div.b> <p> 'y' </p> </div> </div> </li> </ul> <p> 'after' </p>"
+ },
+ {
+  "md": "- item\n\n  ::: {.a}\n  x\n  - inner\n:::\n\nafter\n",
+  "pandoc": "<ul> <li> <p> 'item' </p> <div.a> 'x' <ul> <li> 'inner' </li> </ul> </div> </li> </ul> <p> 'after' </p>",
+  "ours": "<ul> <li> <p> 'item' </p> <div.a> <p> 'x' </p> <ul> <li> 'inner' </li> </ul> </div> </li> </ul> <p> 'after' </p>",
+  "why": "the same blocks; Pandoc and markdown-it differ on which text in a list, a definition or raw HTML gets a <p>"
+ },
+ {
+  "md": "::: {.a}\nx\n<div>y</div>\n:::\n\nafter\n",
+  "pandoc": "<div.a> 'x' <div> 'y' </div> </div> <p> 'after' </p>",
+  "ours": "<div.a> <p> 'x' </p> <div> 'y' </div> </div> <p> 'after' </p>",
+  "why": "the same blocks; Pandoc and markdown-it differ on which text in a list, a definition or raw HTML gets a <p>"
+ },
+ {
+  "md": "::: {.a}\n<div>\n```\n:::\n```\n</div>\n:::\n\nafter\n",
+  "pandoc": "<div.a> <div> <pre> <code> ':::' </code> </pre> </div> </div> <p> 'after' </p>",
+  "ours": "<div.a> <div> '``` ::: ```' </div> </div> <p> 'after' </p>",
+  "why": "markdown-it's own rule for lists, quotes, footnotes, rules or raw HTML, not the fences"
+ },
+ {
+  "md": "::: {.a}\n<!-- c -->\n:::\nafter\n",
+  "pandoc": "<div.a> </div> <p> 'after' </p>"
+ },
+ {
+  "md": "- item\n\n  ::: {.a}\n  <span>y</span>\n  :::\n\nafter\n",
+  "pandoc": "<ul> <li> <p> 'item' </p> <div.a> <p> <span> 'y' </span> </p> </div> </li> </ul> <p> 'after' </p>"
+ },
+ {
+  "md": "<div>\n:::\n</div>\n",
+  "pandoc": "<div> <p> ':::' </p> </div>",
+  "ours": "<div> ':::' </div>",
+  "why": "the same blocks; Pandoc and markdown-it differ on which text in a list, a definition or raw HTML gets a <p>"
+ },
+ {
+  "md": "::: {.a}\n<details>\n<summary>s</summary>\n\nbody\n\n</details>\n:::\n",
+  "pandoc": "<div.a> <details> <summary> 's' </summary> <p> 'body' </p> </details> </div>"
+ },
+ {
+  "md": "::: {.a}\n:::\n",
+  "pandoc": "<div.a> </div>"
+ },
+ {
+  "md": "::: {.a}\n::: {.b}\n:::\n:::\n",
+  "pandoc": "<div.a> <div.b> </div> </div>"
+ },
+ {
+  "md": "::: {.a}\n",
+  "pandoc": "<div.a> </div>"
+ },
+ {
+  "md": "- ::: {.a}\n",
+  "pandoc": "<ul> <li> <div.a> </div> </li> </ul>"
+ },
+ {
+  "md": "> ::: {.a}\n",
+  "pandoc": "<blockquote> <div.a> </div> </blockquote>"
+ },
+ {
+  "md": "::: {.a}\n\n\n:::\n\n\nafter\n",
+  "pandoc": "<div.a> </div> <p> 'after' </p>"
+ },
+ {
+  "md": "::: {.a}\nx\n:::::::\n",
+  "pandoc": "<div.a> <p> 'x' </p> </div>"
+ },
+ {
+  "md": "::: {.a}\nx\n::: :::\n",
+  "pandoc": "<div.a> <p> 'x ::: :::' </p> </div>",
+  "ours": "<div.a> <p> 'x' </p> </div>",
+  "why": "smalldocs reads more than Pandoc; pages that rely on it build today"
+ },
+ {
+  "md": "::: {.a}\n| a | b |\n|---|---|\n| 1 | 2 |\n:::\nafter\n",
+  "pandoc": "<div.a> <table> <thead> <tr> <th> 'a' </th> <th> 'b' </th> </tr> </thead> <tbody> <tr> <td> '1' </td> <td> '2' </td> </tr> </tbody> </table> </div> <p> 'after' </p>"
+ },
+ {
+  "md": "- item\n\n  ::: {.a}\n  | a |\n  |---|\n  | 1 |\n  :::\n\nafter\n",
+  "pandoc": "<ul> <li> <p> 'item' </p> <div.a> <table> <thead> <tr> <th> 'a' </th> </tr> </thead> <tbody> <tr> <td> '1' </td> </tr> </tbody> </table> </div> </li> </ul> <p> 'after' </p>"
+ },
+ {
+  "md": "::: {.a}\n| a |\n|---|\n| 1 |\n\n: caption\n:::\nafter\n",
+  "pandoc": "<div.a> <table> <caption> 'caption' </caption> <thead> <tr> <th> 'a' </th> </tr> </thead> <tbody> <tr> <td> '1' </td> </tr> </tbody> </table> </div> <p> 'after' </p>"
+ },
+ {
+  "md": "::: {.a}\n$$\nx\n$$\n:::\nafter\n",
+  "pandoc": "<div.a> <p> <span.math display> <em> 'x' </em> </span> </p> </div> <p> 'after' </p>",
+  "ours": "<div.a> <p> <span.math display> '\\[x\\]' </span> </p> </div> <p> 'after' </p>",
+  "why": "the same blocks, in Quarto's markup for maths or smalldocs' markup for footnotes"
+ },
+ {
+  "md": "::: {.a}\n$$x\n:::\n\ny $$\n",
+  "pandoc": "<div.a> <p> '$$x' </p> </div> <p> 'y $$' </p>"
+ },
+ {
+  "md": "::: {.a}\n<!--\n::: {.b}\nold\n:::\n-->\n:::\n\nafter\n",
+  "pandoc": "<div.a> </div> <p> 'after' </p>"
+ },
+ {
+  "md": "::: {.a}\n<script>\nlet s = `\n:::\n`;\n</script>\n:::\n\nafter\n",
+  "pandoc": "<div.a> <script> 'let s = ` ::: `;' </script> </div> <p> 'after' </p>"
+ },
+ {
+  "md": "::: {.a}\n<pre>\n:::\n</pre>\n:::\n\nafter\n",
+  "pandoc": "<div.a> <pre> ':::' </pre> </div> <p> 'after' </p>"
+ },
+ {
+  "md": "::: {.a}\n<div>\nx\n:::\n\nafter\n",
+  "pandoc": "<div.a> <div> <p> 'x' </p> <p> ':::' </p> <p> 'after' </p> </div> </div>",
+  "ours": "<div.a> <div> 'x' </div> <p> 'after' </p>",
+  "why": "markdown-it's own rule for lists, quotes, footnotes, rules or raw HTML, not the fences"
+ },
+ {
+  "md": "::: {.a}\n# H\n:::\nafter\n",
+  "pandoc": "<div.a> <h1> 'H' </h1> </div> <p> 'after' </p>"
+ },
+ {
+  "md": "::: {.a}\nH\n===\n:::\nafter\n",
+  "pandoc": "<div.a> <h1> 'H' </h1> </div> <p> 'after' </p>"
+ },
+ {
+  "md": "::: {.a}\nx\n***\n:::\nafter\n",
+  "pandoc": "<div.a> <p> 'x ***' </p> </div> <p> 'after' </p>",
+  "ours": "<div.a> <p> 'x' </p> </div> <p> 'after' </p>",
+  "why": "markdown-it's own rule for lists, quotes, footnotes, rules or raw HTML, not the fences"
+ },
+ {
+  "md": "::: {.a}\n    code\n:::\nafter\n",
+  "pandoc": "<div.a> <pre> <code> 'code' </code> </pre> </div> <p> 'after' </p>"
+ },
+ {
+  "md": "::: {.a}\n[r]: http://x\n:::\n[r]\n",
+  "pandoc": "<div.a> </div> <p> <a> 'r' </a> </p>"
+ },
+ {
+  "md": "::: {.a}\nTerm\n\n:   def\n:::\nafter\n",
+  "pandoc": "<div.a> <dl> <dt> 'Term' </dt> <dd> <p> 'def' </p> </dd> </dl> </div> <p> 'after' </p>",
+  "ours": "<div.a> <dl> <dt> 'Term' </dt> <dd> 'def' </dd> </dl> </div> <p> 'after' </p>",
+  "why": "the same blocks; Pandoc and markdown-it differ on which text in a list, a definition or raw HTML gets a <p>"
+ },
+ {
+  "md": "::: {.a}\nx[^1]\n\n[^1]: note\n:::\nafter\n",
+  "pandoc": "<div.a> <p> 'x' <a.footnote-ref> <sup> '1' </sup> </a> </p> </div> <p> 'after' </p> <div.footnotes footnotes-end-of-document> <ol> <li> <p> 'note' <a.footnote-back> '\u21a9\ufe0e' </a> </p> </li> </ol> </div>",
+  "ours": "<div.a> <p> 'x' <sup.footnote-ref> <a> '[1]' </a> </sup> </p> </div> <p> 'after' </p> <div.footnotes> <ol.footnotes-list> <li.footnote-item> <p> 'note' <a.footnote-backref> '\u21a9\ufe0e' </a> </p> </li> </ol> </div>",
+  "why": "the same blocks, in Quarto's markup for maths or smalldocs' markup for footnotes"
+ },
+ {
+  "md": "Term\n\n:   ::: {.a}\n    x\n    :::\n",
+  "pandoc": "<dl> <dt> 'Term' </dt> <dd> <div.a> <p> 'x' </p> </div> </dd> </dl>"
+ },
+ {
+  "md": "x[^1]\n\n[^1]: ::: {.b}\n    y\n    :::\n",
+  "pandoc": "<p> 'x' <a.footnote-ref> <sup> '1' </sup> </a> </p> <div.footnotes footnotes-end-of-document> <ol> <li> <p> '::: {.b} y :::' <a.footnote-back> '\u21a9\ufe0e' </a> </p> </li> </ol> </div>",
+  "ours": "<p> 'x' <sup.footnote-ref> <a> '[1]' </a> </sup> </p> <div.footnotes> <ol.footnotes-list> <li.footnote-item> <div.b> <p> 'y' </p> </div> <a.footnote-backref> '\u21a9\ufe0e' </a> </li> </ol> </div>",
+  "why": "smalldocs reads more than Pandoc; pages that rely on it build today"
+ },
+ {
+  "md": "x[^1]\n\n[^1]: note\n\n    ::: {.b}\n    y\n    :::\n",
+  "pandoc": "<p> 'x' <a.footnote-ref> <sup> '1' </sup> </a> </p> <div.footnotes footnotes-end-of-document> <ol> <li> <p> 'note' </p> <div.b> <p> 'y' </p> </div> <a.footnote-back> '\u21a9\ufe0e' </a> </li> </ol> </div>",
+  "ours": "<p> 'x' <sup.footnote-ref> <a> '[1]' </a> </sup> </p> <div.footnotes> <ol.footnotes-list> <li.footnote-item> <p> 'note' </p> <div.b> <p> 'y' </p> </div> <a.footnote-backref> '\u21a9\ufe0e' </a> </li> </ol> </div>",
+  "why": "the same blocks, in Quarto's markup for maths or smalldocs' markup for footnotes"
+ },
+ {
+  "md": "::: {.a}\n::: {.a}\n::: {.a}\n::: {.a}\n::: {.a}\n::: {.a}\n::: {.a}\n::: {.a}\n::: {.a}\n::: {.a}\n::: {.a}\n::: {.a}\n::: {.a}\n::: {.a}\n::: {.a}\n::: {.a}\n::: {.a}\n::: {.a}\n::: {.a}\n::: {.a}\nx\n:::\n:::\n:::\n:::\n:::\n:::\n:::\n:::\n:::\n:::\n:::\n:::\n:::\n:::\n:::\n:::\n:::\n:::\n:::\n:::\n\nafter\n",
+  "pandoc": "<div.a> <div.a> <div.a> <div.a> <div.a> <div.a> <div.a> <div.a> <div.a> <div.a> <div.a> <div.a> <div.a> <div.a> <div.a> <div.a> <div.a> <div.a> <div.a> <div.a> <p> 'x' </p> </div> </div> </div> </div> </div> </div> </div> </div> </div> </div> </div> </div> </div> </div> </div> </div> </div> </div> </div> </div> <p> 'after' </p>",
+  "ours": "<div.a> <div.a> <div.a> <div.a> <div.a> <div.a> <div.a> <div.a> <div.a> <div.a> <div.a> <div.a> <div.a> <div.a> <div.a> <div.a> <div.a> <div.a> <div.a> <p> '::: {.a} x' </p> </div> </div> </div> </div> </div> </div> </div> </div> </div> </div> </div> </div> </div> </div> </div> </div> </div> </div> </div> <p> ':::' </p> <p> 'after' </p>",
+  "why": "markdown-it nests at most 20 levels: the deepest fence shows as text, and nothing after it is lost"
+ },
+ {
+  "md": "x[^abcdef]\n\n[^abcdef]: ::: {.b}\n    y\n    :::\n\nafter\n",
+  "pandoc": "<p> 'x' <a.footnote-ref> <sup> '1' </sup> </a> </p> <p> 'after' </p> <div.footnotes footnotes-end-of-document> <ol> <li> <p> '::: {.b} y :::' <a.footnote-back> '\u21a9\ufe0e' </a> </p> </li> </ol> </div>",
+  "ours": "<p> 'x' <sup.footnote-ref> <a> '[1]' </a> </sup> </p> <p> 'after' </p> <div.footnotes> <ol.footnotes-list> <li.footnote-item> <div.b> <p> 'y' </p> </div> <a.footnote-backref> '\u21a9\ufe0e' </a> </li> </ol> </div>",
+  "why": "smalldocs reads more than Pandoc; pages that rely on it build today"
+ },
+ {
+  "md": "-\t::: {.a}\n\tx\n\t:::\n\nafter\n",
+  "pandoc": "<ul> <li> <div.a> <p> 'x' </p> </div> </li> </ul> <p> 'after' </p>"
+ },
+ {
+  "md": "Term\n\n~   ::: {.a}\n    x\n    :::\n",
+  "pandoc": "<dl> <dt> 'Term' </dt> <dd> <div.a> <p> 'x' </p> </div> </dd> </dl>"
+ },
+ {
+  "md": "> - ::: {.a}\n>   x\n:::\n\nafter\n",
+  "pandoc": "<blockquote> <ul> <li> <div.a> <p> 'x' </p> </div> </li> </ul> </blockquote> <p> 'after' </p>"
+ },
+ {
+  "md": "- > ::: {.a}\n  > x\n  :::\n\nafter\n",
+  "pandoc": "<ul> <li> <blockquote> <div.a> <p> 'x' </p> </div> </blockquote> </li> </ul> <p> 'after' </p>"
+ },
+ {
+  "md": "::: {.a}\n::: {.a}\n::: {.a}\n::: {.a}\n::: {.a}\n::: {.a}\n::: {.a}\n::: {.a}\n::: {.a}\n::: {.a}\n::: {.a}\n::: {.a}\n::: {.a}\n::: {.a}\n::: {.a}\n::: {.a}\n::: {.a}\n::: {.a}\n- > - x\n:::\n:::\n:::\n:::\n:::\n:::\n:::\n:::\n:::\n:::\n:::\n:::\n:::\n:::\n:::\n:::\n:::\n:::\n\nAFTER\n",
+  "pandoc": "<div.a> <div.a> <div.a> <div.a> <div.a> <div.a> <div.a> <div.a> <div.a> <div.a> <div.a> <div.a> <div.a> <div.a> <div.a> <div.a> <div.a> <div.a> <ul> <li> <blockquote> <ul> <li> 'x' </li> </ul> </blockquote> </li> </ul> </div> </div> </div> </div> </div> </div> </div> </div> </div> </div> </div> </div> </div> </div> </div> </div> </div> </div> <p> 'AFTER' </p>",
+  "ours": "<div.a> <div.a> <div.a> <div.a> <div.a> <div.a> <div.a> <div.a> <div.a> <div.a> <div.a> <div.a> <div.a> <div.a> <div.a> <div.a> <div.a> <div.a> <ul> <li> </li> </ul> </div> </div> </div> </div> </div> </div> </div> </div> </div> </div> </div> </div> </div> </div> </div> </div> </div> </div>",
+  "why": "markdown-it nests at most 20 levels and drops the rest of the page past them, as it does for lists nested that deep"
+ },
+ {
+  "md": "::: {.a}\n<div>\n<!--\n:::\n-->\n</div>\n:::\n\nafter\n",
+  "pandoc": "<div.a> <div> </div> </div> <p> 'after' </p>"
+ },
+ {
+  "md": "::: {.a}\n| Key | Meaning |\n|---|---|\n| `<!--` | starts a comment |\n:::\n\nAfter\n",
+  "pandoc": "<div.a> <table> <thead> <tr> <th> 'Key' </th> <th> 'Meaning' </th> </tr> </thead> <tbody> <tr> <td> <code> '<!--' </code> </td> <td> 'starts a comment' </td> </tr> </tbody> </table> </div> <p> 'After' </p>"
+ },
+ {
+  "md": "::: {.a}\n| a |\n|---|\n| <!-- |\n:::\n\nAfter\n",
+  "pandoc": "<div.a> <table> <thead> <tr> <th> 'a' </th> </tr> </thead> <tbody> <tr> <td> '<!\u2013' </td> </tr> </tbody> </table> </div> <p> 'After' </p>"
+ },
+ {
+  "md": "::: {.a}\n<p>Note <!-- todo\n:::\nstill comment -->\n</p>\n:::\nafter\n",
+  "pandoc": "<div.a> <p> 'Note' </p> </div> <p> 'after' </p>"
+ },
+ {
+  "md": "::: {.a}\n<div>\n<!-- a --> b <!-- c\n:::\n-->\n</div>\n:::\n\nafter\n",
+  "pandoc": "<div.a> <div> <p> 'b' </p> </div> </div> <p> 'after' </p>",
+  "ours": "<div.a> <div> 'b' </div> </div> <p> 'after' </p>",
+  "why": "the same blocks; Pandoc and markdown-it differ on which text in a list, a definition or raw HTML gets a <p>"
+ },
+ {
+  "md": "::: {.a}\n<div>\n<!-- a\n--> b <!-- c\n:::\n-->\n</div>\n:::\n\nafter\n",
+  "pandoc": "<div.a> <div> <p> 'b' </p> </div> </div> <p> 'after' </p>",
+  "ours": "<div.a> <div> 'b' </div> </div> <p> 'after' </p>",
+  "why": "the same blocks; Pandoc and markdown-it differ on which text in a list, a definition or raw HTML gets a <p>"
+ },
+ {
+  "md": "A[^1].\n\n[^1]:\t::: {.x}\n    in\n    :::\n\nAfter\n",
+  "pandoc": "<p> 'A' <a.footnote-ref> <sup> '1' </sup> </a> '.' </p> <p> 'After' </p> <div.footnotes footnotes-end-of-document> <ol> <li> <p> '::: {.x} in :::' <a.footnote-back> '\u21a9\ufe0e' </a> </p> </li> </ol> </div>",
+  "ours": "<p> 'A' <sup.footnote-ref> <a> '[1]' </a> </sup> '.' </p> <p> 'After' </p> <div.footnotes> <ol.footnotes-list> <li.footnote-item> <div.x> <p> 'in' </p> </div> <a.footnote-backref> '\u21a9\ufe0e' </a> </li> </ol> </div>",
+  "why": "smalldocs reads more than Pandoc; pages that rely on it build today"
+ },
+ {
+  "md": "A[^1].\n\n[^1]:::: {.x}\n    in\n    :::\n\nAfter\n",
+  "pandoc": "<p> 'A' <a.footnote-ref> <sup> '1' </sup> </a> '.' </p> <p> 'After' </p> <div.footnotes footnotes-end-of-document> <ol> <li> <div.x> <p> 'in' </p> </div> <a.footnote-back> '\u21a9\ufe0e' </a> </li> </ol> </div>",
+  "ours": "<p> 'A' <sup.footnote-ref> <a> '[1]' </a> </sup> '.' </p> <p> 'After' </p> <div.footnotes> <ol.footnotes-list> <li.footnote-item> <div.x> <p> 'in' </p> </div> <a.footnote-backref> '\u21a9\ufe0e' </a> </li> </ol> </div>",
+  "why": "the same blocks, in Quarto's markup for maths or smalldocs' markup for footnotes"
+ },
+ {
+  "md": "::: {.x}\n$$\n:::\n$$\n:::\n",
+  "pandoc": "<div.x> <p> <span.math display> ': : :' </span> </p> </div>",
+  "ours": "<div.x> <p> '$$' </p> </div> <p> '$$ :::' </p>",
+  "why": "a `:::` ends the div even inside `$$`, where Pandoc reads on as maths"
+ },
+ {
+  "md": "::: {.x}\ntext <!-- c\n:::\n-->\n:::\n",
+  "pandoc": "<div.x> <p> 'text' </p> </div>",
+  "ours": "<div.x> <p> 'text <!\u2013 c' </p> </div> <p> '\u2013> :::' </p>",
+  "why": "a `:::` ends the div even after `<!--` in a paragraph; only an HTML block keeps a comment's `:::`"
+ },
+ {
+  "md": "Text.[^1]\n\n[^1]: \t::: {.x}\n    inside\n    :::\n\nafter\n",
+  "pandoc": "<p> 'Text.' <a.footnote-ref> <sup> '1' </sup> </a> </p> <p> 'after' </p> <div.footnotes footnotes-end-of-document> <ol> <li> <p> '::: {.x} inside :::' <a.footnote-back> '\u21a9\ufe0e' </a> </p> </li> </ol> </div>",
+  "ours": "<p> 'Text.' <sup.footnote-ref> <a> '[1]' </a> </sup> </p> <p> 'after' </p> <div.footnotes> <ol.footnotes-list> <li.footnote-item> <div.x> <p> 'inside' </p> </div> <a.footnote-backref> '\u21a9\ufe0e' </a> </li> </ol> </div>",
+  "why": "smalldocs reads more than Pandoc; pages that rely on it build today"
+ },
+ {
+  "md": "Text.[^1]\n\n[^1]: - ::: {.x}\n      inside\n      :::\n\nafter\n",
+  "pandoc": "<p> 'Text.' <a.footnote-ref> <sup> '1' </sup> </a> </p> <p> 'after' </p> <div.footnotes footnotes-end-of-document> <ol> <li> <ul> <li> <div.x> <p> 'inside :::' </p> </div> </li> </ul> <a.footnote-back> '\u21a9\ufe0e' </a> </li> </ol> </div>",
+  "ours": "<p> 'Text.' <sup.footnote-ref> <a> '[1]' </a> </sup> </p> <p> 'after' </p> <div.footnotes> <ol.footnotes-list> <li.footnote-item> <ul> <li> <div.x> </div> </li> </ul> <p> 'inside :::' <a.footnote-backref> '\u21a9\ufe0e' </a> </p> </li> </ol> </div>",
+  "why": "markdown-it's own rule for lists, quotes, footnotes, rules or raw HTML, not the fences"
+ },
+ {
+  "md": "> Text.[^1]\n>\n> [^1]: \t::: {.x}\n>     inside\n>     :::\n\nafter\n",
+  "pandoc": "<blockquote> <p> 'Text.' <a.footnote-ref> <sup> '1' </sup> </a> </p> </blockquote> <p> 'after' </p> <div.footnotes footnotes-end-of-document> <ol> <li> <p> '::: {.x} inside :::' <a.footnote-back> '\u21a9\ufe0e' </a> </p> </li> </ol> </div>",
+  "ours": "<blockquote> <p> 'Text.' <sup.footnote-ref> <a> '[1]' </a> </sup> </p> </blockquote> <p> 'after' </p> <div.footnotes> <ol.footnotes-list> <li.footnote-item> <div.x> <p> 'inside' </p> </div> <a.footnote-backref> '\u21a9\ufe0e' </a> </li> </ol> </div>",
+  "why": "smalldocs reads more than Pandoc; pages that rely on it build today"
+ },
+ {
+  "md": ">- ::: {.x}\n>   inside\n>   :::\n\nafter\n",
+  "pandoc": "<blockquote> <ul> <li> <div.x> <p> 'inside' </p> </div> </li> </ul> </blockquote> <p> 'after' </p>"
+ },
+ {
+  "md": "Text.[^ab]\n\n[^ab]: -\t::: {.x}\n        inside\n        :::\n\nafter\n",
+  "pandoc": "<p> 'Text.' <a.footnote-ref> <sup> '1' </sup> </a> </p> <p> 'after' </p> <div.footnotes footnotes-end-of-document> <ol> <li> <ul> <li> <div.x> <pre> <code> 'inside :::' </code> </pre> </div> </li> </ul> <a.footnote-back> '\u21a9\ufe0e' </a> </li> </ol> </div>",
+  "ours": "<p> 'Text.' <sup.footnote-ref> <a> '[1]' </a> </sup> </p> <p> 'after' </p> <div.footnotes> <ol.footnotes-list> <li.footnote-item> <ul> <li> <div.x> <p> 'inside' </p> </div> </li> </ul> <a.footnote-backref> '\u21a9\ufe0e' </a> </li> </ol> </div>",
+  "why": "markdown-it's own rule for lists, quotes, footnotes, rules or raw HTML, not the fences"
+ },
+ {
+  "md": "Text.[^ab]\n\n  [^ab]: - ::: {.x}\n       inside\n       :::\n\nafter\n",
+  "pandoc": "<p> 'Text.' <a.footnote-ref> <sup> '1' </sup> </a> </p> <p> 'after' </p> <div.footnotes footnotes-end-of-document> <ol> <li> <ul> <li> <div.x> <p> 'inside' </p> </div> </li> </ul> <a.footnote-back> '\u21a9\ufe0e' </a> </li> </ol> </div>",
+  "ours": "<p> 'Text.' <sup.footnote-ref> <a> '[1]' </a> </sup> </p> <p> 'after' </p> <div.footnotes> <ol.footnotes-list> <li.footnote-item> <ul> <li> <div.x> <p> 'inside' </p> </div> </li> </ul> <a.footnote-backref> '\u21a9\ufe0e' </a> </li> </ol> </div>",
+  "why": "the same blocks, in Quarto's markup for maths or smalldocs' markup for footnotes"
+ },
+ {
+  "md": "Text.[^1]\n\n- item\n\n  [^1]: ::: {.x}\n      inside\n      :::\n\nafter\n",
+  "pandoc": "<p> 'Text.' <a.footnote-ref> <sup> '1' </sup> </a> </p> <ul> <li> 'item' </li> </ul> <p> 'after' </p> <div.footnotes footnotes-end-of-document> <ol> <li> <p> '::: {.x} inside :::' <a.footnote-back> '\u21a9\ufe0e' </a> </p> </li> </ol> </div>",
+  "ours": "<p> 'Text.' <sup.footnote-ref> <a> '[1]' </a> </sup> </p> <ul> <li> <p> 'item' </p> </li> </ul> <p> 'after' </p> <div.footnotes> <ol.footnotes-list> <li.footnote-item> <div.x> <p> 'inside' </p> </div> <a.footnote-backref> '\u21a9\ufe0e' </a> </li> </ol> </div>",
+  "why": "smalldocs reads more than Pandoc; pages that rely on it build today"
+ },
+ {
+  "md": "> - ::: {.x}\n>\n>   inside\n>   :::\n\nafter\n",
+  "pandoc": "<blockquote> <ul> <li> <div.x> <p> 'inside' </p> </div> </li> </ul> </blockquote> <p> 'after' </p>"
+ },
+ {
+  "md": "- ::: {.x}\n\n      code\n\n  text\n  :::\n\nafter\n",
+  "pandoc": "<ul> <li> <div.x> <pre> <code> 'code' </code> </pre> <p> 'text' </p> </div> </li> </ul> <p> 'after' </p>"
+ },
+ {
+  "md": "> ::: {.x}\n> > q\n> :::\n\nafter\n",
+  "pandoc": "<blockquote> <div.x> <blockquote> <p> 'q' </p> </blockquote> </div> </blockquote> <p> 'after' </p>"
+ },
+ {
+  "md": "> ::: {.x}\n>    three\n>\n> + plus\n\nafter\n",
+  "pandoc": "<blockquote> <div.x> <p> 'three' </p> <ul> <li> 'plus' </li> </ul> </div> </blockquote> <p> 'after' </p>"
+ },
+ {
+  "md": "- ::: {.x}\n     three\n\n  + plus\n\nafter\n",
+  "pandoc": "<ul> <li> <div.x> <p> 'three' </p> <ul> <li> 'plus' </li> </ul> </div> </li> </ul> <p> 'after' </p>"
+ },
+ {
+  "md": ">- ::: {.x}\n>   :::\n\nafter\n",
+  "pandoc": "<blockquote> <ul> <li> <div.x> </div> </li> </ul> </blockquote> <p> 'after' </p>"
+ },
+ {
+  "md": "> ::: {.x}\n> >\n\nafter\n",
+  "pandoc": "<blockquote> <div.x> <blockquote> </blockquote> </div> </blockquote> <p> 'after' </p>"
+ },
+ {
+  "md": "- > ::: {.x}\n  > >\n\nafter\n",
+  "pandoc": "<ul> <li> <blockquote> <div.x> <blockquote> </blockquote> </div> </blockquote> </li> </ul> <p> 'after' </p>"
+ }
+]

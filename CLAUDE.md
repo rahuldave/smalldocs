@@ -63,6 +63,7 @@ reads the Markdown cells of the notebooks; it must pass before a commit.
 | `QUARTO-GAPS.md` | What Quarto does that smalldocs does not, ticked as each gap closes |
 | `src/smalldocs/assets/` | `smalldocs.css`, `smalldocs.js`, and `vendor/` (Bootswatch 5.3.8, Bootstrap 5.3.8, Bootstrap Icons 1.11.3, Fuse.js 7.0.0). Vendored: do not edit |
 | `tests/test_smalldocs.py` | One test per feature |
+| `tests/test_fences.py`, `tests/fence_cases.json` | Fenced divs against Pandoc. `scripts/fence_cases.py` writes the cases from Quarto's Pandoc, with the differences smalldocs keeps and why; add a case there and run it |
 | `docs/` | smalldocs' own site; it uses every feature, and its Reference is made by `smalldocs.api` from this package |
 
 ## Commands

@@ -7,7 +7,7 @@ import json
 import re
 from collections.abc import Callable
 
-from .markdown import EXECUTABLE, is_fence_line, make_parser, parse_attrs, shown, split_front_matter
+from .markdown import EXECUTABLE, make_parser, parse_attrs, shown, split_front_matter
 from .notebook import ANSI, DISPLAY_ORDER, IMAGES, cell_options, fence_for, source
 
 CODE_SPAN = re.compile(r"(`+)(?:.+?)\1", re.S)
@@ -90,7 +90,6 @@ def hidden_cell(
     return opts.get("echo") == "false" or opts.get("include") == "false"
 
 
-DIV_END = re.compile(r"[ >]*:{3,}\s*")  # a line that only ends a div
 PARSER = make_parser()  # the page's parser; only its block step is used, to find the page's divs, code and HTML
 
 
@@ -115,25 +114,36 @@ class Prose:
         body: str,  # Markdown; a div may open in one call and close in a later one, as across a notebook's cells
     ) -> str:  # The Markdown for the copy
         "Turn some Markdown into the copy's; code blocks and HTML blocks stay as they are."
+        if not body.strip():
+            return ""  # an empty cell leaves the divs open as they are
         out: list[str] = []
         lines, i = re.split(r"\r\n?|\n", body.rstrip()), 0  # the lines as markdown-it numbers them; trailing blank lines add none
         # the page's own blocks, from the block step of the parser that builds the page: where divs open, and where code and HTML are
+        # the divs still open from an earlier call, as from a notebook's earlier cells, go first, so this parse reads as the page's does
+        carried = len(self.stack)
         blocks: list = []
-        PARSER.block.parse("\n".join(lines), PARSER, {}, blocks)
-        opens = {t.map[0]: t for t in blocks if t.type == "div_open" and t.map}
-        code = {t.map[0]: t for t in blocks if t.map and t.type in ("fence", "code_block", "html_block")}
-        contained, depth = set(), 0  # the divs inside a list or a quote, which end with it
+        PARSER.block.parse("\n".join(["::: {.carried}"] * carried + lines), PARSER, {}, blocks)
         for t in blocks:
-            depth += t.nesting if t.type.startswith(("blockquote_", "list_item_")) else 0
+            t.map = t.map and [t.map[0] - carried, t.map[1] - carried]
+        opens = {t.map[0]: t for t in blocks if t.type == "div_open" and t.map}
+        where = {id(t): k for k, t in enumerate(blocks)}  # each block's place in the list
+        code = {t.map[0]: t for t in blocks if t.map and t.type in ("fence", "code_block", "html_block")}
+        contained, depth = set(), 0  # the divs inside a list, a quote, a definition or a footnote, which end with it
+        for t in blocks:
+            depth += t.nesting if t.type.startswith(("blockquote_", "list_item_", "dd_", "footnote_reference_")) else 0
             if t.type == "div_open" and depth:
                 contained.add(t.map[0])
-        ends: dict[int, list[str]] = {}  # the line where divs opened here end, and the quote marks before each
-        base = len(self.stack)  # divs opened in an earlier call, as in an earlier cell of a notebook
+        ends: dict[int, list[tuple[str, bool]]] = {}  # the line where divs opened here end, with the indent before each and whether a fence ends it
+        for k in range(-carried, 0):  # a carried div that ends here ends where the page ends it
+            t = opens[k]
+            if t.meta["closed"] or t.map[1] < len(lines):
+                ends.setdefault(t.map[1], []).append(("", t.meta["closed"]))
         while i < len(lines):
             if i in ends:  # a div's end, where the page has it
-                for quote in reversed(ends.pop(i)):  # the inner div first
+                here = ends.pop(i)
+                for quote, _ in reversed(here):  # the inner div first
                     self.close(out, quote)
-                if DIV_END.fullmatch(lines[i]):
+                if any(closed for _, closed in here):  # the closing fence
                     i += 1
                     continue
             if i in code:
@@ -144,20 +154,35 @@ class Prose:
             line, i = lines[i], i + 1
             if i - 1 in opens:
                 t = opens[i - 1]
-                quote = re.match(r"[ >]*", line)[0]
+                lead = re.match(r"(?:[ \t>]|[*+-][ \t]|\d+[.)][ \t]|[:~][ \t]|\[\^[^\]]+\]:[ \t]?)*", line)[0]  # quote marks, and a list, definition or footnote marker
+                # the indent of the div's other lines: that of its own blocks, which the page reads in the div's container
+                n, stop, kids = lead.count(">"), min(t.map[1], len(lines)), []
+                for j in range(where[id(t)] + 1, len(blocks)):  # the first lines of the div's own blocks, but not code
+                    c = blocks[j]
+                    if c.map and c.map[0] >= stop:
+                        break
+                    if c.map and c.level == t.level + 1 and c.nesting >= 0 and c.type != "code_block" and lines[c.map[0]].strip(" \t>"):
+                        kids.append(lines[c.map[0]])
+                own = rf"[ \t]*(?:>[ \t]*){{0,{n}}}"  # an indent, with the quote marks of the div's own quotes, not those of a quote inside it
+                if kids:  # the least indent of them: an over-indented first line must not carry the end into a nested list
+                    quote = min((re.match(own, x)[0] for x in kids), key=lambda q: len(q.expandtabs(4)))
+                elif t.meta["closed"] and t.map[1] < len(lines):  # an empty div: the indent of its closing fence
+                    quote = re.match(own, lines[t.map[1]])[0]
+                else:  # an empty div left open: worked out from its markers; a quote mark with no space after it takes one
+                    quote = re.sub(r"[^ \t>]", " ", re.sub(r">(?=[^ \t>])", "> ", re.sub(r"\[\^[^\]]+\]:[ \t]*$", "    ", lead)))
+                end = t.map[1]
+                while not t.meta["closed"] and t.map[0] < end - 1 < len(lines) and not lines[end - 1].strip():
+                    end -= 1  # an empty quote's end takes in the blank line after it; the div ends before that line
                 if t.map[1] < len(lines) or i - 1 in contained:  # a div left open outside a list or a quote goes on, into a notebook's next cell
-                    ends.setdefault(t.map[1], []).append(quote)
+                    ends.setdefault(end, []).append((quote, t.meta["closed"]))
                 a = parse_attrs(t.info)
                 keep = kept(a.classes, a.kv, self.env)
                 self.stack.append("drop" if self.dropping or keep is False else "unwrap" if keep else "div")
                 if self.stack[-1] == "div":
-                    out += [quote + tag("div", t.info), quote.rstrip()]
-            elif is_fence_line(line) == "" and base and not ends:  # the end of a div that an earlier call opened
-                base -= 1
-                self.close(out, "")
+                    out += [lead + tag("div", t.info), quote.rstrip()]
             elif not self.dropping:
                 out.append(inline(line, self.link, self.env))
-        for quote in reversed(ends.pop(len(lines), [])):  # a div left open in a quote or a list ends with it, as on the page
+        for quote, _ in reversed(ends.pop(len(lines), [])):  # a div left open in a quote or a list ends with it, as on the page
             self.close(out, quote)
         return "\n".join(out)
 

@@ -1,0 +1,22 @@
+---
+title: smalldocs 0.5.4
+subtitle: Divs read as Pandoc reads them
+date: 2026-10-22
+author: Rahul Dave
+categories: [release]
+image: ../images/mark.svg
+---
+
+This release changes how smalldocs finds the end of a div. It now reads a div's lines as it reads the
+rest of the page. A `:::` ends only a div in its own list item or quote. So these now work, as in Pandoc:
+
+- A div on a list item's first line, as in `- ::: {.callout-note}` or `10. ::: {.callout-note}`.
+- A div in a nested list, with four or more spaces before its `:::`.
+- A `:::` in a list inside a div. Before, it could end the outer div early and leave a stray `:::`.
+- A line with no indent right after a div's text, in a list or a quote. It now joins the text, as in Pandoc.
+- A raw HTML line right before a div's `:::`.
+
+The Markdown copies for agents follow the page in each of these cases.
+
+A new test reads 135 cases of divs with Pandoc and with smalldocs, and checks that they agree. In 35 of
+them they do not agree on purpose, and each of these cases says why.

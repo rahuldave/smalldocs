@@ -3,7 +3,7 @@
 import html
 import os
 import re
-from collections.abc import Callable, Sequence
+from collections.abc import Callable, Iterable, Sequence
 from dataclasses import dataclass, field
 
 import yaml
@@ -149,50 +149,131 @@ def fenced_div(
     end: int,  # The line after the last one
     silent: bool,  # Only say whether a div starts here
 ) -> bool:  # Whether a div starts here
-    "Parse `::: {.class}` ... `:::` into div tokens; a fence with no attributes closes the innermost div."
+    "Parse `::: {.class}` ... `:::` into div tokens; the div's blocks are parsed until `div_end` meets its closing fence."
     if state.sCount[start] - state.blkIndent >= 4:
         return False
-    first = state.src[state.bMarks[start] : state.eMarks[start]]
-    params = is_fence_line(first)
-    if not params:
-        return False
+    params = is_fence_line(state.src[state.bMarks[start] + state.tShift[start] : state.eMarks[start]])
+    if not params or state.level + 1 >= state.md.options["maxNesting"]:
+        return False  # too deep a div stays text, as markdown-it leaves too deep a list; nothing after it is lost
     if silent:
         return True
-    depth, line, code = 1, start, None
-    while True:
-        line += 1
-        if line >= end:
-            break
-        text = state.src[state.bMarks[line] : state.eMarks[line]]
-        if state.sCount[line] < state.blkIndent and text.strip():
-            break
-        fence = re.match(r"^ {0,3}(`{3,}|~{3,})", text)
-        if code:
-            if fence and fence.group(1)[0] == code[0] and len(fence.group(1)) >= len(code) and not text.strip()[len(fence.group(1)) :].strip():
-                code = None
-            continue
-        if fence:
-            code = fence.group(1)
-            continue
-        p = is_fence_line(text)
-        if p is None:
-            continue
-        depth += 1 if p else -1
-        if depth == 0:
-            break
-    closed = line < end and is_fence_line(text) == ""  # the div's closing fence, even outdented, as Pandoc reads it; any other line stays
-    old_parent, old_max = state.parentType, state.lineMax
-    state.parentType, state.lineMax = "div", line
     tok = state.push("div_open", "div", 1)
-    tok.info, tok.map, tok.block = params, [start, line], True
-    attrs = parse_attrs(params)
-    tok.meta = {"attrs": attrs}
-    state.md.block.tokenize(state, start + 1, line)
-    close = state.push("div_close", "div", -1)
-    close.block = True
-    state.parentType, state.lineMax = old_parent, old_max
-    state.line = line + 1 if closed else line
+    tok.info, tok.block, tok.meta = params, True, {"attrs": parse_attrs(params)}
+    divs = state.__dict__.setdefault("divs", [])
+    divs.append([state.level, None])  # the level of the div's blocks, and the line of its closing fence
+    seen = state.__dict__.get("lazy_seen", 0)  # in a quote, the lines whose lazy fences are marked already
+    for k in range(max(start + 1, seen), end) if state.__dict__.get("quotes") else ():
+        if state.sCount[k] < 0 and is_fence_line(state.src[state.bMarks[k] : state.eMarks[k]]) == "":
+            state.sCount[k] = state.blkIndent  # a quote's lazy line would continue a paragraph; a bare fence must end it
+    state.__dict__["lazy_seen"] = max(seen, end)  # so each line of a quote is scanned once
+    old_parent, state.parentType = state.parentType, "div"
+    state.line = start + 1  # tokenize leaves it alone when the div holds no lines
+    state.md.block.tokenize(state, start + 1, end)
+    state.parentType = old_parent
+    line = state.line
+    if divs[-1][1] is None and line < end and state.sCount[line] < state.blkIndent and not state.isEmpty(line - 1) and div_end(state, line, end, True, True):
+        divs[-1][1] = line  # a lazy closing fence, right after the div's text, as in Pandoc
+    closer = divs.pop()[1]
+    tok.map, tok.meta["closed"] = [start, line if closer is None else closer], closer is not None  # map[1]: the closing fence, or the line after the div
+    state.push("div_close", "div", -1).block = True
+    state.line = line if closer is None else closer + 1
     return True
+
+
+def div_end(
+    state: StateBlock,  # The block parser's state
+    start: int,  # The line to try
+    end: int,  # The line after the last one
+    silent: bool,  # Only say whether the innermost div ends here
+    lazy: bool = False,  # Whether the line is outdented past the div, after its text
+) -> bool:  # Whether the line is the closing fence of the innermost open div
+    "End the innermost open div at a bare `:::`, but only among the div's own blocks, not in a list or quote inside it."
+    divs = state.__dict__.get("divs")
+    outdented = lazy or state.sCount[start] < state.blkIndent  # it ends the lists and quotes in the div, too
+    if not divs or (divs[-1][0] != state.level and not outdented) or state.sCount[start] - state.blkIndent >= 4:
+        return False
+    if is_fence_line(state.src[state.bMarks[start] + state.tShift[start] : state.eMarks[start]]) != "":
+        return False
+    if not silent:
+        divs[-1][1], state.line = start, end  # stop the div's blocks here
+    return True
+
+
+RAW_HTML = re.compile(r"\s*<(?:(?:script|pre|style|textarea)(?:\s|>|$)|!--|\?|![A-Za-z]|!\[CDATA\[)", re.I)  # HTML that ends at its own end tag
+BOUNDED = ("table", "table_caption", "math_block", "html_block")  # the block rules that run on with no terminator rules
+LEADS = {"math_block": "$$", "html_block": "<"}  # how those blocks start; the table rules are asked, which is safe
+
+
+def closing_fence(
+    lines: Iterable[str],  # Lines, each indented as far past its container as in the source; read only up to the answer
+    comments: bool = False,  # Whether the lines are raw HTML, where `<!--` starts a comment
+) -> int | None:  # The index of the first bare `:::`, or None
+    "Find the first bare `:::` before a blank line that is not in code, nor in an HTML comment in raw HTML."
+    code, comment = None, False
+    for k, text in enumerate(lines):
+        fence = re.match(r" {0,3}(`{3,}|~{3,})", text)
+        if comment:
+            comment = text.rfind("<!--") > text.rfind("-->")
+        elif code:
+            code = None if fence and fence.group(1)[0] == code[0] and len(fence.group(1)) >= len(code) and not text.strip()[len(fence.group(1)) :].strip() else code
+        elif fence:
+            code = fence.group(1)
+        elif not text.strip():
+            return None
+        elif comments and "<!--" in text:
+            comment = text.rfind("<!--") > text.rfind("-->")
+        elif is_fence_line(text) == "":
+            return k
+    return None
+
+
+def div_bound(
+    state: StateBlock,  # The block parser's state
+    start: int,  # The first line of a block
+    end: int,  # The line after the last one
+    comments: bool = False,  # Whether the block is raw HTML, where `<!--` starts a comment
+) -> int:  # The line where the block must stop: the innermost div's closing fence, or `end`
+    "In a div, stop a block that does not ask `div_end` at the div's closing fence, as in Pandoc."
+    if not state.__dict__.get("divs"):
+        return end
+    # from the block's first line, which is no fence but may open a comment
+    lines = (" " * max(0, state.sCount[k] - state.blkIndent) + state.src[state.bMarks[k] + state.tShift[k] : state.eMarks[k]] for k in range(start, end))
+    k = closing_fence(lines, comments)
+    return end if k is None else start + k
+
+
+def bounded(
+    rule: Callable,  # A block rule
+    name: str,  # Its name
+) -> Callable:  # The rule, stopped at the closing fence of the div it is in, as in Pandoc
+    "Stop a block rule that reads on to a blank line at its div's `:::`; a comment, script or `<pre>` keeps a `:::` inside it."
+
+    def stop(state: StateBlock, start: int, end: int, silent: bool) -> bool:
+        first = state.src[state.bMarks[start] + state.tShift[start] : state.eMarks[start]]
+        if name == "html_block" and RAW_HTML.match(first):
+            return rule(state, start, end, silent)
+        if not first.startswith(LEADS.get(name, "")) or (name not in LEADS and not rule(state, start, end, True)):
+            return False  # most lines start no such block; find the bound only for one that may
+        return rule(state, start, end if silent else div_bound(state, start, end, name == "html_block"), silent)  # a silent check needs no bound
+
+    return stop
+
+
+def in_quote(
+    rule: Callable,  # markdown-it's blockquote rule
+) -> Callable:  # The rule, counting the quotes open, as `fenced_div` needs for a quote's lazy lines
+    "Count the open quotes while a quote is read, and let its first div mark its lazy fences."
+
+    def quote(state: StateBlock, start: int, end: int, silent: bool) -> bool:
+        seen = state.__dict__.get("lazy_seen", 0)
+        state.__dict__["quotes"], state.__dict__["lazy_seen"] = state.__dict__.get("quotes", 0) + 1, 0
+        try:
+            return rule(state, start, end, silent)
+        finally:
+            state.__dict__["quotes"] -= 1
+            state.__dict__["lazy_seen"] = seen
+
+    return quote
 
 
 def table_caption(
@@ -1466,7 +1547,11 @@ def make_parser(
         for name in ("math_block", "math_block_label"):
             md.add_render_rule(name, math_block)
     md.block.ruler.before("fence", "fenced_div", fenced_div, {"alt": ["paragraph", "reference", "blockquote", "list"]})
+    md.block.ruler.before("fenced_div", "div_end", div_end, {"alt": ["paragraph", "reference", "blockquote", "list"]})
     md.block.ruler.before("table", "table_caption", table_caption)  # before deflist, which reads `: text` as a definition
+    for r in list(md.block.ruler.__rules__):
+        if r.name in BOUNDED or r.name == "blockquote":
+            md.block.ruler.at(r.name, in_quote(r.fn) if r.name == "blockquote" else bounded(r.fn, r.name), {"alt": r.alt})
     md.inline.ruler.before("strikethrough", "subscript", sub_sup("~", "sub"))
     md.inline.ruler.before("strikethrough", "superscript", sub_sup("^", "sup"))
     md.core.ruler.after("block", "heading_attrs", heading_attrs)

@@ -140,6 +140,11 @@ Inner, in the centre.
 :::
 :::
 
+A div can also sit in a list item or a quote, even on the item's first line, as in `1. ::: {.callout-note}`.
+Indent its lines as far as the item's text. A `:::` ends only a div in its own list item or quote.
+smalldocs reads divs as Pandoc does. The cases where the two differ are in `tests/fence_cases.json`,
+each with its reason.
+
 ## Callouts
 
 A callout is a box that sets off a note, a tip or a warning:
