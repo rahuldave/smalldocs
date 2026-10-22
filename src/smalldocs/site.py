@@ -332,13 +332,11 @@ class Site:
     def render_page(
         self,
         page: Page,  # The page to render
-        llms: bool = False,  # Render for the Markdown copy, where `when-format="llms-txt"` decides
     ) -> None:
         "Render one page's Markdown into HTML."
         m = page.meta
         env = {
             "title": page.front.get("title"),
-            "llms": llms,
             "link": lambda href, kind, page=page: self.resolve(href, page),
             "symbols": self.symbols,
             "code_copy": m.get("code-copy", True) is not False,
@@ -358,8 +356,6 @@ class Site:
             env["title_text"] = html.unescape(re.sub(r"<[^>]+>", "", env["title_html"]))
         page.html = render(page.body, env, str(m.get("from") or ""))
         page.env = env
-        if llms:
-            return
         if env.get("unrun"):
             self.warn(f"{page.src}: {len(env['unrun'])} executable cell(s) shown but not run; smalldocs runs no code")
 
@@ -438,8 +434,6 @@ class Site:
         for page in self.pages.values():
             if page.meta.get("listing"):
                 listing.expand(self, page)
-        # render the Markdown copies' own bodies now: a link is checked against the old output, as the pages' links were
-        llms_bodies = {src: self.llms_body(page) for src, page in self.pages.items() if self.llms_on() and not self.hidden(page) and "llms-txt" in page.body}
         if self.out.exists():
             for child in self.out.iterdir():
                 shutil.rmtree(child) if child.is_dir() and not child.is_symlink() else child.unlink()
@@ -447,9 +441,13 @@ class Site:
         for page in self.pages.values():
             dest = self.out / page.out
             dest.parent.mkdir(parents=True, exist_ok=True)
-            dest.write_text(text := layout.page(self, nav, page), encoding="utf-8")
+            dest.write_text(layout.page(self, nav, page), encoding="utf-8")
             if self.llms_on() and not self.hidden(page):
-                dest.with_name(dest.name.removesuffix(".html") + ".llms.md").write_text(self.llms_copy(nav, page, text, llms_bodies.get(page.src)), encoding="utf-8")
+                text, files = self.llms_copy(page)
+                dest.with_name(dest.name.removesuffix(".html") + ".llms.md").write_text(text, encoding="utf-8")
+                for name, data in files.items():
+                    (dest.parent / name).parent.mkdir(parents=True, exist_ok=True)
+                    (dest.parent / name).write_bytes(data)
         self.copy_assets(nav)
         self.copy_resources()
         browser.build(self, nav, notebooks)
@@ -623,40 +621,41 @@ class Site:
         found = self.find_page(PurePosixPath(path.removesuffix(".llms.md") + ".html"))
         return found is not None and not self.hidden(found)
 
-    def llms_body(
+    def llms_link(
         self,
-        page: Page,  # A page with `when-format="llms-txt"` content
-    ) -> tuple[str, dict]:  # The body's HTML and its render environment, for the Markdown copy
-        "Render a page again for its Markdown copy, where `when-format=\"llms-txt\"` decides; the page itself is left as it was."
-        saved = page.html, page.env
-        try:
-            self.render_page(page, llms=True)
-            # keep what the steps after rendering added, such as a notebook's links; a listing is put in again
-            page.env = {k: v for k, v in {**saved[1], **page.env}.items() if k != "feeds"}
-            if page.meta.get("listing"):
-                listing.expand(self, page)
-            return page.html, page.env
-        finally:
-            page.html, page.env = saved
+        href: str,  # A link as written in a page
+        page: Page,  # The page it is written on
+    ) -> str:  # The link for the page's Markdown copy
+        "Rewrite a link for a Markdown copy: a page to its copy; anything else as written, since the copy sits where the page's source does."
+        m = re.match(r"([^#?]*)(.*)", href, re.S)
+        path = unquote(m.group(1))
+        if path and not href.startswith(("#", "?")) and not SCHEME.match(href):
+            joined = posixpath.normpath(path.lstrip("/") if path.startswith("/") else posixpath.join(str(page.src.parent), path))
+            found = self.find_page(PurePosixPath(joined))
+            if found is not None and not self.hidden(found):
+                return rel(found.out.with_name(found.out.name.removesuffix(".html") + ".llms.md"), page) + m.group(2)
+        return href
 
     def llms_copy(
         self,
-        nav: "layout.SiteNav",  # The site's navigation
-        page: Page,  # A page
-        text: str,  # Its HTML, as written
-        body: tuple[str, dict] | None = None,  # Its body for the copy, from `llms_body`, when it differs from the page's
-    ) -> str:  # Its Markdown copy
-        "Make a page's Markdown copy from its HTML, or from its own body when it has `when-format=\"llms-txt\"` content."
+        page: Page,  # A page, rendered
+    ) -> tuple[str, dict[str, bytes]]:  # Its Markdown copy, and a notebook's pictures to save beside it, by path
+        "Make a page's Markdown copy from its own Markdown, after includes and shortcodes, with links to the other pages' copies."
         from . import llms
 
-        if body is None:
-            return llms.page_markdown(text)
-        saved = page.html, page.env
-        try:
-            page.html, page.env = body
-            return llms.page_markdown(layout.page(self, nav, page))
-        finally:
-            page.html, page.env = saved
+        prose = llms.Prose(lambda href: self.llms_link(href, page), page.env)
+
+        def expand(text: str) -> str:  # A notebook's Markdown cell, with its shortcodes expanded
+            return shortcodes.expand(text, self.root / page.src, self.root, page.meta, []) if "{{<" in text else text
+
+        files: dict[str, bytes] = {}
+        if page.src.suffix == ".ipynb":
+            text = (self.root / page.src).read_text(encoding="utf-8-sig")
+            body, files = llms.notebook(text, cell_defaults(page.meta), page.src.stem, prose, expand)
+        else:
+            body = llms.prose(page.body, prose)
+        description = page.meta.get("description")
+        return llms.page_markdown(page.title, description if isinstance(description, str) else "", body), files
 
     def write_llms_txt(self) -> None:
         "Write `llms.txt` when `website.llms-txt` is on: the site's title and description, and a link to each page's Markdown copy."

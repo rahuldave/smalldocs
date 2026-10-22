@@ -275,6 +275,15 @@ def type_text(
     return re.sub(r" at 0x[0-9a-f]+", "", repr(anno)).replace("typing.", "")  # no memory address, so a page is the same at each build
 
 
+def default_text(
+    value: object,  # A parameter's default value
+) -> str:  # It as Python: a function by its name, anything else by its repr
+    "Write a default value; a function's repr holds its memory address, which changes at each build, so a function is written by its name."
+    if inspect.isfunction(value) or inspect.isbuiltin(value) or inspect.ismethod(value):
+        return value.__qualname__
+    return re.sub(r" at 0x[0-9a-f]+", "", repr(value))  # no memory address, as in `type_text`
+
+
 def signature(
     sym: Code,  # A function, method or class
     mod: ModuleType,  # The module it was written in
@@ -292,7 +301,7 @@ def signature(
         if p.annotation is not EMPTY:
             text += f": {type_text(p.annotation, mod)}"
         if p.default is not EMPTY:
-            text += f" = {p.default!r}"
+            text += f" = {default_text(p.default)}"
         parts.append(text)
     if inspect.isclass(sym) or sig.return_annotation is EMPTY:
         return f"({', '.join(parts)})"
@@ -349,7 +358,7 @@ def params_table(
             if d.anno is not EMPTY and d.anno is not None and d.anno != "None":
                 rows.append(["returns", anno, "", d.docment or ""])
             continue
-        default = "required" if d.default is EMPTY else f"`{d.default!r}`"
+        default = "required" if d.default is EMPTY else f"`{default_text(d.default)}`"
         rows.append([f"`{name}`", anno, default, d.docment or ""])
     return table(rows, ["Parameter", "Type", "Default", "Description"])
 
@@ -370,7 +379,7 @@ def fields_table(
     said = field_descriptions(model)
     rows = []
     for name, f in model.model_fields.items():
-        default = "required" if f.is_required() else f"`{f.default!r}`"
+        default = "required" if f.is_required() else f"`{default_text(f.default)}`"
         rows.append([f"`{name}`", type_text(f.annotation, mod), default, said.get(name, "")])
     return table(rows, ["Field", "Type", "Default", "Description"])
 

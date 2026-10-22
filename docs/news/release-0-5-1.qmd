@@ -1,0 +1,16 @@
+---
+title: smalldocs 0.5.1
+subtitle: Simpler Markdown copies for agents
+date: 2026-10-21
+author: Rahul Dave
+categories: [release]
+image: ../images/mark.svg
+---
+
+The Markdown copy of each page, `page.llms.md`, is now made from the page's own Markdown, not from its
+HTML. A callout or a tabset is an HTML `<div>`, and links go to the other pages' copies. A notebook's
+copy is made as Jupyter's nbconvert makes it, with its pictures saved as files. [Pages for
+agents](../guide/llms.qmd) says what a copy holds.
+
+The API pages write a function given as a default by its name, such as `ask_tty`. They wrote its memory
+address before, which changed at each build.

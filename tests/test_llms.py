@@ -1,10 +1,9 @@
-"The tests of `website.llms-txt`: a Markdown copy of each page, `page.llms.md`, and the index `llms.txt`, as Quarto writes them."
+"The tests of `website.llms-txt`: a Markdown copy of each page, `page.llms.md`, made from its own Markdown, and the index `llms.txt`."
 
 import json
 import textwrap
 from pathlib import Path
 
-from smalldocs.llms import page_markdown
 from smalldocs.site import build
 
 
@@ -100,19 +99,45 @@ def test_html_does_not_change(tmp_path: Path) -> None:
 
 
 def test_page_copy(tmp_path: Path) -> None:
-    "Each page has a Markdown copy beside it: its content, with no navigation, as Quarto writes it."
+    "A copy is the page's own Markdown: divs become HTML divs, links go to the other pages' copies, and code, maths and notes stay."
     md = (site(tmp_path) / "guide.llms.md").read_text(encoding="utf-8")
     assert md.startswith("# Guide\n\nIntro with a [link](other.llms.md#part), an [outside link](https://example.com/a.html) and `code`.")
-    assert "> **TIP:**\n>\n> Tip body." in md and "Its own title" not in md
-    assert "## One\n\nFirst tab.\n\n## Two\n\nSecond tab." in md
-    assert '``` python\nprint("hi")\n```' in md
-    assert "Maths $x^2$ and a note[^1]. It costs \\$5 and \\$10." in md
-    assert "| A | B |\n|---|---|\n| 1 | 2 |" in md
-    assert "- [x] done\n- [ ] open" in md
-    assert "![A picture](pic.svg)" in md
-    assert md.rstrip().endswith("## Footnotes\n\n[^1]: The note.")
-    for nav in ("Home", "Other", "breadcrumb", "Toggle"):
-        assert nav not in md, nav
+    assert '<div class="callout-tip">\n\n## Its own title\nTip body.\n\n</div>' in md
+    assert '<div class="panel-tabset">\n\n## One\nFirst tab.\n\n## Two\nSecond tab.\n\n</div>' in md
+    assert '```python\nprint("hi")\n```' in md
+    assert "Maths $x^2$ and a note[^1]. It costs $5 and $10." in md and md.rstrip().endswith("[^1]: The note.")
+    assert "![A picture](pic.svg)" in md and ":::" not in md and "title: Guide" not in md
+
+
+def test_divs_spans_and_code(tmp_path: Path) -> None:
+    "Nested divs and spans become HTML with their id, classes and attributes; inside code, nothing changes."
+    page = """---
+title: D
+description: About divs.
+---
+
+::: {#box .a .b k="v & w"}
+:::: inner
+Text [small]{.smallcaps} and [a link](guide.qmd){target=_blank}.
+::::
+:::
+
+```markdown
+::: {.callout-note}
+[x](guide.qmd) and [s]{.y}
+:::
+```
+
+`[x](guide.qmd)` stays.
+
+[ref]: guide.qmd
+"""
+    md = (site(tmp_path, more={"d.qmd": page}) / "d.llms.md").read_text(encoding="utf-8")
+    assert md.startswith("# D\n\nAbout divs.\n\n")
+    assert '<div id="box" class="a b" k="v &amp; w">\n\n<div class="inner">\n\n' in md
+    assert 'Text <span class="smallcaps">small</span> and [a link](guide.llms.md){target=_blank}.\n\n</div>\n\n</div>' in md
+    assert "```markdown\n::: {.callout-note}\n[x](guide.qmd) and [s]{.y}\n:::\n```" in md
+    assert "`[x](guide.qmd)` stays." in md and "[ref]: guide.llms.md" in md
 
 
 def test_llms_txt(tmp_path: Path) -> None:
@@ -136,12 +161,37 @@ def test_drafts_and_404(tmp_path: Path) -> None:
 
 
 def test_conditional_content(tmp_path: Path) -> None:
-    "`when-format=\"llms-txt\"` content is only in the copy; `content-hidden` with it is only in the HTML."
-    page = '---\ntitle: C\n---\n\n::: {.content-visible when-format="llms-txt"}\nFor agents.\n:::\n\n::: {.content-hidden when-format="llms-txt"}\nFor people.\n:::\n'
+    "In the copy, a condition on `llms-txt` decides alone, as in Quarto; any other decides as on the HTML page."
+    page = """---
+title: C
+---
+
+::: {.content-visible when-format="llms-txt"}
+For agents.
+:::
+
+::: {.content-hidden when-format="llms-txt"}
+For people.
+
+::: {.callout-note}
+Nested, for people.
+:::
+:::
+
+::: {.content-visible when-format="html"}
+On the web.
+:::
+
+::: {.content-visible when-format="pdf"}
+In print.
+:::
+
+A [span for agents]{.content-visible when-format="llms-txt"}.
+"""
     out = site(tmp_path, more={"c.qmd": page})
     html, md = (out / "c.html").read_text(encoding="utf-8"), (out / "c.llms.md").read_text(encoding="utf-8")
-    assert "For people." in html and "For agents." not in html
-    assert "For agents." in md and "For people." not in md
+    assert "For people." in html and "For agents." not in html and "span for agents" not in html
+    assert md == "# C\n\nFor agents.\n\n\nOn the web.\n\n\nA span for agents.\n"
 
 
 def test_links_to_the_copies(tmp_path: Path) -> None:
@@ -161,47 +211,27 @@ def test_copies_are_not_pages(tmp_path: Path) -> None:
 
 
 def test_notebook_copy(tmp_path: Path) -> None:
-    "A notebook's copy has its code and its saved output as code blocks; a picture held in the page is named."
+    "A notebook's copy follows nbconvert: fenced code, indented text, pictures saved beside it; cells the page hides are left out."
     nb = {"nbformat": 4, "nbformat_minor": 5, "metadata": {"kernelspec": {"language": "python"}}, "cells": [
-        {"cell_type": "markdown", "metadata": {}, "source": "# NB\n\nText."},
-        {"cell_type": "code", "metadata": {}, "execution_count": 1, "source": "print(1)", "outputs": [{"output_type": "stream", "name": "stdout", "text": "1\n"}]},
-        {"cell_type": "code", "metadata": {}, "execution_count": 2, "source": "#| fig-cap: A dot\nplot()",
-         "outputs": [{"output_type": "display_data", "metadata": {}, "data": {"image/png": "iVBORw0KGgo="}}]},
+        {"cell_type": "markdown", "metadata": {}, "source": "---\ntitle: NB\n---\n\nSee [the guide](guide.qmd).\n\n::: {.callout-note}\nA note.\n:::"},
+        {"cell_type": "code", "metadata": {}, "execution_count": 1, "source": "#| label: one\nprint(1)", "outputs": [{"output_type": "stream", "name": "stdout", "text": "1\n2\n"}]},
+        {"cell_type": "code", "metadata": {}, "execution_count": 2, "source": "#| echo: false\nplot()",
+         "outputs": [{"output_type": "display_data", "metadata": {}, "data": {"image/png": "iVBORw0KGgo=", "text/plain": "<Figure>"}}]},
+        {"cell_type": "code", "metadata": {"tags": ["remove-cell"]}, "source": "secret()", "outputs": []},
+        {"cell_type": "code", "metadata": {}, "source": "#| output: false\nquiet()", "outputs": [{"output_type": "stream", "name": "stdout", "text": "hidden\n"}]},
+        {"cell_type": "code", "metadata": {}, "source": "1/0", "outputs": [{"output_type": "error", "ename": "ZeroDivisionError", "evalue": "x",
+         "traceback": ["\x1b[0;31mZeroDivisionError\x1b[0m: division by zero"]}]},
+        {"cell_type": "code", "metadata": {}, "source": "t", "outputs": [{"output_type": "execute_result", "metadata": {}, "execution_count": 3,
+         "data": {"text/html": "<table><tr><td>1</td></tr></table>", "text/plain": "t"}}]},
     ]}  # fmt: skip
     out = site(tmp_path, more={"nb.ipynb": json.dumps(nb)})
     md = (out / "nb.llms.md").read_text(encoding="utf-8")
-    assert "``` python\nprint(1)\n```\n\n```\n1\n```" in md
-    assert "[Image: A dot]" in md and "base64" not in md
-
-
-def test_writer_details() -> None:
-    "The writer escapes what Markdown reads, keeps an underscore inside a word, gives code a fence it cannot close, and puts a caption after its table."
-    md = page_markdown('<main><p>a *b* _c snake_case [d] &lt;e&gt;</p><pre><code class="sourceCode python">x = """\n```\n"""</code></pre></main>')
-    assert "a \\*b\\* \\_c snake_case \\[d\\] \\<e>" in md
-    assert '```` python\nx = """\n```\n"""\n````' in md
-    md = page_markdown("<main><table><caption>Cap</caption><tr><th>A</th></tr><tr><td>1</td></tr></table></main>")
-    assert md == "| A |\n|---|\n| 1 |\n\nCap\n"
-
-
-# ---------------------------------------------------------------- what the adversarial review found
-
-
-def test_listing_page_with_llms_content(tmp_path: Path) -> None:
-    "A listing page with `when-format=\"llms-txt\"` content keeps its listing in the copy, and its feed is not doubled."
-    cfg = CONFIG.replace("  llms-txt: true\n", "  llms-txt: true\n  site-url: https://x.org/\n")
-    page = '---\ntitle: Posts\nlisting: {contents: posts, feed: true}\n---\n\n::: {.content-visible when-format="llms-txt"}\nAgents only.\n:::\n'
-    posts = {"posts/a.qmd": "---\ntitle: Post A\ndate: 2026-01-02\n---\n\nA.\n", "posts/b.qmd": "---\ntitle: Post B\ndate: 2026-01-01\n---\n\nB.\n"}
-    out = site(tmp_path, cfg, {"blog.qmd": page, **posts})
-    md = (out / "blog.llms.md").read_text(encoding="utf-8")
-    assert "Agents only." in md and "### [Post A](posts/a.llms.md)" in md and "### [Post B](posts/b.llms.md)" in md
-    assert (out / "blog.xml").read_text(encoding="utf-8").count("<item>") == 2
-
-
-def test_margin_footnotes(tmp_path: Path) -> None:
-    "With `reference-location: margin`, the notes go to the end of the copy, under Footnotes, and not before the text."
-    page = "---\ntitle: M\nreference-location: margin\n---\n\n## Sec\n\nText with note[^1] and another[^2].\n\n[^1]: Note one.\n[^2]: Note two.\n"
-    md = (site(tmp_path, more={"m.qmd": page}) / "m.llms.md").read_text(encoding="utf-8")
-    assert md == "# M\n\n## Sec\n\nText with note[^1] and another[^2].\n\n## Footnotes\n\n[^1]: Note one.\n\n[^2]: Note two.\n"
+    assert md == (
+        "# NB\n\nSee [the guide](guide.llms.md).\n\n<div class=\"callout-note\">\n\nA note.\n\n</div>\n\n"
+        "```python\nprint(1)\n```\n\n    1\n    2\n\n![png](nb_files/nb_2_0.png)\n\n```python\nquiet()\n```\n\n"
+        "```python\n1/0\n```\n\n    ZeroDivisionError: division by zero\n\n```python\nt\n```\n\n<table><tr><td>1</td></tr></table>\n"
+    )
+    assert (out / "nb_files" / "nb_2_0.png").read_bytes() == b"\x89PNG\r\n\x1a\n"
 
 
 def test_a_source_named_llms_md(tmp_path: Path) -> None:
@@ -210,14 +240,6 @@ def test_a_source_named_llms_md(tmp_path: Path) -> None:
     for cfg in (CONFIG, CONFIG.replace("  llms-txt: true\n", "")):
         out = site(tmp_path, cfg, more)
         assert 'href="notes.llms.html"' in (out / "links.html").read_text(encoding="utf-8")
-
-
-def test_broken_link_in_llms_content(tmp_path: Path) -> None:
-    "A broken link inside `when-format=\"llms-txt\"` content is reported, as one elsewhere is."
-    write(tmp_path, {"_quarto.yml": CONFIG, "index.qmd": "---\ntitle: Home\n---\n\nHi.\n", "guide.qmd": "# G\n", "other.qmd": "# O\n",
-                     "c.qmd": '---\ntitle: C\n---\n\n::: {.content-visible when-format="llms-txt"}\n[gone](nowhere.qmd)\n:::\n'})  # fmt: skip
-    s = build(tmp_path, quiet=True)
-    assert any("nowhere.qmd" in w for w in s.warnings), s.warnings
 
 
 def test_link_to_an_unlinked_drafts_copy(tmp_path: Path) -> None:
@@ -229,49 +251,6 @@ def test_link_to_an_unlinked_drafts_copy(tmp_path: Path) -> None:
     assert any("draft.llms.md" in w for w in s.warnings), s.warnings
 
 
-def test_escapes_and_tight_lists() -> None:
-    "A `!` before a link and a literal entity are escaped; a list with a nested list stays tight, as Pandoc writes it."
-    md = page_markdown('<main><p>Wow!<a href="x.html">link</a> and &amp;copy;</p><ol><li>first<ul><li>inner</li></ul></li><li>second</li></ol></main>')
-    assert "Wow\\![link](x.llms.md) and \\&copy;" in md
-    assert "1. first\n   - inner\n2. second" in md
-
-
-# ---------------------------------------------------------------- what the second review found
-
-
-def test_rebuild_warns_as_the_html_build(tmp_path: Path) -> None:
-    "A page with content for agents that links to a file the build makes, such as a feed, warns on a rebuild as it does with the option off."
-    page = '---\ntitle: Posts\nlisting: {contents: posts, feed: true}\n---\n\n[feed](blog.xml)\n\n::: {.content-visible when-format="llms-txt"}\nAgents.\n:::\n'
-    files = {"index.qmd": "# Home\n", "blog.qmd": page, "posts/a.qmd": "---\ntitle: A\ndate: 2026-01-01\n---\n\nA.\n"}
-    warnings = []
-    for on in (True, False):
-        root = tmp_path / str(on)
-        cfg = "project: {type: website}\nwebsite:\n  title: S\n  site-url: https://x.org/\n" + ("  llms-txt: true\n" if on else "")
-        write(root, {"_quarto.yml": cfg, **files})
-        build(root, quiet=True)
-        warnings.append(build(root, quiet=True).warnings)
-    assert warnings[0] == warnings[1] == []
-
-
-def test_bang_before_a_link() -> None:
-    "A `!` before a link is escaped after a literal backslash and across an empty element, so the link is not read as a picture."
-    md = page_markdown('<main><p>a\\!<a href="x.html">l</a></p><p>wow!<span></span><a href="x.html">m</a></p></main>')
-    assert "a\\\\\\![l](x.llms.md)" in md
-    assert "wow\\![m](x.llms.md)" in md
-
-
-def test_a_div_called_fn1_is_not_a_note() -> None:
-    "Only a note in the margin is moved to the footnotes, and only its own number is dropped."
-    md = page_markdown('<main><div id="fn1"><p>E = mc<sup>2</sup> is a user div.</p></div></main>')
-    assert md == "E = mc2 is a user div.\n"
-
-
-def test_table_after_text_in_a_list() -> None:
-    "A table after text in a tight list item gets a blank line before it, so that a reader takes it for a table."
-    md = page_markdown("<main><ul><li>text<table><tr><th>a</th></tr><tr><td>1</td></tr></table></li></ul></main>")
-    assert md == "- text\n\n  | a |\n  |---|\n  | 1 |\n"
-
-
 def test_a_page_called_x_llms_qmd(tmp_path: Path) -> None:
     "With `foo.qmd` and `foo.llms.qmd`, a link to `foo.llms.md` goes to the page `foo.llms.html`, with the option on or off."
     more = {"foo.qmd": "# Foo\n", "foo.llms.qmd": "# Foo notes\n", "links.qmd": "---\ntitle: L\n---\n\n[notes](foo.llms.md)\n"}
@@ -280,68 +259,53 @@ def test_a_page_called_x_llms_qmd(tmp_path: Path) -> None:
         assert 'href="foo.llms.html"' in (out / "links.html").read_text(encoding="utf-8")
 
 
-# ---------------------------------------------------------------- what the third review found
+# ---------------------------------------------------------------- what the adversarial review found
 
 
-def test_margin_note_numbers_in_any_block(tmp_path: Path) -> None:
-    "A note in the margin loses its number wherever its first text is: after code, in a quote, a list or a table."
-    page = """---
-title: M
-reference-location: margin
----
-
-One[^1] two[^2] three[^3] four[^4].
-
-[^1]:
-    ```
-    code
-    ```
-
-    After the code.
-
-[^2]: > A quote.
-
-[^3]: 1. first
-
-[^4]:
-    | h |
-    |---|
-    | x |
-"""
-    md = (site(tmp_path, more={"m.qmd": page}) / "m.llms.md").read_text(encoding="utf-8")
-    notes = md.split("## Footnotes", 1)[1]
-    assert "After the code." in notes and "> A quote." in notes and "1. first" in notes and "| h |" in notes
-    for n in "1234":
-        assert f" {n} " not in notes.replace(f"[^{n}]: ", ""), notes
+def test_no_file_is_published_by_a_copy(tmp_path: Path) -> None:
+    "A link in a comment, in code or anywhere in a copy adds no file to the site; a footnote's first word is not a link."
+    page = "---\ntitle: S\n---\n\n<!-- [hidden](secret.txt) -->\n\n    [code](secret2.txt)\n\nA note[^1].\n\n[^1]: word here\n"
+    out = site(tmp_path, more={"s.qmd": page, "secret.txt": "x", "secret2.txt": "y"})
+    assert not (out / "secret.txt").exists() and not (out / "secret2.txt").exists()
+    assert "[^1]: word here" in (out / "s.llms.md").read_text(encoding="utf-8")
 
 
-def test_rule_after_text_in_a_list() -> None:
-    "Only a nested list follows text on the next line in a tight item; a rule gets a blank line, so it is not read as a heading."
-    md = page_markdown("<main><ul><li>text<hr></li><li>two</li></ul></main>")
-    assert md.startswith("- text\n\n  ---")
+def test_hidden_div_across_notebook_cells(tmp_path: Path) -> None:
+    "A hidden div that opens in one cell and closes in a later one hides the cells between, as on the page."
+    nb = {"nbformat": 4, "nbformat_minor": 5, "metadata": {}, "cells": [
+        {"cell_type": "markdown", "metadata": {}, "source": "# N\n\n::: {.content-hidden when-format=\"llms-txt\"}\nsecret prose"},
+        {"cell_type": "code", "metadata": {}, "source": "password = 'hunter2'", "outputs": [{"output_type": "stream", "name": "stdout", "text": "hunter2\n"}]},
+        {"cell_type": "markdown", "metadata": {}, "source": ":::\n\n::: {.callout-note}\nopen"},
+        {"cell_type": "code", "metadata": {}, "source": "x = 1\n```\ny", "outputs": []},
+    ]}  # fmt: skip
+    md = (site(tmp_path, more={"nb.ipynb": json.dumps(nb)}) / "nb.llms.md").read_text(encoding="utf-8")
+    assert "hunter2" not in md and "secret" not in md and ":::" not in md
+    assert md.endswith('<div class="callout-note">\n\nopen\n\n````python\nx = 1\n```\ny\n````\n\n</div>\n')
 
 
-# ---------------------------------------------------------------- what the fourth review found
+def test_maths_is_not_a_span() -> None:
+    "LaTeX's optional arguments are not Pandoc spans."
+    from smalldocs.llms import Prose, prose
+
+    md = prose("$\\sqrt[3]{x}$ and $\\begin{array}[t]{cc}$ and [s]{.c}", Prose(lambda h: h, {}))
+    assert md == '$\\sqrt[3]{x}$ and $\\begin{array}[t]{cc}$ and <span class="c">s</span>'
 
 
-def test_nested_lists_that_cannot_break_text() -> None:
-    "A nested list that starts at a number other than 1, or an empty one, gets a blank line, so it stays a list."
+def test_hidden_qmd_cells(tmp_path: Path) -> None:
+    "A `.qmd` cell hidden on the page by `include: false` or `echo: false` is hidden in the copy; a plain code block stays."
+    page = "---\ntitle: Q\n---\n\n```{python}\n#| include: false\nsecret = 1\n```\n\n```{python}\n#| echo: false\nshh = 2\n```\n\n```{python}\nshown = 3\n```\n\n```python\n#| echo: false\nplain = 4\n```\n"
+    write(tmp_path, {"_quarto.yml": "project: {type: website}\nwebsite:\n  title: S\n  llms-txt: true\n", "index.qmd": "# Home\n", "q.qmd": page})
+    assert [w for w in build(tmp_path, quiet=True).warnings if "not run" not in w] == []
+    md = (tmp_path / "_site" / "q.llms.md").read_text(encoding="utf-8")
+    assert "secret" not in md and "shh" not in md and "shown = 3" in md and "plain = 4" in md
+
+
+def test_markdown_after_a_div(tmp_path: Path) -> None:
+    "Text right after a div's end is still Markdown, and a div left open is closed."
     from markdown_it import MarkdownIt
 
-    md = page_markdown('<main><ol start="3"><li>three<ol start="7"><li>seven</li><li>eight</li></ol></li></ol></main>')
-    toks = [t.type for t in MarkdownIt("commonmark").parse(md)]
-    assert toks.count("ordered_list_open") == 2, md
-    assert "- a\n  -" not in page_markdown("<main><ul><li>a<ul><li></li></ul></li></ul></main>")
+    from smalldocs.llms import Prose, prose
 
-
-def test_text_that_starts_with_a_number() -> None:
-    "Text that starts like a numbered item has its dot or bracket escaped, as Pandoc writes it, not a backslash a reader sees."
-    md = page_markdown("<main><p>6. not a list</p><p>1) nor this</p></main>")
-    assert md == "6\\. not a list\n\n1\\) nor this\n"
-
-
-def test_a_raw_block_with_the_notes_number() -> None:
-    "A note's own `<sup>N</sup>` in the user's raw HTML stays; only smalldocs' number, with its no-break space, is dropped."
-    note = '<div class="column-margin"><div id="fn4"><div><sup>4</sup> raw block</div><p><sup>4</sup>\u00a0Para.</p></div></div>'
-    md = page_markdown(f"<main><p>Text.</p>{note}</main>")
-    assert "[^4]: 4 raw block\n\n      Para." in md, md
+    md = prose("::: {.a}\nIn.\n:::\nAfter *emph*.\n\n::: {.b}\nopen", Prose(lambda h: h, {}))
+    assert "<em>emph</em>" in MarkdownIt("commonmark").render(md)
+    assert md.endswith('<div class="b">\n\nopen\n\n</div>') and md.count("</div>") == 2

@@ -1,6 +1,6 @@
 [project]
 name = "smalldocs"
-version = "0.5.0"
+version = "0.5.1"
 description = "Quarto-like websites from a _quarto.yml project, in pure Python: pages, API reference and listings"
 readme = "README.md"
 license = "MIT"

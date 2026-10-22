@@ -1627,3 +1627,18 @@ def test_api_typevars_newtypes_and_callables(tmp_path: Path) -> None:
         sys.modules.pop(m)
     assert main(["api", "build", "--dir", str(tmp_path / "docs")]) == 0
     assert "f(x: T, u: UID, c: Callable[[int], str]) -> T" in (tmp_path / "docs/api/m.qmd").read_text()
+
+
+def test_api_function_default_by_name() -> None:
+    "A function given as a default is written by its name, with no memory address, so a page is the same at each build."
+    from smalldocs import api
+
+    def ask(q: str) -> bool:  # A question
+        "Ask."
+        return True
+
+    def add(x: int = 1, ask=ask) -> None:  # Nothing
+        "Add."
+
+    assert api.signature(add, sys.modules[__name__]) == "(x: int = 1, ask = test_api_function_default_by_name.<locals>.ask) -> None"
+    assert api.default_text(print) == "print" and api.default_text("a") == "'a'"
