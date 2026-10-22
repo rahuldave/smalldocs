@@ -309,3 +309,193 @@ def test_markdown_after_a_div(tmp_path: Path) -> None:
     md = prose("::: {.a}\nIn.\n:::\nAfter *emph*.\n\n::: {.b}\nopen", Prose(lambda h: h, {}))
     assert "<em>emph</em>" in MarkdownIt("commonmark").render(md)
     assert md.endswith('<div class="b">\n\nopen\n\n</div>') and md.count("</div>") == 2
+
+
+def test_notebook_figure_captions(tmp_path: Path) -> None:
+    "A picture with `fig-cap` is followed by its caption in a div; a list gives each picture its own, and `fig-alt` is the alt text."
+    png = {"output_type": "display_data", "metadata": {}, "data": {"image/png": "iVBORw0KGgo="}}
+    nb = {"nbformat": 4, "nbformat_minor": 5, "metadata": {}, "cells": [
+        {"cell_type": "markdown", "metadata": {}, "source": "# F"},
+        {"cell_type": "code", "metadata": {}, "source": "#| fig-cap: [One, Two]\n#| fig-alt: A dot\nplot()",
+         "outputs": [png, {"output_type": "stream", "name": "stdout", "text": "between\n"}, png]},
+    ]}  # fmt: skip
+    md = (site(tmp_path, more={"nb.ipynb": json.dumps(nb)}) / "nb.llms.md").read_text(encoding="utf-8")
+    cap = '![A dot](nb_files/nb_1_{}.png)\n\n<div class="figure-caption">\n\n{}\n\n</div>'
+    assert cap.format(0, "One") + "\n\n    between\n\n" + cap.format(2, "Two") in md
+
+
+# ---------------------------------------------------------------- what the second review found
+
+
+SMALL = "project: {type: website}\nwebsite:\n  title: S\n  llms-txt: true\n"
+
+
+def copy_of(tmp_path: Path, files: dict[str, str], name: str) -> str:  # The copy's text
+    "Build a small site, allowing the warning for cells that are not run, and read one copy."
+    write(tmp_path, {"_quarto.yml": SMALL, "other.qmd": "---\ntitle: O\n---\n\nO.\n", **files})
+    assert [w for w in build(tmp_path, quiet=True).warnings if "not run" not in w] == []
+    return (tmp_path / "_site" / name).read_text(encoding="utf-8")
+
+
+def test_comment_mark_in_a_code_span(tmp_path: Path) -> None:
+    "`<!--` inside a code span opens no comment, so what follows is still hidden and rewritten."
+    page = '---\ntitle: P\n---\n\nType `<!--` to start one.\n\n::: {.content-hidden when-format="llms-txt"}\nSECRET\n:::\n\n[o](other.qmd)\n'
+    md = copy_of(tmp_path, {"index.qmd": page}, "index.llms.md")
+    assert "SECRET" not in md and ":::" not in md and "[o](other.llms.md)" in md
+
+
+def test_hidden_cells_in_a_list_or_quote(tmp_path: Path) -> None:
+    "A hidden cell inside a list item or a quote is hidden in the copy, as on the page."
+    page = "---\ntitle: P\n---\n\n- item\n\n    ```{python}\n    #| echo: false\n    IN_LIST = 2\n    ```\n\n> ```{python}\n> #| echo: false\n> IN_QUOTE = 3\n> ```\n"
+    md = copy_of(tmp_path, {"index.qmd": page}, "index.llms.md")
+    assert "IN_LIST" not in md and "IN_QUOTE" not in md and "- item" in md
+
+
+def test_no_attachment_of_a_hidden_cell(tmp_path: Path) -> None:
+    "An attachment of a Markdown cell that the copy leaves out is not saved."
+    att = {"s.png": {"image/png": "iVBORw0KGgo="}}
+    nb = {"nbformat": 4, "nbformat_minor": 5, "metadata": {}, "cells": [
+        {"cell_type": "markdown", "metadata": {}, "source": "---\ntitle: N\n---\n\n::: {.content-hidden when-format=\"llms-txt\"}"},
+        {"cell_type": "markdown", "metadata": {}, "attachments": att, "source": "![s](attachment:s.png)"},
+        {"cell_type": "markdown", "metadata": {}, "source": ":::"},
+        {"cell_type": "markdown", "metadata": {}, "attachments": att, "source": "![t](attachment:s.png)"},
+    ]}  # fmt: skip
+    md = copy_of(tmp_path, {"index.ipynb": json.dumps(nb)}, "index.llms.md")
+    assert "![t](index_files/index_3_s.png)" in md and "index_1_s" not in md
+    assert sorted(f.name for f in (tmp_path / "_site" / "index_files").iterdir()) == ["index_3_s.png"]
+
+
+def test_title_from_the_first_heading_once(tmp_path: Path) -> None:
+    "A page with no `title:` takes its first heading as its title, and the copy has that heading once."
+    md = copy_of(tmp_path, {"index.qmd": "# Heading Title\n\nText.\n"}, "index.llms.md")
+    assert md == "# Heading Title\n\nText.\n"
+
+
+def test_caption_details(tmp_path: Path) -> None:
+    "Alt text is escaped, a caption's links go to copies, captions are counted as the page counts pictures, and bad data is skipped."
+    gif = {"output_type": "display_data", "metadata": {}, "data": {"image/gif": "R0lGOA==", "text/plain": "<gif>"}}
+    png = {"output_type": "display_data", "metadata": {}, "data": {"image/png": "iVBORw0KGgo="}}
+    bad = {"output_type": "display_data", "metadata": {}, "data": {"image/png": "not base64!"}}
+    nb = {"nbformat": 4, "nbformat_minor": 5, "metadata": {}, "cells": [
+        {"cell_type": "markdown", "metadata": {}, "source": "---\ntitle: N\n---\n"},
+        {"cell_type": "code", "metadata": {}, "source": '#| fig-cap: [Gif, "See [o](other.qmd)"]\n#| fig-alt: "a ]bad[\\n alt"\nplot()', "outputs": [gif, png, bad]},
+    ]}  # fmt: skip
+    md = copy_of(tmp_path, {"index.ipynb": json.dumps(nb)}, "index.llms.md")
+    assert '![a \\]bad\\[ alt](index_files/index_1_1.png)\n\n<div class="figure-caption">\n\nSee [o](other.llms.md)\n\n</div>' in md
+    assert "index_1_2" not in md
+
+
+# ---------------------------------------------------------------- what the third review found
+
+
+def test_code_blocks_as_commonmark_reads_them(tmp_path: Path) -> None:
+    "An indented example of a cell stays; a fence that a quote's end closes ends there; a comment closes at `-->` in backticks."
+    from smalldocs.llms import Prose, prose
+
+    p = Prose(lambda h: h.replace(".qmd", ".llms.md"), {})
+    md = prose("To hide a cell:\n\n    ```{python}\n    #| echo: false\n    1 + 1\n    ```\n\nDone [o](o.qmd).", p)
+    assert md == "To hide a cell:\n\n    ```{python}\n    #| echo: false\n    1 + 1\n    ```\n\nDone [o](o.llms.md)."
+    md = prose('> ```{python}\n> #| echo: false\n> x=1\n\n::: {.content-hidden when-format="llms-txt"}\nSECRET\n:::\n\nAfter.', p)
+    assert md == "After."
+    md = prose('<!-- a\n`-->`\n\n::: {.content-hidden when-format="llms-txt"}\nSECRET\n:::\n\nAfter.', p)
+    assert "SECRET" not in md and md.endswith("After.")
+
+
+def test_title_kept_without_a_heading(tmp_path: Path) -> None:
+    "A page with no `title:` and no first heading keeps the title the HTML page shows."
+    md = copy_of(tmp_path, {"index.qmd": "---\npagetitle: Tab name\n---\n\nText.\n"}, "index.llms.md")
+    assert md == "# Tab name\n\nText.\n"
+
+
+def test_bad_attachment_is_skipped(tmp_path: Path) -> None:
+    "An attachment whose data is broken is skipped, and the build goes on."
+    nb = {"nbformat": 4, "nbformat_minor": 5, "metadata": {}, "cells": [
+        {"cell_type": "markdown", "metadata": {}, "attachments": {"s.png": {"image/png": "not base64!"}}, "source": "---\ntitle: N\n---\n\n![s](attachment:s.png)"},
+    ]}  # fmt: skip
+    assert copy_of(tmp_path, {"index.ipynb": json.dumps(nb)}, "index.llms.md").startswith("# N")
+
+
+def test_html_blocks_as_written() -> None:
+    "An HTML block, such as an indented comment or `<details>`, is copied as written, and the page's text after it stays."
+    from smalldocs.llms import Prose, prose
+
+    p = Prose(lambda h: h, {})
+    assert prose("   <!--\n::: {.content-hidden}\n-->\npublic", p) == "   <!--\n::: {.content-hidden}\n-->\npublic"
+    assert prose("<details>\n:::\nshown\n</details>\n\nAfter.", p) == "<details>\n:::\nshown\n</details>\n\nAfter."
+
+
+def test_html_line_before_a_divs_end() -> None:
+    "An HTML line right before a div's `:::` does not hide the div's end, as on the page."
+    from smalldocs.llms import Prose, prose
+
+    p = Prose(lambda h: h, {})
+    assert prose("::: {.content-hidden}\nSECRET\n<div>x</div>\n:::\n\nAFTER", p) == "AFTER"
+    md = prose("::: {.callout-note}\nIn.\n<div>x</div>\n:::\n\nAFTER", p)
+    assert md == '<div class="callout-note">\n\nIn.\n<div>x</div>\n\n</div>\n\n\nAFTER'
+
+
+def test_divs_where_the_page_has_them() -> None:
+    "Divs, code and HTML are found by the page's own parser, so a `:::` in code inside HTML, or after it, ends no div early."
+    from smalldocs.llms import Prose, prose
+
+    p = Prose(lambda h: h, {})
+    assert prose("::: {.content-hidden}\n<div>\n```\n:::\n```\nSECRET\n</div>\n:::\n\nAFTER", p) == "AFTER"
+    assert prose("::: {.content-hidden}\n::: inner\n<div>\n:::\n```\n:::\n```\nSECRET\n:::\n\nAFTER", p) == "AFTER"
+
+
+def test_divs_in_a_quote() -> None:
+    "A div in a quote ends where the page ends it, with its own classes, and its lines stay in the quote."
+    from smalldocs.llms import Prose, prose
+
+    p = Prose(lambda h: h, {})
+    assert prose("> ::: {.content-hidden}\n> secret\n> :::\n\nafter", p) == "after"
+    note = '> <div class="callout-note">\n>\n> note\n>\n> </div>\n>\n\nafter'
+    assert prose("> ::: {.callout-note}\n> note\n> :::\n\nafter", p) == note
+    assert prose("> ::: {.callout-note}\n> note\n\nafter", p) == note  # the quote's end ends the div
+
+
+def test_divs_ending_together() -> None:
+    "Divs that end on the same line all close; a div left open in a quote ends with its cell, as on the page."
+    from smalldocs.llms import Prose, prose
+
+    p = Prose(lambda h: h, {})
+    assert prose("> ::: {.content-hidden}\n> ::: {.b}\n> SEC\n\nBB", p) == "BB"
+    assert prose("> ::: {.a}\n> ::: {.b}\n> AA\n\nBB", p).endswith("> </div>\n>\n> </div>\n>\n\nBB")
+    assert prose("::: {.a}\nAA\n> ::: {.b}\n> XX\n:::\nCC", p) == '<div class="a">\n\nAA\n> <div class="b">\n>\n> XX\n>\n> </div>\n>\n\n</div>\n\nCC'
+    q = Prose(lambda h: h, {})
+    assert q.feed("> ::: {.content-hidden}\n> SEC").strip() == "" and q.feed("YY").strip() == "YY" and not q.dropping
+
+
+def test_nested_divs_across_notebook_cells(tmp_path: Path) -> None:
+    "A div opened inside another and closed in a later cell hides or holds the code cells between, as on the page."
+    cells = [
+        {"cell_type": "markdown", "metadata": {}, "source": '---\ntitle: N\n---\n\n::: {.callout-tip}\nTry it.\n\n::: {.content-hidden when-format="llms-txt"}\nSolution:'},
+        {"cell_type": "code", "metadata": {}, "source": "SECRETCODE", "outputs": []},
+        {"cell_type": "markdown", "metadata": {}, "source": ":::\n:::\n\n:::: {.columns}\n::: {.column}\nLeft"},
+        {"cell_type": "code", "metadata": {}, "source": "left()", "outputs": []},
+        {"cell_type": "markdown", "metadata": {}, "source": ":::\n::: {.column}\nRight\n:::\n::::\n\nAfter."},
+    ]
+    nb = {"nbformat": 4, "nbformat_minor": 5, "metadata": {}, "cells": cells}
+    md = copy_of(tmp_path, {"index.ipynb": json.dumps(nb)}, "index.llms.md")
+    assert "SECRET" not in md and "Solution" not in md and ":::" not in md
+    assert '<div class="column">\n\nLeft\n\n```python\nleft()\n```\n\n</div>' in md
+    assert md.endswith("Right\n\n</div>\n\n</div>\n\n\nAfter.\n")
+
+
+def test_indented_div_across_cells() -> None:
+    "A top-level div whose `:::` is indented a little still goes on into the next cell."
+    from smalldocs.llms import Prose
+
+    q = Prose(lambda h: h, {})
+    assert q.feed(" ::: {.callout-note}\n Note") == ' <div class="callout-note">\n\n Note' and q.stack == ["div"]
+    assert q.feed(":::\n\nAfter.") == "\n</div>\n\n\nAfter."
+
+
+def test_cells_ending_with_a_newline() -> None:
+    "A div left open in a cell that ends with a newline goes on into the next cell."
+    from smalldocs.llms import Prose
+
+    q = Prose(lambda h: h, {})
+    q.feed('::: {.content-hidden when-format="llms-txt"}\nSolution:\n  \n\n')
+    assert q.dropping
+    assert q.feed(":::\n\nAfter.\n").strip() == "After." and not q.stack

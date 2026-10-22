@@ -78,6 +78,8 @@ turning a notebook into other formats.
 - An HTML output, such as a table from pandas, and a Markdown output stay as they are.
 - A picture is saved as a file beside the copy, and the copy links to it. So the picture of the ninth
   cell of `notebooks.ipynb` is `notebooks_files/notebooks_8_0.png`.
+- A picture's caption, from `fig-cap`, follows it in a `<div class="figure-caption">`. Its `fig-alt` is the
+  picture's alt text.
 
 The copy shows what the page shows. A cell that `echo`, `output`, `include` or a tag hides on the page is
 hidden in the copy too.

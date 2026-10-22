@@ -1,0 +1,18 @@
+---
+title: smalldocs 0.5.2
+subtitle: Captions and fixes in the Markdown copies
+date: 2026-10-21
+author: Rahul Dave
+categories: [release]
+image: ../images/mark.svg
+---
+
+A notebook's picture with `fig-cap` now has its caption in the Markdown copy, in a
+`<div class="figure-caption">` after the picture. Its `fig-alt` is the picture's alt text.
+
+This release also fixes the copies:
+
+- A cell hidden on the page is hidden in the copy, also in a list item or a quote.
+- Text hidden with `when-format="llms-txt"` stays hidden after `<!--` in a code span.
+- A notebook's attached picture is saved only when the copy shows its cell.
+- A page with no `title:` has its first heading once, not twice.

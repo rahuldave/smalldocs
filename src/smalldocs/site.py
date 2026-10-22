@@ -655,7 +655,8 @@ class Site:
         else:
             body = llms.prose(page.body, prose)
         description = page.meta.get("description")
-        return llms.page_markdown(page.title, description if isinstance(description, str) else "", body), files
+        title = "" if page.env.get("title") and not page.front.get("title") else page.title  # a title from the first heading is in the body
+        return llms.page_markdown(title, description if isinstance(description, str) else "", body), files
 
     def write_llms_txt(self) -> None:
         "Write `llms.txt` when `website.llms-txt` is on: the site's title and description, and a link to each page's Markdown copy."
