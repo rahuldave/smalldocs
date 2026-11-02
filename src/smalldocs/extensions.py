@@ -22,6 +22,8 @@ QUARTO_SPECS = ("_extension.yml", "_extension.yaml")
 SPEC_KEYS = ("css", "logo", "favicon")
 PLAIN = ("default", "bootstrap", "none")  # Bootstrap with no theme
 URL = re.compile(r"""url\(\s*(['"]?)([^'")]+?)\1\s*\)|@import\s+(['"])([^'"]+)\3""")
+LICENSE = re.compile(r"(?:^|[-_.])(?:un)?(?:licen[cs]es?|copying|copyright|notices?|ofl)(?:[-_.]|$)", re.IGNORECASE)  # LICENSE, OFL.txt, inter-OFL.txt
+LICENSE_SUFFIXES = ("", ".txt", ".md", ".rst", ".html")  # A licence is text: never a picture, a stylesheet or a key
 
 
 def bundled() -> list[str]:  # The Bootswatch themes, and `bootstrap`
@@ -188,6 +190,29 @@ def css_files(
                 found.append(dep)
                 if dep.suffix == ".css":
                     todo.append(dep)
+    return found
+
+
+def license_files(
+    ext: Extension,  # The extension
+    used: list[Path],  # The files of the extension that the site copies
+) -> list[Path]:  # The licence files in the extension's folder, and in the folder of each file used and the folders above it
+    "Find the licence files that go with a theme's files, such as `LICENSE` and the `*-OFL.txt` of a font."
+    top = ext.path.resolve()
+    folders = {top}
+    for f in used:
+        folders.update(p for p in f.resolve().parents if p == top or top in p.parents)
+    found: list[Path] = []
+    for folder in sorted(folders):
+        for f in sorted(folder.iterdir()):
+            if not LICENSE.search(f.name) or f.suffix.lower() not in LICENSE_SUFFIXES:
+                continue
+            try:
+                r = f.resolve(strict=True)
+            except (OSError, RuntimeError):  # a broken link, or a loop of links
+                continue
+            if r.is_file() and top in r.parents and r not in found:
+                found.append(r)
     return found
 
 

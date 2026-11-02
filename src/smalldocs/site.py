@@ -536,27 +536,28 @@ class Site:
         self,
         nav: "layout.SiteNav",  # The site's navigation
     ) -> None:
-        "Copy the theme, Bootstrap, the icons, search and smalldocs' own CSS and JavaScript into `site_libs`."
+        "Copy the theme with the licences of its files, Bootstrap, the icons, search and smalldocs' own CSS and JavaScript into `site_libs`."
         libs = self.out / "site_libs"
         vendor = ASSETS / "vendor"
         shutil.copytree(vendor / "bootstrap", libs / "bootstrap", dirs_exist_ok=True, ignore=shutil.ignore_patterns("bootstrap.min.css", "LICENSE"))
         shutil.copytree(vendor / "bootstrap-icons", libs / "bootstrap-icons", dirs_exist_ok=True)
         shutil.copytree(vendor / "fuse", libs / "fuse", dirs_exist_ok=True, ignore=shutil.ignore_patterns("LICENSE"))
+        extras = [e for e in (self.theme_extra(k) for k in ("logo", "favicon")) if e is not None]
         for t in self.theme_files():
             dest = libs / t.href
             dest.parent.mkdir(parents=True, exist_ok=True)
             shutil.copy(t.src, dest)
             if t.ext is not None:
                 top = t.ext.path.resolve()
-                for f in extensions.css_files(t.src, t.ext, self.warn):
+                used = extensions.css_files(t.src, t.ext, self.warn)
+                own = [src for src, to in extras if to.parts[2] == t.name]  # the theme's logo and favicon, from `site_libs/themes/<name>/...`
+                for f in used + extensions.license_files(t.ext, [t.src, *used, *own]):
                     to = libs / "themes" / t.name / f.relative_to(top)
                     to.parent.mkdir(parents=True, exist_ok=True)
                     shutil.copy(f, to)
-        for key in ("logo", "favicon"):
-            extra = self.theme_extra(key)
-            if extra is not None:
-                (self.out / extra[1]).parent.mkdir(parents=True, exist_ok=True)
-                shutil.copy(extra[0], self.out / extra[1])
+        for src, to in extras:
+            (self.out / to).parent.mkdir(parents=True, exist_ok=True)
+            shutil.copy(src, self.out / to)
         for f in ("smalldocs.css", "smalldocs.js"):
             shutil.copy(ASSETS / f, libs / f)
         for css in layout.as_list(self.project.html_options().get("css")):

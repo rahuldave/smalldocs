@@ -114,8 +114,26 @@ smalldocs:
 
 The build copies the CSS of the theme into `_site/site_libs/themes/<name>/`. It also copies each file
 that the CSS uses through `url(...)` or `@import`, such as a font or an image. A file outside the folder
-of the extension is not copied, and the build gives a warning. The build does not copy the other files
-of the extension, and it never copies `_extensions/` itself into the site.
+of the extension is not copied, and the build gives a warning.
+
+The licence files go with these files. The build copies the licence files at the top of the extension
+folder. It also copies the licence files in the folder of each copied file and in each folder above
+it, up to the top. The logo and the favicon of the theme count as copied files. So a font keeps its
+licence, as the SIL Open Font License asks.
+
+A licence file is a text file. Its name has no extension, or `.txt`, `.md`, `.rst` or `.html`. The
+name holds one of these words, alone or between `-`, `_` and `.`, in any case:
+
+- `license` or `licence`, with or without `un` before it or `s` after it;
+- `copying` or `copyright`;
+- `notice` or `notices`;
+- `OFL`.
+
+Examples are `LICENSE`, `BOOTSTRAP-LICENSE`,
+`NOTICE.md` and `inter-OFL.txt`. A link to a file outside the extension is not copied.
+
+The build does not copy the other files of the extension, and it never copies `_extensions/` itself
+into the site.
 
 If your site sets no logo, the site uses the logo of the theme. If it sets no favicon, the site uses
 the favicon of the theme. A favicon is the small picture in the tab of the browser.

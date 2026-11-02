@@ -644,6 +644,40 @@ def test_theme_extensions(tmp_path: Path) -> None:
         build(site, quiet=True)
 
 
+def test_theme_licenses_go_with_its_files(tmp_path: Path) -> None:
+    "Licence files go with the files of a theme: at the top, beside each file and above it, and beside its logo; not other files, links outside or loops."
+    licences = {
+        "_extensions/ac215/smalldocs.yml": "css: {light: ac215.css, dark: ac215-dark.css}\nlogo: brand/logo.png\nfavicon: brand/logo.png\n",
+        "_extensions/ac215/ac215-dark.css": "@font-face{src:url(fonts/inter/x.woff2)}\n",
+        "_extensions/ac215/fonts/inter/x.woff2": "font\n",
+        "_extensions/ac215/brand/logo.png": "logo\n",
+        "_extensions/ac215/brand/COPYRIGHT": "logo licence\n",
+        "_extensions/ac215/LICENSE": "mit\n",
+        "_extensions/ac215/BOOTSTRAP-LICENSE": "mit\n",
+        "_extensions/ac215/fonts/f-OFL.txt": "ofl\n",
+        "_extensions/ac215/fonts/README.md": "fonts\n",
+        "_extensions/ac215/img/NOTICE.md": "notice\n",
+        "_extensions/ac215/img/license-badge.svg": "<svg/>\n",
+        "_extensions/ac215/img/notice.css": ".a{}\n",
+        "_extensions/ac215/img/LICENSE.key": "secret\n",
+        "_extensions/ac215/unused/LICENSE": "unused\n",
+        "outside-LICENSE": "outside\n",
+    }
+    site = write(tmp_path, {**THEME_REPO, **licences, "_smalldocs.yml": SITE_YML + "theme: ac215\n", "index.md": "# Hi\n"})
+    ext = site / "_extensions/ac215"
+    (ext / "fonts/LICENCE.txt").symlink_to(site / "outside-LICENSE")
+    (ext / "a").symlink_to(ext / "b")
+    (ext / "b").symlink_to(ext / "a")
+    (ext / "COPYING").symlink_to(ext / "COPYING")
+    s = build(site, quiet=True)
+    libs = s.out / "site_libs/themes/ac215"
+    assert sorted(p.relative_to(libs).as_posix() for p in libs.rglob("*") if p.is_file()) == [
+        "BOOTSTRAP-LICENSE", "LICENSE", "ac215-dark.css", "ac215.css", "brand/COPYRIGHT", "brand/logo.png", "fonts/f-OFL.txt", "fonts/f.woff2",
+        "fonts/inter/x.woff2", "img/NOTICE.md", "img/a.png", "more.css",
+    ]  # fmt: skip
+    assert (libs / "fonts/f-OFL.txt").read_text() == "ofl\n"
+
+
 def test_theme_logo_and_favicon_only_when_the_site_has_none(tmp_path: Path) -> None:
     "The theme's logo and favicon fill in for the site's; the site's own win."
     site = write(tmp_path, {**THEME_REPO, "_smalldocs.yml": SITE_YML + "theme: ac215\n", "index.md": "# Hi\n", "me.png": "me\n"})

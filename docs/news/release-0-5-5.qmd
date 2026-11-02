@@ -1,0 +1,20 @@
+---
+title: smalldocs 0.5.5
+subtitle: A theme's licences go with its fonts
+date: 2026-11-02
+author: Rahul Dave
+categories: [release]
+image: ../images/mark.svg
+---
+
+A theme extension often brings its own fonts. The SIL Open Font License asks that each copy of such a
+font carries its licence. Before, the build copied the fonts into the site, but not their licence files.
+
+Now the build also copies the licence files of the theme into `site_libs/themes/<name>/`. It takes them
+from the top of the extension folder, and from the folder of each copied file and each folder above it.
+The logo and the favicon of the theme count as copied files. A licence file is a text file with a name
+such as `LICENSE`, `BOOTSTRAP-LICENSE`, `NOTICE.md` or `inter-OFL.txt`.
+[Themes](../guide/themes.qmd#what-the-build-copies) gives the exact rule.
+
+A site with a Bootswatch theme or its own CSS file builds as before. A site with a theme extension gets
+only the new licence files.
