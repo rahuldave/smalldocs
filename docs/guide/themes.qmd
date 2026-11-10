@@ -176,20 +176,25 @@ It includes the original custom designs and their refinements, with source links
 The [theme handbook](https://rahuldave.com/elegant-themes/theme-guide.html) describes each theme,
 its fonts and its colour modes. It also shows how to add optional labels above page titles.
 
-Folio, Atelier and Nocturne include light and dark modes. Their revised release is `v0.2.0`.
-The Reading themes are separate extensions that keep the native palette of a Bootswatch theme.
-The current default branches omit the fixed title labels. The pinned `v0.2.0` release still includes them.
+The current themes include light and dark modes under one name. Each Reading theme has its native
+palette and a designed companion. The stock Bootswatch themes stay unchanged. Tufte also has both modes.
+
+The November foundation revisions define colours, fonts, spacing and control states in a file
+`foundations.json`. The custom three declare version 0.3.0, the Reading themes 0.2.0, and Tufte 0.2.1.
+A version in the manifest does not mean that a Git tag with that name exists.
+The custom `v0.2.0` tags still select the October release, with the earlier fixed title labels.
 
 | Theme and example | Name in `theme:` | Modes |
 |---|---|---|
 | [Folio](https://rahuldave.com/smalldocs-folio/) | [`folio`](https://github.com/rahuldave/smalldocs-folio) | Light and dark |
 | [Atelier](https://rahuldave.com/smalldocs-atelier/) | [`atelier`](https://github.com/rahuldave/smalldocs-atelier) | Light and dark |
 | [Nocturne](https://rahuldave.com/smalldocs-nocturne/) | [`nocturne`](https://github.com/rahuldave/smalldocs-nocturne) | Light and dark |
-| [Zephyr Reading](https://rahuldave.com/smalldocs-zephyr-reading/) | [`zephyr-reading`](https://github.com/rahuldave/smalldocs-zephyr-reading) | Light |
-| [Simplex Reading](https://rahuldave.com/smalldocs-simplex-reading/) | [`simplex-reading`](https://github.com/rahuldave/smalldocs-simplex-reading) | Light |
-| [Pulse Reading](https://rahuldave.com/smalldocs-pulse-reading/) | [`pulse-reading`](https://github.com/rahuldave/smalldocs-pulse-reading) | Light |
-| [Litera Reading](https://rahuldave.com/smalldocs-litera-reading/) | [`litera-reading`](https://github.com/rahuldave/smalldocs-litera-reading) | Light |
-| [Darkly Reading](https://rahuldave.com/smalldocs-darkly-reading/) | [`darkly-reading`](https://github.com/rahuldave/smalldocs-darkly-reading) | Dark |
+| [Tufte](https://rahuldave.com/smalldocs-tufte/) | [`tufte`](https://github.com/rahuldave/smalldocs-tufte) | Light and dark |
+| [Zephyr Reading](https://rahuldave.com/smalldocs-zephyr-reading/) | [`zephyr-reading`](https://github.com/rahuldave/smalldocs-zephyr-reading) | Light and dark |
+| [Simplex Reading](https://rahuldave.com/smalldocs-simplex-reading/) | [`simplex-reading`](https://github.com/rahuldave/smalldocs-simplex-reading) | Light and dark |
+| [Pulse Reading](https://rahuldave.com/smalldocs-pulse-reading/) | [`pulse-reading`](https://github.com/rahuldave/smalldocs-pulse-reading) | Light and dark |
+| [Litera Reading](https://rahuldave.com/smalldocs-litera-reading/) | [`litera-reading`](https://github.com/rahuldave/smalldocs-litera-reading) | Light and dark |
+| [Darkly Reading](https://rahuldave.com/smalldocs-darkly-reading/) | [`darkly-reading`](https://github.com/rahuldave/smalldocs-darkly-reading) | Light and dark |
 
 The name links to the source repository. The install source is `rahuldave/smalldocs-` followed by the
 name, as in the commands below.
@@ -212,13 +217,13 @@ theme: folio
 smalldocs render
 ```
 
-The command gets the newest commit of the default branch, including the title label cleanup.
-Add a tag to select a fixed release. The extension includes compiled CSS and local fonts, so installation needs no Sass compiler.
+The command gets the newest commit of the default branch. The extension includes compiled CSS and
+local fonts, so installation needs no Sass compiler. To fix the source, give a tag or a full commit hash.
 
 ### Update the original Atelier
 
 The revised Atelier keeps the name `atelier`. Existing sites keep their installed copy until you
-replace it. To install the current theme without the fixed title label:
+replace it. To install the current foundation revision:
 
 ```bash
 smalldocs add rahuldave/smalldocs-atelier --force
@@ -254,7 +259,8 @@ smalldocs add rahuldave/smalldocs-litera-reading
 theme: litera-reading
 ```
 
-You can pair a light Reading theme with Darkly Reading. Install both extensions:
+A Reading extension now includes both modes. The navbar or sidebar shows the mode toggle.
+You can still use a different theme in each mode. For example, install both extensions:
 
 ```bash
 smalldocs add rahuldave/smalldocs-litera-reading
@@ -267,8 +273,46 @@ theme:
   dark: darkly-reading
 ```
 
-The navbar or sidebar shows the mode toggle. A Reading extension has one native palette; Folio,
-Atelier and Nocturne have both modes in one extension.
+The mixed pair selects each extension in the named mode. A single extension, such as
+`theme: litera-reading`, already has both modes.
+
+### Fix a source commit
+
+To install the exact Folio revision assessed on 10 November 2026, give its full commit hash:
+
+```bash
+smalldocs add rahuldave/smalldocs-folio@e33e059ff40fd49aad28a8b7449cf77449e66898 --force
+```
+
+The [version guide](https://rahuldave.com/elegant-themes/using-themes.html) lists the source commits of
+all nine themes. Commit the installed extension with your site. An untagged install can change as the
+source repository changes.
+
+### Use the foundation roles
+
+A foundation manifest is a JSON file that defines colours, font roles, spacing and control states.
+Each installed extension includes `foundations.json`. The source repository holds its editable copy in
+`src/foundations.json`.
+
+The reading profile defines prose, interface, metadata and code sizes. A profile is a set of sizes
+for one use. The presentation profile is separate and does not enlarge document navigation.
+The [handbook](https://rahuldave.com/elegant-themes/theme-guide.html#foundations) explains the roles
+and an optional denser reading style.
+
+The themes use 18 to 20px prose and 16px code at the default browser size. Their prose line spacing is
+1.60. The fixed typography rubric deducts points because Butterick prefers 1.20 to 1.45.
+The [November assessment](https://rahuldave.com/elegant-themes/visual-design-report.html#foundations)
+also flags specific controls in Pulse Reading and Litera Reading, and light syntax colours in Darkly Reading.
+
+Each theme also has a Quarto format. For example:
+
+```bash
+quarto add rahuldave/smalldocs-litera-reading
+```
+
+```yaml
+format: litera-reading-html
+```
 
 ### Read the assessments and principles
 
