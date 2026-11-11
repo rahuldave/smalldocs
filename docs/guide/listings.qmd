@@ -53,7 +53,7 @@ To choose the fields and their order, write for example `fields: [title, date, d
 |---|---|
 | `id` | The id of the listing. If the page has an empty div with this id, the listing goes there. If not, it goes at the end |
 | `max-items` | Show this number of items at most |
-| `page-size` | Show this number of items on each page of the listing; 50 by default |
+| `page-size` | Show this number of items on each page of the listing; 50 by default, and for `grid` 6 times `grid-columns` |
 | `sort-ui`, `filter-ui` | A box to sort and a box to filter. They are on for `default` and `table` |
 | `max-description-length` | Cut a description after this number of characters; 175 by default |
 | `date-format` | For example `MMMM D, YYYY`, or `iso`, `long`, `medium` or `short` |

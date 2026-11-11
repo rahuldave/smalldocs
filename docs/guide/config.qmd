@@ -57,10 +57,11 @@ Quarto, so a script written for Quarto still works:
 - `QUARTO_PROJECT_RENDER_ALL`: `1`, because each build makes every page
 - `SMALLDOCS`: `1`, so a script can tell smalldocs from Quarto
 
-Each build deletes the old content of the output folder. So smalldocs refuses an output folder in these
+Each build deletes the old content of the output folder. So the build stops with an error in these
 cases:
 
-- The folder is the project, or a folder above the project.
+- The folder is the project, a folder above the project, or your home folder.
+- The path is a file, not a folder.
 - The folder holds a `.git` folder.
 - The folder holds files, but no `site_libs` folder. A `site_libs` folder shows that an earlier build
   made the folder.
@@ -105,7 +106,7 @@ Notebook sources stay private unless you turn on browser notebooks.
 | `description` | The summary of the site. The home page uses it when its front matter has no `description` | None |
 | `site-url` | The address of the site. smalldocs needs it for `sitemap.xml` and for feeds | None, and smalldocs writes no `sitemap.xml` |
 | `llms-txt` | `true` writes a Markdown copy of each page, `page.llms.md`, and the index `llms.txt`, for agents. See [Pages for agents](llms.qmd) | `false` |
-| `repo-url`, `repo-subdir` | The repository of the site, and the folder of the site in it | None |
+| `repo-url`, `repo-subdir` | The repository of the site, and the folder of the project in it | None |
 | `repo-branch` | The branch for the `edit` and `source` links | `main` |
 | `repo-actions` | Links under the table of contents: `edit`, `source`, `issue`. They need `repo-url` | None |
 | `navbar` | `left`, `right`, `tools`, `title`, `logo`, `background`, `search`. An entry is a page, or `href` and `text`, with an `icon`. `url` is another name for `href`. `menu` makes a dropdown. See [Links in the navigation](#links-in-the-navigation) | No navbar. The sidebar then shows the title of the site |
@@ -281,8 +282,8 @@ project. It reads `order` only from the front matter of a page.
 ## Options that smalldocs does not read
 
 smalldocs gives a warning for each key of the config that it does not read. It checks the keys inside
-each section too, down to each entry of the navbar and the sidebar. So a key with a typing error does
-not go unseen:
+each section too, down to each entry of the navbar and the sidebar. So the build reports a key with a
+typing error:
 
 ```
 warning: unknown key website.sidebar.stylee
@@ -319,7 +320,7 @@ These options belong to smalldocs. They are at the top level of `_smalldocs.yml`
 | Key | What it does | Default |
 |---|---|---|
 | `linkify` | A documented name in backticks links to its entry in the API reference. See [Linkify](#linkify) | On when `api` has `packages`, or when the `filters` of a `_quarto.yml` name `linkify.lua`. Off otherwise |
-| `symbols` | The index of names that linkify reads, from the folder of the site. Set it only for an index that you write yourself, without `api`. The `api` section always writes `_symbols.json` | `_symbols.json` |
+| `symbols` | The index of names that linkify reads, from the folder of the project. Set it only for an index that you write yourself, without `api`. The `api` section always writes `_symbols.json` | `_symbols.json` |
 | `api` | The API reference. See [The API reference](api.qmd#turn-on-the-reference) | None: no reference |
 
 ## Linkify
@@ -329,7 +330,7 @@ example, `` `Site.build` `` and `` `Site.build()` `` link to the entry of `Site.
 only names that look like code, such as a call, a dotted name or a class. A plain lowercase word, such
 as `main`, stays as code. See [Links from the text](api.qmd#links-from-the-text).
 
-Linkify reads the names and their links from the file `_symbols.json`, in the folder of the site. When
+Linkify reads the names and their links from the file `_symbols.json`, in the folder of the project. When
 the config has `api`, each build writes this file before it builds the pages. See
 [The index of names](api.qmd#the-index-of-names).
 
@@ -337,7 +338,8 @@ smalldocs decides whether linkify is on in this order:
 
 1. `linkify`, if you set it. `linkify: true` turns it on, and `linkify: false` turns it off.
 2. `api.linkify`, if you set it.
-3. Otherwise, linkify is on when `api` has `packages`.
+3. Otherwise, linkify is on when `api` has `packages`, or when the `filters` of a `_quarto.yml` name
+   `linkify.lua`.
 
 ## What a build writes
 

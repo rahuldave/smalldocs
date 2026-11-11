@@ -1,4 +1,4 @@
-"The `smalldocs` command: render, preview, check, api, publish, add and themes."
+"The `smalldocs` command: render, preview, check, api, publish, add, themes and notebooks."
 
 import argparse
 import os

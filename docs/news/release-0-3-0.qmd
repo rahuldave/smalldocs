@@ -9,7 +9,7 @@ image: ../images/mark.svg
 
 smalldocs now gives a warning for each key of the config that it does not read. It checks the keys
 inside the navbar, the sidebar and a listing too. In front matter, it gives a warning only for an option of Quarto
-that it does not read, so your own keys are fine. The options that run code, such as `jupyter` and
+that it does not read, so a key of your own gives no warning. The options that run code, such as `jupyter` and
 `freeze`, give a warning that says smalldocs runs no code. With `smalldocs render --strict`, a warning
 makes the exit code 1. See
 [Options that smalldocs does not read](../guide/config.qmd#options-that-smalldocs-does-not-read).

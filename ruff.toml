@@ -1,4 +1,4 @@
-extend-exclude = ["docs/**/*.ipynb"]
+extend-exclude = ["docs/**/*.ipynb", ".agents/**"]
 line-length = 150
 target-version = "py311"
 

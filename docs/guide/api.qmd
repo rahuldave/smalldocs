@@ -63,11 +63,11 @@ class Page(BaseModel):
 Each style is good for a different kind of model:
 
 - `Field(description="...")` is data that pydantic keeps when the program runs. It goes into
-  `model_json_schema()`, and so into an OpenAPI schema, a FastAPI page or the tool schema of an LLM. For
-  a model that is the schema of an API, the description does the work of the comment and more. Use it
-  there.
+  `model_json_schema()`, and so into an OpenAPI schema, a FastAPI page or the tool schema of an LLM. Use
+  it for a model that is the schema of an API. Then the one description goes into the reference and into
+  the schema.
 - The comment is lighter, and it reads like the comments of a function. For a model that only parses
-  data, nothing else reads a description. There, the comment is enough.
+  data, nothing but the reference reads a description, so the comment is enough there.
 
 ## Turn on the reference
 
@@ -77,7 +77,7 @@ Add an `api` section to `_smalldocs.yml`:
 api:
   packages: [mypkg]                  # the importable packages to document
   out: api                           # the folder of pages, inside the site; `api` by default
-  root: ..                           # the root of the repository, from the folder of the site
+  root: ..                           # the root of the repository, from the folder of the project
   source: https://github.com/me/mypkg/blob/main   # each entry links to its line here
   check: ["*.py", "tests/**/*.py"]   # more files that `smalldocs api check` holds to the convention
 ```
@@ -87,8 +87,8 @@ In a `_quarto.yml`, write the same section under `smalldocs:`, as `smalldocs.api
 | Key | What it does | Default |
 |---|---|---|
 | `packages` | The importable packages to document. `package` with one name works too | None. An `api` section without it stops the build |
-| `out` | The folder of the reference pages, from the folder of the site. It must be inside the site | `api` |
-| `root` | The root of the repository, from the folder of the site. The globs of `check` start here | `..`, or `.` when the folder of the site holds `pyproject.toml` or `.git` |
+| `out` | The folder of the reference pages, from the folder of the project. It must be inside that folder | `api` |
+| `root` | The root of the repository, from the folder of the project. The globs of `check` start here | `..`, or `.` when the folder of the project holds `pyproject.toml` or `.git` |
 | `source` | The address of the code. Each entry links to its line there | None: no links to the code |
 | `check` | Globs of more files that `smalldocs api check` holds to the convention | None: only the packages |
 | `linkify` | Names in backticks link to their entries. The top-level `linkify` wins over it | On |
@@ -99,8 +99,8 @@ part of its name starts with `_`. The page has the name of the module without it
 A package whose `__init__.py` defines functions or classes gets a page too.
 
 smalldocs notes the pages that it writes in the file `api/.smalldocs-api`. It deletes a page only if an
-earlier build wrote the page and the new build did not. So a page of your own in the folder, such as
-`api/index.qmd`, is safe.
+earlier build wrote the page and the new build did not. So smalldocs keeps a page of your own in the
+folder, such as `api/index.qmd`.
 
 To list the pages in the sidebar, use a glob:
 
@@ -112,12 +112,13 @@ website:
         contents: api/*
 ```
 
-smalldocs imports your package. So install smalldocs in the environment of the package. If the import
-fails, smalldocs also looks in the root of the repository and in its `src` folder.
+smalldocs imports your package. So install smalldocs in the environment of the package. Before the
+import, smalldocs puts the root of the repository and its `src` folder first on the import path,
+unless a folder is on it already.
 
 ## The index of names
 
-Each build also writes `_symbols.json`, in the folder of the site, before it builds the pages. It is a
+Each build also writes `_symbols.json`, in the folder of the project, before it builds the pages. It is a
 JSON object. Each key is a name, and its value is the entry of that name, as a page and an anchor:
 
 ```json
@@ -137,7 +138,8 @@ smalldocs makes the index from the reference. For each class, method and functio
 Two modules can have a function with the same name, such as `build`. Then the short name links to the
 first one, in the order of `packages`, and then of the names of the modules. The full names link to each one.
 
-smalldocs writes the file only when its content changes. Linkify then reads it.
+smalldocs writes the file only when its content changes. Linkify, the step of the build that links
+names in backticks, then reads it.
 
 ## Links from the text
 
@@ -175,7 +177,8 @@ smalldocs api check --dir docs        # what is typed and documented, and every 
 
 `check` reports each gap in the code:
 
-- a function without a docstring
+- a module without a docstring
+- a function or a class without a docstring
 - a parameter without a type or a docment
 - a return value without a type or a docment
 - a field of a pydantic model without a description or a comment

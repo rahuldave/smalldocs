@@ -4,6 +4,7 @@ import json
 import re
 import subprocess
 import sys
+import tarfile
 import textwrap
 from pathlib import Path
 
@@ -1418,6 +1419,32 @@ def test_output_dir_that_is_not_a_built_site_is_refused(tmp_path: Path, out: str
     write(tmp_path, {"other/keep.txt": "mine\n"})
     assert main(["render", str(root), "-q"]) == 2
     assert (root / "guide/a.qmd").exists() and (root / "src/x.py").exists() and (tmp_path / "other/keep.txt").exists()
+
+
+def test_output_dir_guards_home_file_and_git(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    "The home folder, a path that is a file, and a folder with .git are refused, even when they hold site_libs."
+    home = tmp_path / "home"
+    monkeypatch.setattr(Path, "home", lambda: home)
+    write(tmp_path, {"home/site_libs/x.css": "", "home/keep.txt": "mine\n", "out.txt": "mine\n", "repo/site_libs/x.css": "", "repo/.git/HEAD": "ref\n"})
+    for out, says in (("../home", "holds the project"), ("../out.txt", "is a file"), ("../repo", "git repository")):
+        write(tmp_path, {"site/_quarto.yml": f"project:\n  type: website\n  output-dir: {out}\n", "site/index.md": "# Hi\n"})
+        with pytest.raises(BuildError, match=says):
+            build(tmp_path / "site", quiet=True)
+    assert (home / "keep.txt").exists() and (tmp_path / "out.txt").read_text() == "mine\n" and (tmp_path / "repo/.git/HEAD").exists()
+
+
+def test_sdist_leaves_out_the_agent_folders(tmp_path: Path) -> None:
+    "The sdist holds the package, not the folders of agents: .agents, .claude and .gest, which only .git/info/exclude ignores."
+    root, copy = Path(__file__).parent.parent, tmp_path / "copy"
+    for name in ("pyproject.toml", "README.md", "LICENSE"):
+        write(copy, {name: (root / name).read_text()})
+    write(copy, {"src/smalldocs/__init__.py": (root / "src/smalldocs/__init__.py").read_text()})
+    write(copy, {".agents/skills/x/SKILL.md": "x", ".claude/skills/x/SKILL.md": "x", ".gest/gest.db": "x"})
+    subprocess.run(["uv", "build", "--sdist", "-q", "-o", str(tmp_path / "dist"), str(copy)], check=True)
+    with tarfile.open(next((tmp_path / "dist").glob("*.tar.gz"))) as tar:
+        names = tar.getnames()
+    assert any(n.endswith("src/smalldocs/__init__.py") for n in names)
+    assert [n for n in names if "/.agents/" in n or "/.claude/" in n or "/.gest/" in n] == []
 
 
 def test_output_dir_with_an_earlier_build_is_emptied(tmp_path: Path) -> None:

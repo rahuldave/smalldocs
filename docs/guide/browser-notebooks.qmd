@@ -37,7 +37,7 @@ smalldocs:
 Build your site with `smalldocs render`.
 Each Python notebook that passes lint gets **Run in browser** and **Download and run** buttons.
 The build creates the JupyterLite site in `lab/` and the bundles in `site_libs/notebooks/`.
-Sites under a URL prefix use the same relative links.
+The links to the JupyterLite site and the bundles are relative, so they also work on a site under a URL prefix.
 
 ## Packages and lint
 
@@ -56,13 +56,14 @@ Run the lint command on its own:
 smalldocs notebooks lint docs
 ```
 
-The lint checks for Python code and packages on a disallow list.
+The lint checks that the notebook has a Python kernel and code cells, and that it uses no package on a
+disallow list.
 The list contains `torch`, `pytorch`, `pymc`, `pymc3`, `theano`, `theano-pymc` and `lxml`.
 A notebook with one of those packages gets no run or download buttons.
 The command reports each result and exits with code 1 if a notebook fails lint.
 
 Lint does not execute the notebook or install its packages.
-The check does not promise that every package or operation works in Pyodide.
+A notebook that passes lint can still use a package or an operation that does not work in Pyodide.
 Run the notebook yourself after you build the site.
 
 To leave one notebook out, add this key to its front matter, the YAML cell at the start:

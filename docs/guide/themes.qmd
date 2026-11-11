@@ -54,8 +54,8 @@ First, add the theme. Give the repository as `org/repo` on GitHub:
 smalldocs add rahuldave/smalldocs-tufte
 ```
 
-The command clones the repository with `git clone --depth 1`, over ssh. So it can get a private
-repository that your own ssh key can read. It copies each folder of `_extensions/` in the repository
+The command clones the repository with `git clone --depth 1`. It clones `org/repo` over ssh, so it can
+get a private repository that your own ssh key can read. It copies each folder of `_extensions/` in the repository
 into the `_extensions/` folder of your project, without `.git`. Then it prints the line to use:
 
 ```yaml
@@ -176,11 +176,13 @@ It includes the original custom designs and their refinements, with source links
 The [theme handbook](https://rahuldave.com/elegant-themes/theme-guide.html) describes each theme,
 its fonts and its colour modes. It also shows how to add optional labels above page titles.
 
-The current themes include light and dark modes under one name. Each Reading theme has its native
-palette and a designed companion. The stock Bootswatch themes stay unchanged. Tufte also has both modes.
+Each of the nine themes in the table has a light mode and a dark mode under one name. Each
+Reading theme has its native palette and a companion palette designed for it. The Reading themes do
+not change the stock Bootswatch themes that smalldocs includes.
 
-The November foundation revisions define colours, fonts, spacing and control states in a file
-`foundations.json`. The custom three declare version 0.3.0, the Reading themes 0.2.0, and Tufte 0.2.1.
+Each theme defines its colours, fonts, spacing and control states in a
+file `foundations.json`. The three custom themes, Folio, Atelier and Nocturne, declare version 0.3.0,
+the Reading themes 0.2.0, and Tufte 0.2.1.
 A version in the manifest does not mean that a Git tag with that name exists.
 The custom `v0.2.0` tags still select the October release, with the earlier fixed title labels.
 
@@ -218,12 +220,13 @@ smalldocs render
 ```
 
 The command gets the newest commit of the default branch. The extension includes compiled CSS and
-local fonts, so installation needs no Sass compiler. To fix the source, give a tag or a full commit hash.
+local fonts, so installation needs no Sass compiler. To install a fixed version, give a tag or a full
+commit hash.
 
 ### Update the original Atelier
 
 The revised Atelier keeps the name `atelier`. Existing sites keep their installed copy until you
-replace it. To install the current foundation revision:
+replace it. To install the revised Atelier:
 
 ```bash
 smalldocs add rahuldave/smalldocs-atelier --force
@@ -237,14 +240,12 @@ Use `smalldocs themes` to see the installed source and commit. Folio and Nocturn
 commands, with their own repository names.
 
 The original custom designs remain at the tag `before-reading-redesign-2026-10-16`.
-To restore the original Atelier:
+To restore the original Atelier, keep `theme: atelier` and run:
 
 ```bash
 smalldocs add rahuldave/smalldocs-atelier@before-reading-redesign-2026-10-16 --force
 smalldocs render
 ```
-
-The configuration name stays `atelier` for both versions.
 
 ### Use a Reading theme
 
@@ -259,8 +260,8 @@ smalldocs add rahuldave/smalldocs-litera-reading
 theme: litera-reading
 ```
 
-A Reading extension now includes both modes. The navbar or sidebar shows the mode toggle.
-You can still use a different theme in each mode. For example, install both extensions:
+A Reading extension includes both modes, so the navbar or the sidebar shows the toggle. You can also
+use a different theme in each mode. For example, install both extensions:
 
 ```bash
 smalldocs add rahuldave/smalldocs-litera-reading
@@ -273,8 +274,7 @@ theme:
   dark: darkly-reading
 ```
 
-The mixed pair selects each extension in the named mode. A single extension, such as
-`theme: litera-reading`, already has both modes.
+The pair takes the light CSS of `litera-reading` and the dark CSS of `darkly-reading`.
 
 ### Fix a source commit
 
@@ -285,8 +285,8 @@ smalldocs add rahuldave/smalldocs-folio@e33e059ff40fd49aad28a8b7449cf77449e66898
 ```
 
 The [version guide](https://rahuldave.com/elegant-themes/using-themes.html) lists the source commits of
-all nine themes. Commit the installed extension with your site. An untagged install can change as the
-source repository changes.
+all nine themes. Commit the installed extension with your site. Without a tag or a hash, the next
+`smalldocs add` can get a different commit, because the source repository changes.
 
 ### Use the foundation roles
 
@@ -294,13 +294,15 @@ A foundation manifest is a JSON file that defines colours, font roles, spacing a
 Each installed extension includes `foundations.json`. The source repository holds its editable copy in
 `src/foundations.json`.
 
-The reading profile defines prose, interface, metadata and code sizes. A profile is a set of sizes
-for one use. The presentation profile is separate and does not enlarge document navigation.
+A profile is a set of sizes for one use. The reading profile defines the sizes of prose, interface,
+metadata and code. The presentation profile is separate, and it does not enlarge the navigation of a
+document.
 The [handbook](https://rahuldave.com/elegant-themes/theme-guide.html#foundations) explains the roles
 and an optional denser reading style.
 
-The themes use 18 to 20px prose and 16px code at the default browser size. Their prose line spacing is
-1.60. The fixed typography rubric deducts points because Butterick prefers 1.20 to 1.45.
+At the default size of the browser, the prose of the themes is 18 to 20px and their code is 16px. The
+line spacing of their prose is 1.60. The fixed rubric of the typography assessment deducts points for
+that line spacing, because Butterick prefers 1.20 to 1.45.
 The [November assessment](https://rahuldave.com/elegant-themes/visual-design-report.html#foundations)
 also flags specific controls in Pulse Reading and Litera Reading, and light syntax colours in Darkly Reading.
 
@@ -396,8 +398,9 @@ and before your `css`. Write `linkcolor`, `backgroundcolor` and `fontcolor` as a
 `#1a5fb4`, or as `rgb()`. Bootstrap needs the red, green and blue parts of the colour of links. The
 build leaves out a value with `<`, `>`, `{`, `}`, `;` or a backslash, and gives a warning.
 
-The colours apply to the light theme and to the dark theme. With two themes, set the colours in your
-own CSS instead, under `html.quarto-dark` for the dark theme.
+`linkcolor` applies to the light theme and to the dark theme. `backgroundcolor` and `fontcolor` apply
+only to the light theme, so a dark theme keeps its own. To set them for the dark theme, write them in
+your own CSS, under `html.quarto-dark`.
 
 ## Your own CSS
 

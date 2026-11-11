@@ -423,8 +423,8 @@ after it. Attributes in braces at the end of the caption belong to the table. Th
 : Two shortcodes. {#tbl-shortcodes .striped}
 
 A caption with an id, such as `#tbl-shortcodes`, puts the table in a figure with that id. A link to
-`#tbl-shortcodes` goes to the table. smalldocs does not number tables. The caption goes above the table.
-The option `tbl-cap-location` moves it to the `bottom`, or into the `margin`. The attribute
+`#tbl-shortcodes` goes to the table, but smalldocs does not number tables. The caption goes above the
+table. The option `tbl-cap-location` moves it to the `bottom`, or into the `margin`. The attribute
 `tbl-cap-location` in the braces does the same for one table.
 
 ## Content for some builds only
@@ -513,7 +513,7 @@ A div with one of these classes is wider than the text:
 | `.column-screen-inset` | The width of the window, less a small space at each side |
 | `.column-screen-inset-shaded` | The same, with a shaded background |
 
-Each class except `.column-page-inset` and `.column-screen-inset-shaded` also has a `-left` and a
+Each class except `.column-screen-inset-shaded` also has a `-left` and a
 `-right` form, which is wide on one side only. A figure in such a div fills its width if the figure
 has `width=100%`.
 
@@ -564,6 +564,7 @@ replaces these shortcodes everywhere except in code blocks:
 | `{{</* meta title */>}}` | An option of the page: {{< meta title >}} |
 | `{{</* var version */>}}` | A value from `_variables.yml`, a YAML map of names to values at the root of the project |
 | `{{</* env HOME */>}}` | An environment variable |
+| `{{</* pagebreak */>}}` | Nothing. A web page has no page breaks |
 | `{{</* kbd Shift-Ctrl-P mac=Shift-Command-P */>}}` | Keys to press: {{< kbd Shift-Ctrl-P mac=Shift-Command-P >}}. `mac`, `win` and `linux` give the keys on each system, which show when the pointer is on the keys |
 | `{{</* video https://www.youtube.com/watch?v=ID */>}}` | A video. A YouTube, Vimeo or Brightcove address becomes a player from that site. A file becomes a `<video>` with controls, and smalldocs copies the file into the site. `title`, `width`, `height`, `aspect-ratio` and `start` set the video |
 | `{{</* lipsum 2 */>}}` | Two paragraphs of placeholder text |

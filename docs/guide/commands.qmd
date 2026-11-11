@@ -13,7 +13,7 @@ command uses the folder you are in.
 smalldocs render [DIR] [--quiet] [--strict]
 ```
 
-The command builds the site. With `--quiet`, it prints only warnings and errors. With `--strict`, a
+`render` builds the site. With `--quiet`, it prints only warnings and errors. With `--strict`, a
 warning makes the exit code 1. A broken link and an option that smalldocs ignores are warnings.
 
 ## preview
@@ -22,7 +22,7 @@ warning makes the exit code 1. A broken link and an option that smalldocs ignore
 smalldocs preview [DIR] [--port 4200] [--host 127.0.0.1] [--no-browser]
 ```
 
-The command builds the site, serves it and opens a browser. When a file of the project changes, it
+`preview` builds the site, serves it and opens a browser. When a file of the project changes, it
 builds the site again, and the browser loads the new pages. If a build fails, the command prints the
 error and keeps the last good site. It listens on this computer only. To listen on other addresses, give `--host`.
 
@@ -32,7 +32,7 @@ error and keeps the last good site. It listens on this computer only. To listen 
 smalldocs check [DIR]
 ```
 
-The command builds the site into a temporary folder, and keeps your output folder as it is. It still
+`check` builds the site into a temporary folder, and keeps your output folder as it is. It still
 writes the API pages and runs the `pre-render` and `post-render` commands, as a build does. Then it
 lists what to fix:
 
@@ -50,7 +50,7 @@ smalldocs api build|check|list [--dir DIR]
 smalldocs api module NAME [--dir DIR]
 ```
 
-The command makes the reference pages, checks the docments, lists the documented names, or prints one module as
+`api` makes the reference pages, checks the docments, lists the documented names, or prints one module as
 Markdown. See [The API reference](api.qmd).
 
 ## publish
@@ -59,10 +59,10 @@ Markdown. See [The API reference](api.qmd).
 smalldocs publish gh-pages [DIR] [--branch gh-pages] [--remote origin] [--no-render] [-m MESSAGE]
 ```
 
-The command builds the site and pushes it to the branch. It works in a temporary worktree, so your
+`publish` builds the site and pushes it to the branch. It works in a temporary worktree, so your
 files and your current branch do not change. Your git hooks do not run for the commit of the site.
 
-The command refuses some branches, because they hold your source files:
+It refuses some branches, because they hold your source files:
 
 - your current branch
 - the default branch of the remote
@@ -77,9 +77,9 @@ With `--no-render`, the command publishes the output folder as it is.
 smalldocs add SOURCE [--dir DIR] [--force]
 ```
 
-The command copies the theme extensions of a git repository into the folder `_extensions/` of the
+`add` copies the theme extensions of a git repository into the folder `_extensions/` of the
 project. SOURCE is `org/repo` on GitHub, `org/repo@ref`, a git URL, a local git repository, or a local
-folder. The command clones over ssh, so a private repository works with your own key. If an extension
+folder. It clones `org/repo` over ssh, so a private repository works with your own key. If an extension
 is already there, the command asks before it replaces the extension. `--force` replaces it without a
 question. See [Themes](themes.qmd).
 
@@ -89,7 +89,7 @@ question. See [Themes](themes.qmd).
 smalldocs themes [DIR]
 ```
 
-The command lists the bundled themes, and the extensions in `_extensions/` with the source of each.
+`themes` lists the bundled themes, and the extensions in `_extensions/` with the source of each.
 
 ## notebooks lint
 
@@ -97,9 +97,10 @@ The command lists the bundled themes, and the extensions in `_extensions/` with 
 smalldocs notebooks lint [DIR]
 ```
 
-The command lists packages found in each notebook's imports and checks the Pyodide disallow list.
-It runs no notebook code and needs no JupyterLite installation.
-It exits with code 1 if a notebook fails lint.
+`notebooks lint` lists the packages that each notebook imports. It checks them against the disallow
+list, a list of packages that do not run in Pyodide, the Python that runs in the browser. A notebook
+also fails lint when its kernel is not Python, or when it has no code cells. The command runs no
+notebook code and needs no JupyterLite installation. It exits with code 1 if a notebook fails lint.
 See [Run notebooks in the browser](browser-notebooks.qmd).
 
 ## Exit codes
@@ -107,5 +108,5 @@ See [Run notebooks in the browser](browser-notebooks.qmd).
 | Code | Meaning |
 |---|---|
 | 0 | Done |
-| 1 | Done, with something to fix: `--strict` with warnings, or `check` and `api check` with findings |
+| 1 | Done, with something to fix: `--strict` with warnings, `check` and `api check` with findings, or `notebooks lint` with a notebook that fails |
 | 2 | Stopped: no `_smalldocs.yml` or `_quarto.yml`, a bad option, a failed script, a port in use, or a failed clone |

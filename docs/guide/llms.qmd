@@ -23,8 +23,8 @@ website:
   llms-txt: true
 ```
 
-The option is off unless you set it. A site without it builds as before, and the option changes no HTML
-page.
+The option is off unless you set it. When it is on, a build adds the copies and `llms.txt`. An HTML page
+changes only where it links to `llms.txt` or to a copy.
 
 ## What a build writes
 
@@ -99,15 +99,15 @@ Only the HTML page has this paragraph.
 ```
 
 In the copy, a condition on `llms-txt` decides alone. Any other condition decides as it does on the
-page. So a block for `html` is in the copy, and a block for `pdf` is not. On the HTML page, `llms-txt` is
-a format that does not hold, as `pdf` does not.
+page. So a block for `html` is in the copy, and a block for `pdf` is not. On the HTML page, `llms-txt`
+is a format that does not hold, as `pdf` does not.
 
 ## Drafts and the 404 page
 
 A draft that a build leaves out has no copy. A draft with `draft-mode: unlinked` is built, but it has no
 copy and no line in `llms.txt`. The 404 page has a copy, but no line in `llms.txt`, as in Quarto.
 
-## The copies are not pages
+## Copies in the output folder {#the-copies-are-not-pages}
 
 The copies are written only into the output folder. smalldocs never reads the output folder as pages,
 and `smalldocs preview` does not watch it. So the next build does not read a copy as a page.
