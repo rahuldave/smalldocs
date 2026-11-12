@@ -6,6 +6,6 @@ export interface ButtonProps {
 }
 
 /** A button, as a string of HTML. */
-export function Button({ label, disabled = false }: ButtonProps): string {  // the HTML
-  return `<button${disabled ? " disabled" : ""}>${label}</button>`;
+export function Button({ label, disabled = false }: ButtonProps): JSX.Element {  // the HTML
+  return { html: `<button${disabled ? " disabled" : ""}>${label}</button>` };
 }

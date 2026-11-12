@@ -175,8 +175,14 @@
       }
      ],
      "type": {
-      "type": "intrinsic",
-      "name": "string"
+      "type": "reference",
+      "target": {
+       "packageName": "<unknown>",
+       "packagePath": "types/jsx.d.ts",
+       "qualifiedName": "JSX.Element"
+      },
+      "name": "Element",
+      "qualifiedName": "JSX.Element"
      }
     }
    ]

@@ -59,7 +59,7 @@
           "type": "reference",
           "target": {
            "packageName": "<unknown>",
-           "packagePath": "/Users/rahul/Projects/smalldocs/.claude/worktrees/agent-a8e13a4c070a160f8/tests/fixtures/ts/app/src/components/Badge.ts",
+           "packagePath": "src/components/Badge.ts",
            "qualifiedName": "Props"
           },
           "name": "Props"
@@ -67,8 +67,14 @@
         }
        ],
        "type": {
-        "type": "intrinsic",
-        "name": "string"
+        "type": "reference",
+        "target": {
+         "packageName": "<unknown>",
+         "packagePath": "types/jsx.d.ts",
+         "qualifiedName": "JSX.Element"
+        },
+        "name": "Element",
+        "qualifiedName": "JSX.Element"
        }
       }
      ]
@@ -197,8 +203,14 @@
         }
        ],
        "type": {
-        "type": "intrinsic",
-        "name": "string"
+        "type": "reference",
+        "target": {
+         "packageName": "<unknown>",
+         "packagePath": "types/jsx.d.ts",
+         "qualifiedName": "JSX.Element"
+        },
+        "name": "Element",
+        "qualifiedName": "JSX.Element"
        }
       }
      ]
@@ -227,7 +239,7 @@
         "summary": [
          {
           "kind": "text",
-          "text": "Draw a line; it takes no props, so it is no component, and its return needs a comment."
+          "text": "Draw a line; it returns a string, not JSX, so it is no component, and its return needs a comment."
          }
         ]
        },

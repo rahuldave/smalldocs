@@ -16,6 +16,6 @@ interface Props {
 
 /** Draw a badge. */
 export default function Badge({ text, tone = "info",
-                                loud = false }: Props): string {  // the HTML of the badge
-  return `<span class="${tone}">${loud ? shout(text) : text}</span>`;
+                                loud = false }: Props): JSX.Element {  // the HTML of the badge
+  return { html: `<span class="${tone}">${loud ? shout(text) : text}</span>` };
 }

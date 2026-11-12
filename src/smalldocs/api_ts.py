@@ -40,6 +40,7 @@ from .api import (
     page_key,
     table,
     type_cell,
+    warn_unlinked,
     write_reference,
 )
 
@@ -60,6 +61,8 @@ class Field:
     optional: bool  # Whether it is written `name?`
     doc: str  # The comment after it, or its JSDoc comment; empty when there is none
     default: str = ""  # Its default, from a component's destructured props; empty when there is none
+    shared: bool = False  # Whether its line has a comment that it shares with other fields, so that the comment is no one's
+    listed: bool = False  # Whether its type has an entry of its own, where `check` reports the field
 
 
 # ---------------------------------------------------------------- running TypeDoc
@@ -151,6 +154,7 @@ class Sources:
         "Keep the project's folder; read files when they are asked for."
         self.project = project
         self.files: dict[str, list[Line]] = {}
+        self.unlinked: set[str] = set()  # The files outside the root, whose items get no source link
 
     def lines(
         self,
@@ -176,6 +180,16 @@ class Sources:
         if not 0 < line <= len(lines):
             return ""
         return escape_angles(lines[line - 1].comment) if alone(lines[line - 1].code, src.get("character", 0)) else ""
+
+    def shared(
+        self,
+        node: dict,  # An item of TypeDoc's JSON that has `sources`
+    ) -> bool:  # Whether its line has a `//` comment that is not its alone, because more follows it on the line
+        "Tell whether the comment on an item's line belongs to no one item, as in `{ a: number; b: number }  // the size`."
+        src = (node.get("sources") or [{}])[0]
+        lines = self.lines(src.get("fileName", ""))
+        line = src.get("line", 0)
+        return 0 < line <= len(lines) and bool(lines[line - 1].comment) and not alone(lines[line - 1].code, src.get("character", 0))
 
 
 @dataclass
@@ -303,6 +317,7 @@ class Signature:
     params: list[str]  # The comment after each parameter, in order; empty for one without
     returns: str  # The comment on the line of the return type or of the `{`; empty when there is none
     defaults: dict[str, str]  # The defaults of a destructured first parameter, `{ a, b = 1 }`, by name
+    destructured: bool = False  # Whether the first parameter is destructured, as `{ a, b }`
 
 
 def read_signature(
@@ -314,8 +329,9 @@ def read_signature(
     starts: list[int] = []  # the line each parameter starts on
     defaults: dict[str, str] = {}
     depth, angle, open_line, close_line, end_line = 0, 0, -1, -1, -1
-    pattern, kept, in_pattern = "", "", False  # a destructured first parameter: its code, and its text with strings
+    pattern, kept, in_pattern, destructuring = "", "", False, False  # a destructured first parameter: its code, and its text with strings
     first = True
+    typed, expect, last = False, False, ""  # after the `)`: whether a `:` began a return type, whether a type comes next, the last sign
     for n in range(line - 1, min(len(lines), line + 400)):
         start = column if n == line - 1 else 0
         code, text = lines[n].code[start:], lines[n].text[start:]
@@ -339,6 +355,7 @@ def read_signature(
                     starts.append(n)
                     first = False
                     in_pattern = c == "{" and len(starts) == 1
+                    destructuring = destructuring or in_pattern
                 if c in "([{":
                     depth += 1
                 elif c in ")]}":
@@ -356,9 +373,29 @@ def read_signature(
                     pattern, kept = pattern + c, kept + text[i]
                 if depth == 0:
                     close_line = n
-            elif c in "{;" or code[i : i + 2] == "=>":
-                end_line = n
+            elif depth > 0:  # inside the brackets of the return type
+                if c in "([{<":
+                    depth += 1
+                elif c in ")]}" or (c == ">" and not arrow):
+                    depth -= 1
+                    last = c
+            elif code[i : i + 2] == "=>":
+                if not (typed and last == ")"):
+                    end_line = n  # an arrow function's body
+                    break
+                expect, last = True, ">"  # a function type, `(v: string) => void`
+                i += 1
+            elif c == ";" or (c == "{" and not expect):
+                end_line = n  # the body, or the end of an overload
                 break
+            elif c in "([{<":
+                depth, expect = depth + 1, False
+            elif c == ":":
+                typed, expect = True, True
+            elif c in "|&?":
+                expect = True
+            elif not c.isspace():
+                expect, last = False, c
             i += 1
         if pattern and in_pattern:
             pattern, kept = pattern + "\n", kept + "\n"
@@ -367,9 +404,9 @@ def read_signature(
     if close_line < 0:
         return Signature([], "", {})
     end_line = end_line if end_line >= 0 else close_line
-    returns = next((lines[n].comment for n in range(close_line, end_line + 1) if lines[n].comment), "")
+    returns = lines[close_line].comment or lines[end_line].comment  # the lines between hold the return type's own parts
     params = [lines[n].comment if n < close_line and starts.count(n) == 1 else "" for n in starts]
-    return Signature(params, returns, defaults)
+    return Signature(params, returns, defaults, destructuring)
 
 
 def destructured(
@@ -442,7 +479,9 @@ def declared_fields(
                 doc = jsdoc_at(raws, k)
             while i < len(code):
                 if depth == 1 and cur is None and (f := FIELD.match(text, i)):
-                    cur = Field(f.group(1), "", bool(f.group(2)), escape_angles((lines[k].comment if alone(code, i) else "") or doc))
+                    mine = alone(code, i)
+                    said = escape_angles((lines[k].comment if mine else "") or doc)
+                    cur = Field(f.group(1), "", bool(f.group(2)), said, shared=bool(lines[k].comment) and not mine)
                     out.append(cur)
                     doc, i = "", f.end()
                     continue
@@ -490,13 +529,80 @@ def jsdoc_at(
 
 def header_comment(
     text: str,  # A TypeScript file
-) -> str:  # The `/** */` comment at its top, when imports follow it; empty otherwise
-    "Read a file's opening comment, which TypeDoc drops when no `@module` tag marks it, as the module's description."
-    m = re.match(r"\s*/\*\*(.*?)\*/\s*(?=import\b|export\s+(?:\*|\{[^}]*\}\s*from)|$)", text, re.S)
+) -> str:  # The `/** */` comment at its top, when no declaration takes it; empty otherwise
+    "Read a file's opening comment as the module's, when TypeDoc drops it: no `@module` marks it, and no declaration follows it at once."
+    other = r"(?>//[^\n]*|/\*(?!\*[^/])(?:(?!\*/).)*\*/)\s*"  # a comment that is no doc comment, such as a licence or `/**/`; atomic, so it never backtracks
+    before = rf"\ufeff?(?:#![^\n]*\n)?\s*(?:{other})*+"  # a byte-order mark, a `#!` line, and such comments
+    after = r"import\b|export\s+(?:type\s+)?(?:\*|\{[^}]*\}\s*from)|[\"']use \w+[\"']|/\*\*|$"  # an import, a re-export, a directive, a doc comment, the end
+    m = re.match(rf"{before}/\*\*(?!/)((?:(?!\*/).)*)\*/\s*(?:{other})*+(?={after})", text, re.S)
     if not m:
         return ""
     lines = [re.sub(r"^\s*\* ?", "", ln) for ln in m.group(1).split("\n")]
     return escape_angles("\n".join(lines).strip("\n").rstrip())
+
+
+PARAM_TAG = re.compile(r"@param\s+(?:\{(?:[^{}]|\{[^{}]*\})*\}\s*)?(?:\[\s*([\w$.]+)\s*(?:=[^\]]*)?\]|([\w$.]+))\s*(?:-\s+)?(.*)")
+
+
+def param_tags(
+    lines: list[Line],  # The file, as `split_comments` gives it
+    line: int,  # The line of a declaration, from 1
+) -> dict[str, str]:  # The text of each `@param` of the doc comment just above it, by name; `props.a` also as `.a`
+    "Read the `@param` tags of a declaration's doc comment from its source, as JSDoc writes them for a destructured parameter: `@param a` or `@param props.a`."
+    raws = [ln.raw for ln in lines]
+    end = line - 2
+    start = None
+    while 0 <= end < len(raws) and start is None:
+        if not raws[end].strip() or raws[end].strip().startswith("//"):
+            end -= 1  # TypeDoc reads the doc comment past blank lines and comments
+            continue
+        if not raws[end].rstrip().endswith("*/"):
+            return {}
+        opens = next((k for k in range(end, -1, -1) if "/*" in raws[k][: len(raws[k]) - 2 if k == end else None]), None)
+        if opens is None:
+            return {}
+        if re.search(r"/\*\*(?!/)", raws[opens]):
+            start = opens
+        else:
+            end = opens - 1  # a comment that is no doc comment, such as `/* eslint-disable */`
+    if start is None:
+        return {}
+    out: dict[str, str] = {}
+    name = ""
+    body = "\n".join(raws[start : end + 1])
+    for text in body[body.find("/**") + 3 : body.rfind("*/")].split("\n"):
+        text = re.sub(r"^\s*\* ?", "", text).strip()
+        m = PARAM_TAG.match(text)
+        if m:
+            name = m.group(1) or m.group(2)
+            out[name] = m.group(3).strip()
+        elif text.startswith("@"):
+            name = ""
+        elif name and text:
+            out[name] = (out[name] + " " + text).strip()
+    for key, said in list(out.items()):
+        head, dot, field = key.partition(".")
+        if dot and head and "." not in field:
+            out.setdefault("." + field, said)
+    return out
+
+
+PRIMITIVES = {"string", "number", "boolean", "bigint", "symbol"}  # Types that no props object has
+JSX_TYPES = {"JSX.Element", "ReactElement", "ReactNode", "ReactPortal"}  # What a React component returns, without `React.`
+
+
+def is_jsx(
+    t: dict | None,  # A return type
+) -> bool:  # Whether it is what a React component returns: `JSX.Element`, `ReactNode` and the like, alone or with `null`
+    "Tell whether a function returns what React draws."
+    if not t:
+        return False
+    if t.get("type") == "union":
+        nothing = [x for x in t["types"] if (x.get("type") == "literal" and (x.get("value") is None or x.get("value") is False)) or (x.get("type") == "intrinsic" and x.get("name") in ("null", "undefined"))]
+        rest = [x for x in t["types"] if x not in nothing]
+        return bool(rest) and all(is_jsx(x) for x in rest)
+    name = (t.get("qualifiedName") or t.get("name") or "").removeprefix("React.")
+    return t.get("type") == "reference" and name in JSX_TYPES
 
 
 # ---------------------------------------------------------------- writing it as Markdown
@@ -772,13 +878,16 @@ class Module:
             return None
         if t.get("type") == "reflection" and "children" in t["declaration"]:
             return self.own_fields(t["declaration"])
+        if t.get("type") == "intersection":  # `Props & { more?: string }`: the fields of each part
+            parts = [self.fields(x) for x in t["types"]]
+            return None if any(x is None for x in parts) else [f for x in parts for f in x]
         if t.get("type") != "reference":
             return None
         target = t.get("target")
         if isinstance(target, int) and target in self.ids:
             node = self.ids[target]
             if node["kind"] == INTERFACE or (node["kind"] == ALIAS and "children" in node):
-                return self.own_fields(node)
+                return self.own_fields(node, listed=True)
             if node["kind"] == ALIAS:
                 return self.fields(node.get("type"))
             return None
@@ -792,6 +901,7 @@ class Module:
     def own_fields(
         self,
         node: dict,  # An interface, a type or a class of TypeDoc's JSON, with `children`
+        listed: bool = False,  # Whether the node has an entry of its own, where `check` reports its fields
     ) -> list[Field]:  # Its properties and accessors, each with the comment after it or its JSDoc
         "List the fields of an interface, a type or a class."
         out = []
@@ -799,7 +909,8 @@ class Module:
             if c["kind"] not in (PROPERTY, ACCESSOR) or c.get("inheritedFrom") or c.get("flags", {}).get("isPrivate"):
                 continue
             said = self.src.comment(c) or doc(c) or doc(c.get("getSignature"))
-            out.append(Field(c["name"], type_text(member_type(c)), bool(c.get("flags", {}).get("isOptional")), said))
+            optional = bool(c.get("flags", {}).get("isOptional"))
+            out.append(Field(c["name"], type_text(member_type(c)), optional, said, shared=self.src.shared(c), listed=listed))
         return out
 
     def props(
@@ -807,11 +918,24 @@ class Module:
         name: str,  # The item's name on the page
         sig: dict,  # Its first signature
     ) -> list[Field] | None:  # The fields of its props, when it is a React component; otherwise `None`
-        "Tell a React component, a function with a capital name that takes one props object, and list its props."
+        "List a React component's props: a component is a function with a capital name that returns JSX and takes no parameter or one props object."
         params = sig.get("parameters", [])
-        if len(params) != 1 or not name.rpartition(".")[2][:1].isupper():
+        if not component(name, sig):
             return None
-        return self.fields(params[0].get("type"))
+        return self.fields(params[0].get("type")) if params else []
+
+    def named(
+        self,
+        sig: dict,  # A signature of TypeDoc's JSON
+    ) -> dict:  # The same, its destructured parameter named `props` again when TypeDoc named it after the `@param` of one of its fields
+        "Undo TypeDoc's naming of a destructured parameter after a `@param` that is JSDoc's for one of its fields, as `@param a` for `{ a }`."
+        params = sig.get("parameters") or []
+        if not params or params[0]["name"] == "__namedParameters" or not self.read(sig).destructured:
+            return sig
+        if params[0]["name"] not in {f.name for f in self.fields(params[0].get("type")) or []}:
+            return sig
+        first = {k: v for k, v in params[0].items() if k != "comment"} | {"name": "__namedParameters"}
+        return sig | {"parameters": [first, *params[1:]]}
 
     def read(
         self,
@@ -831,10 +955,13 @@ class Module:
         said, rows, gaps = self.read(sig), [], []
         props = self.props(name, sig)
         if props is not None:
+            src = (sig.get("sources") or [{}])[0]
+            tags = param_tags(self.src.lines(src.get("fileName", "")), src.get("line", 0)) if props else {}
             for f in props:
                 default = f"`{said.defaults[f.name]}`" if f.name in said.defaults else "optional" if f.optional else "required"
-                rows.append([f"`{f.name}`", type_cell(f.type), default, one_line(f.doc)])
-                gaps += [] if f.doc else [f"({f.name}): no comment"]
+                text = f.doc or escape_angles(tags.get(f.name) or tags.get("." + f.name, ""))
+                rows.append([f"`{f.name}`", type_cell(f.type), default, one_line(text)])
+                gaps += [] if text or f.listed else [f"({f.name}): {gap(f)}"]  # a field of a type with its own entry is reported there
         else:
             for i, p in enumerate(sig.get("parameters", [])):
                 flags = p.get("flags", {})
@@ -845,7 +972,7 @@ class Module:
         if not constructor and not is_void(sig.get("type")):
             text = said.returns or returns_doc(sig)
             rows.append(["returns", type_cell(type_text(sig.get("type"))), "", one_line(text)])
-            gaps += [] if text or props is not None else [": no return comment"]  # a component returns what it draws
+            gaps += [] if text or component(name, sig) else [": no return comment"]  # a component returns what it draws
         return rows, gaps
 
     def entry(
@@ -858,7 +985,7 @@ class Module:
         kind, short = c["kind"], name.rpartition(".")[2]
         gaps = [] if doc(c) or doc((c.get("signatures") or [None])[0]) else [": no doc comment"]
         if kind in (FUNCTION, METHOD):
-            sigs = c.get("signatures", [])
+            sigs = [self.named(x) if self.props(name, x) is not None else x for x in c.get("signatures", [])]
             word = "function " if kind == FUNCTION else "static " if c.get("flags", {}).get("isStatic") else ""
             code = "\n".join(f"{word}{short}{type_params(x)}({params_text(x)}): {type_text(x.get('type'))}" for x in sigs)
             rows, more = self.param_rows(name, sigs[0]) if sigs else ([], [])
@@ -873,14 +1000,14 @@ class Module:
                 code += "\n" + "\n".join(f"new {short}({params_text(x)})" for x in ctor["signatures"])
                 rows, more = self.param_rows(name, ctor["signatures"][0], constructor=True)
             fields = self.own_fields(c)
-            gaps += more + [f".{f.name}: no comment" for f in fields if not f.doc]
+            gaps += more + [f".{f.name}: {gap(f)}" for f in fields if not f.doc]
             return self.parts(code, doc(c), table(rows, ["Parameter", "Type", "Default", "Description"]), fields_table(fields)), gaps
         if kind == INTERFACE or (kind == ALIAS and "children" in c):
             word = "interface" if kind == INTERFACE else "type"
             heads = [f"{word} {short}{type_params(c)}"]
             heads += [f"extends {', '.join(type_text(x) for x in c['extendedTypes'])}"] if c.get("extendedTypes") else []
             fields = self.own_fields(c)
-            gaps += [f".{f.name}: no comment" for f in fields if not f.doc]
+            gaps += [f".{f.name}: {gap(f)}" for f in fields if not f.doc]
             return self.parts(" ".join(heads), doc(c), fields_table(fields)), gaps
         if kind == ALIAS:
             return self.parts(f"type {short}{type_params(c)} = {type_text(c.get('type'))}", doc(c)), gaps
@@ -901,6 +1028,34 @@ class Module:
     ) -> str:  # The parts as Markdown, the signature in a `ts` block
         "Join the parts of an entry."
         return "\n\n".join(p for p in [f"```ts\n{code}\n```" if code else "", *rest] if p)
+
+
+def gap(
+    f: Field,  # A field with no comment
+) -> str:  # What `check` says of it
+    "Say why a field has no comment: it has none, or the comment on its line follows more than the field, so it belongs to no field."
+    said = "no comment: the comment on its line follows more than this field, so it is no field's; put each field on its own line, or give each a JSDoc"
+    return said if f.shared else "no comment"
+
+
+def component(
+    name: str,  # A function's name on the page
+    sig: dict,  # Its signature
+) -> bool:  # Whether it is a React component: a capital name, JSX back, and no parameter or one
+    "Tell a React component by React's rules: its props may be of any object type, even one that smalldocs cannot read, but not a string or a number."
+    params = sig.get("parameters", [])
+    if len(params) > 1 or not name.rpartition(".")[2][:1].isupper() or not is_jsx(sig.get("type")):
+        return False
+    return not params or not primitive(params[0].get("type") or {})
+
+
+def primitive(
+    t: dict,  # A type
+) -> bool:  # Whether it is a string, a number, a boolean, a bigint, a symbol, a literal, or a union of them, which no props object is
+    "Tell a type that no props object can have."
+    if t.get("type") == "union":
+        return all(primitive(x) for x in t["types"])
+    return t.get("type") == "literal" or (t.get("type") == "intrinsic" and t.get("name") in PRIMITIVES)
 
 
 def fields_table(
@@ -930,6 +1085,8 @@ def source_link(
     try:
         file = path.relative_to(s.root) if s.root else path
     except ValueError:
+        if path.is_relative_to(src.project.resolve()) and "node_modules" not in path.parts:
+            src.unlinked.add(where["fileName"])  # the project's own file; a package's can have no link
         return ""
     return f"[source]({s.source}/{link_path(file.as_posix())}#L{where.get('line', 1)}){{.source-link}}"
 
@@ -1060,7 +1217,9 @@ def build(
 ) -> list[Path]:  # The pages written
     "Write one reference page per entry point or file, and `_symbols.json`, the index of names that links use."
     taken = hand_written(out_folder(s))  # before TypeDoc runs, which refuses an `out` outside the site
-    texts, index = written_pages(s, load(s), taken)
+    mods = load(s)
+    texts, index = written_pages(s, mods, taken)
+    warn_unlinked(s, mods[0].src.unlinked if mods else set())
     return write_reference(s, texts, index, taken)
 
 
