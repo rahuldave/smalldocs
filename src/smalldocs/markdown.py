@@ -1564,7 +1564,7 @@ def make_parser(
     md.core.ruler.push("escaped_spaces", rules.escaped_spaces)
     md.core.ruler.push("video_sources", rules.video_sources)
     if smart:
-        md.core.ruler.push("typography", rules.typography)  # before ids: Pandoc makes ids from the smart text
+        md.core.ruler.before("text_join", "typography", rules.typography)  # before ids, as Pandoc makes ids from the smart text; before escapes join the text, so `\-\-` stays `--`
     md.core.ruler.push("ids", rules.ids)
     md.core.ruler.push("title", rules.title)
     md.core.ruler.push("layouts", rules.layouts)  # while the blocks are still divs and paragraphs

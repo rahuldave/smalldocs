@@ -653,3 +653,25 @@ def test_hand_written_index_in_another_case_moves_the_module_page() -> None:
     "A hand-written `Geo/index.qmd` is `geo/index.qmd` on macOS, so the module's page moves beside it, as on a TypeScript site."
     crate = api_rust.Crate(fixture(), CRATE, taken={"Geo/index.qmd"})
     assert "geo/geo.qmd" in [p.file for p in crate.pages]
+
+
+def test_heading_text_is_escaped_and_its_id_is_not(site: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    "A function `__x__` shows as `fn __x__`, not a bold `x`, and its id is `__x__`."
+    data = fixture()
+    add = next(v for v in data["index"].values() if v.get("name") == "add")
+    add["name"] = "__x__"
+    monkeypatch.setattr(api_rust, "rustdoc", lambda s, private=False: (data, CRATE))
+    p = pages(site)
+    assert "## fn \\_\\_x\\_\\_ {#__x__}" in p["tinycrate.qmd"]
+    build(site, quiet=True)
+    html = (site / "_site/api/tinycrate.html").read_text()
+    assert '<h2 class="anchored" data-anchor-id="__x__">fn __x__</h2>' in html and "<strong>" not in html.split('data-anchor-id="__x__"')[1][:60]
+
+
+def test_source_link_to_a_file_with_a_hash(site: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    "A source file `src/a#b.rs`, as `#[path]` allows, links as `src/a%23b.rs`, so that its `#` starts no fragment."
+    data = fixture()
+    add = next(v for v in data["index"].values() if v.get("name") == "add")
+    add["span"]["filename"] = "src/a#b.rs"
+    monkeypatch.setattr(api_rust, "rustdoc", lambda s, private=False: (data, CRATE))
+    assert f"[source](https://example.com/tiny/blob/main/src/a%23b.rs#L{add['span']['begin'][0]}){{.source-link}}" in entry(pages(site)["tinycrate.qmd"], "add")

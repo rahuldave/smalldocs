@@ -23,7 +23,21 @@ import tempfile
 from dataclasses import dataclass, field
 from pathlib import Path
 
-from .api import Settings, escape_angles, folder_indexes, front_matter, hand_written, listing, out_folder, page_key, table, type_cell, write_reference
+from .api import (
+    Settings,
+    escape_angles,
+    folder_indexes,
+    front_matter,
+    hand_written,
+    heading_text,
+    link_path,
+    listing,
+    out_folder,
+    page_key,
+    table,
+    type_cell,
+    write_reference,
+)
 
 FORMATS = (57, 61)  # The versions of rustdoc's JSON that smalldocs reads
 COMPILER_TRAITS = {"StructuralPartialEq", "StructuralEq"}  # Markers that `#[derive(PartialEq)]` adds, which say nothing to a reader
@@ -806,14 +820,14 @@ class Crate:
         id = str(id)
         if id in self.where:
             page, anchor = self.where[id]
-            return f"/{self.out}/{page.file}#{anchor}"
+            return f"{link_path(f'/{self.out}/{page.file}')}#{anchor}"
         page = next((p for p in self.pages if p.id == id), None)
         if page is not None:
-            return f"/{self.out}/{page.file}"
+            return link_path(f"/{self.out}/{page.file}")
         owner = self.owners.get(id)
         if owner and owner in self.where:
             page, anchor = self.where[owner]
-            return f"/{self.out}/{page.file}#{anchor}"
+            return f"{link_path(f'/{self.out}/{page.file}')}#{anchor}"
         return self.external_url(id)
 
     def external_url(
@@ -991,7 +1005,7 @@ def source_link(
         file = path.relative_to(s.root) if s.root else path
     except ValueError:
         return ""
-    return f"[source]({s.source}/{file.as_posix()}#L{span['begin'][0]}){{.source-link}}"
+    return f"[source]({s.source}/{link_path(file.as_posix())}#L{span['begin'][0]}){{.source-link}}"
 
 
 def code(
@@ -1140,7 +1154,7 @@ def entry_markdown(
     item = crate.item(e.id)
     kind = crate.kind(e.id)
     label = {"function": "fn " if e.level == 2 else "", "macro": "macro ","type_alias": "type ", "constant": "const ", "assoc_type": "type ", "assoc_const": "const "}.get(kind, f"{kind} ")
-    parts = [f"{'#' * e.level} {label}{e.name} {{#{e.anchor}}}", source_link(s, crate, item)]
+    parts = [f"{'#' * e.level} {heading_text(label + e.name)} {{#{e.anchor}}}", source_link(s, crate, item)]
     docs = item.get("docs") or ""
     args: dict[str, str] = {}
     name, here = crate.name_of.get(e.id, item["name"]), crate.home[e.id].id
@@ -1195,7 +1209,7 @@ def modules_table(
     pages: list[Page],  # The pages of some modules
 ) -> str:  # A Markdown table with a link to each, by its name, and its summary
     "List some modules, each by its own name, linked to its page, with its summary."
-    return listing([(p.path.rpartition("::")[2], f"/{crate.out}/{p.file}", summary(crate.item(p.id).get("docs") or "")) for p in pages])
+    return listing([(p.path.rpartition("::")[2], link_path(f"/{crate.out}/{p.file}"), summary(crate.item(p.id).get("docs") or "")) for p in pages])
 
 
 def symbols(
@@ -1205,7 +1219,7 @@ def symbols(
     index: dict[str, str] = {}
     for page in crate.pages:
         for e in page.entries:
-            target = f"/{crate.out}/{page.file}#{e.anchor}"
+            target = f"{link_path(f'/{crate.out}/{page.file}')}#{e.anchor}"
             index.setdefault(e.name.rpartition("::")[2] if e.level == 2 else e.name, target)
             index.setdefault(e.name.replace("::", "."), target)
             index.setdefault(f"{page.path}::{e.name}", target)

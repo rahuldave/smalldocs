@@ -164,6 +164,11 @@ def test_typography_and_its_extension() -> None:
     assert '"hi" -- it\'s' in plain.replace("&quot;", '"')
 
 
+def test_escaped_dashes_and_dots_stay_as_typed() -> None:
+    "A backslash before a `-` or a `.` keeps it out of a dash or an ellipsis, as in Pandoc: `a-\\-b` is `a--b`, and `a--b` is still an en dash."
+    assert "<p>a--b a...b a--b a–b a...b</p>" in md("a-\\-b a.\\..b a\\--b a--b a\\...b\n")
+
+
 def test_maths_and_dollars() -> None:
     "`$x$` is maths; `$5 and $10` is money; `-tex_math_dollars` turns maths off."
     env: dict = {}

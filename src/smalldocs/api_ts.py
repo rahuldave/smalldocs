@@ -34,6 +34,8 @@ from .api import (
     folder_listing,
     front_matter,
     hand_written,
+    heading_text,
+    link_path,
     out_folder,
     page_key,
     table,
@@ -929,7 +931,7 @@ def source_link(
         file = path.relative_to(s.root) if s.root else path
     except ValueError:
         return ""
-    return f"[source]({s.source}/{file.as_posix()}#L{where.get('line', 1)}){{.source-link}}"
+    return f"[source]({s.source}/{link_path(file.as_posix())}#L{where.get('line', 1)}){{.source-link}}"
 
 
 def modules(
@@ -1001,7 +1003,7 @@ def written_pages(
         folder = rel.rpartition("/")[0] if rel.endswith("/index") or rel == "index" else None
         out[f"{rel}.qmd"] = page(s, mod, folder_listing(s.out, folder, summaries) if folder is not None else "")
         for id_ in unique([n for _, n, _ in mod.items()]):
-            target = f"/{s.out}/{rel}.qmd#{id_}"
+            target = f"{link_path(f'/{s.out}/{rel}.qmd')}#{id_}"
             names.setdefault(id_, target)
             names[f"{mod.name}.{id_}"] = target
     return out | folder_indexes(s.out, summaries, taken), names
@@ -1041,7 +1043,7 @@ def page(
         word = "static " if c.get("flags", {}).get("isStatic") else KEYWORD.get(c["kind"], "")
         link = source_link(s, mod.src, c)
         body, _ = mod.entry(c, name, level)
-        out.append("\n\n".join(p for p in [f"{'#' * level} {word}{name} {{#{id_}}}", link, body] if p))
+        out.append("\n\n".join(p for p in [f"{'#' * level} {heading_text(word + name)} {{#{id_}}}", link, body] if p))
     return front_matter(mod.name.rpartition("/")[2], one_line(head)) + "\n\n".join(out) + "\n"
 
 

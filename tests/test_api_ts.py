@@ -13,6 +13,7 @@ import pytest
 from smalldocs import api, api_ts
 from smalldocs.api_ts import read_signature, split_comments, type_text
 from smalldocs.cli import main
+from smalldocs.markdown import render
 
 FIX = Path(__file__).parent / "fixtures" / "ts"
 TOP = f"---\n{api.MARK}\n"  # The start of each page that a build writes
@@ -821,3 +822,72 @@ def test_type_cells_keep_quotes_tildes_and_carets(tmp_path: Path, monkeypatch: p
     site(tmp_path, "app", monkeypatch)
     assert main(["render", str(tmp_path), "-q"]) == 0
     assert "<td>&quot;info&quot; | &quot;warn&quot;</td>" in (tmp_path / "_site/api/components/Badge.html").read_text()
+
+
+# ---------------------------------------------------------------- headings and file names that Markdown or a link would misread
+
+
+def test_heading_text_is_escaped_and_its_id_is_not(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    "A name such as `__x__`, or `$b` in the namespace `$a`, shows as it is: no bold, no maths; the heading's id is the name."
+    data, project = fixture("lib")
+    add = next(c for c in data["children"] if c["name"] == "add")
+    data["children"] += [{**add, "id": 9001, "name": "__x__"}, {"id": 9002, "kind": api_ts.NAMESPACE, "name": "$a", "children": [{**add, "id": 9003, "name": "$b"}]}]
+    site(tmp_path, "lib", monkeypatch)
+    monkeypatch.setattr(api_ts, "typedoc_json", lambda s: (data, project))
+    assert main(["render", str(tmp_path), "-q", "--strict"]) == 0
+    text = pages(tmp_path)["lib.qmd"]
+    assert "## \\_\\_x\\_\\_ {#__x__}" in text and "## namespace \\$a {#$a}" in text and "### \\$a.\\$b {#$a.$b}" in text
+    html = (tmp_path / "_site/api/lib.html").read_text()
+    assert '<h2 class="anchored" data-anchor-id="__x__">__x__</h2>' in html
+    assert '<h3 class="anchored" data-anchor-id="$a.$b">$a.$b</h3>' in html and "math inline" not in html
+
+
+def test_heading_text_escapes_every_sign() -> None:
+    "Each sign that Markdown, maths or HTML reads is escaped; a `_` inside a word, as in `in_a`, needs nothing."
+    assert api.heading_text("in_a") == "in_a" and api.heading_text("a-b.c") == "a-b.c"
+    assert api.heading_text("a--b...c") == "a\\-\\-b\\.\\.\\.c"
+    env: dict = {}
+    assert ">a--b...c $x$ __y__</h2>" in render(f"## {api.heading_text('a--b...c $x$ __y__')} {{#q}}", env) and env["headings"][0]["text"] == "a--b...c $x$ __y__"
+    assert api.heading_text("_a __b__ $c$ *d* `e` <f> &g [h] {i} #j ~k~ ^l^ 'm' \"n\" @o") == (
+        "\\_a \\_\\_b\\_\\_ \\$c\\$ \\*d\\* \\`e\\` \\<f\\> \\&g \\[h\\] \\{i\\} \\#j \\~k\\~ \\^l\\^ \\'m\\' \\\"n\\\" \\@o"
+    )
+
+
+def test_title_of_a_file_is_escaped(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    "A page's title is Markdown, so a file `$x$.ts` gives the title `$x$`, not the maths `x`."
+    data, project = fixture("app")
+    next(m for m in data["children"] if m["name"] == "src/utils/format")["name"] = "src/utils/$x$"
+    site(tmp_path, "app", monkeypatch)
+    monkeypatch.setattr(api_ts, "typedoc_json", lambda s: (data, project))
+    assert main(["render", str(tmp_path), "-q", "--strict"]) == 0
+    assert pages(tmp_path)["utils/$x$.qmd"].startswith(TOP + 'title: "\\\\$x\\\\$"\n')
+    html = (tmp_path / "_site/api/utils/$x$.html").read_text()
+    assert '<h1 class="title">$x$</h1>' in html and "<title>$x$" in html and "math inline" not in html
+
+
+@pytest.mark.parametrize("name, quoted", [("a#b", "a%23b"), ("a?b", "a%3Fb"), ("a%41b", "a%2541b"), ("a b", "a%20b")])
+def test_file_names_with_hash_query_or_percent_link(tmp_path: Path, monkeypatch: pytest.MonkeyPatch, name: str, quoted: str) -> None:
+    "A file `a#b.ts` gives the page `a#b.qmd`; each link to it, from its folder's index, `_symbols.json`, a name in backticks and `source`, finds it."
+    data, project = fixture("app")
+    mod = next(m for m in data["children"] if m["name"] == "src/utils/format")
+    mod["name"] = f"src/utils/{name}"
+    for c in mod["children"]:
+        c["sources"][0]["fileName"] = f"src/utils/{name}.ts"
+    site(tmp_path, "app", monkeypatch, "  source: https://example.com/app/blob/main\n")
+    monkeypatch.setattr(api_ts, "typedoc_json", lambda s: (data, project))
+    (tmp_path / "index.qmd").write_text("# Home\n\nSee `shout`.\n")
+    assert main(["render", str(tmp_path), "-q", "--strict"]) == 0
+    p = pages(tmp_path)
+    assert p[f"utils/{name}.qmd"].startswith(TOP + f"title: {api.yaml_text(api.heading_text(name))}\n")
+    assert f"| [`{name}`](/api/utils/{quoted}.qmd) |" in p["utils/index.qmd"]
+    assert f"[source](https://example.com/app/blob/main/src/utils/{quoted}.ts#L" in p[f"utils/{name}.qmd"]
+    assert json.loads((tmp_path / "_symbols.json").read_text())["shout"] == f"/api/utils/{quoted}.qmd#shout"
+    assert f'<a href="api/utils/{quoted}.html#shout"><code>shout</code></a>' in (tmp_path / "_site/index.html").read_text()
+    assert f'href="{quoted}.html"' in (tmp_path / "_site/api/utils/index.html").read_text()
+    assert (tmp_path / f"_site/api/utils/{name}.html").exists()
+
+
+def test_link_path_keeps_what_quarto_reads() -> None:
+    "`+page`, `@scope` and `$lib` stay as they are, because Quarto does not decode them; `&` is encoded, so `a&amp;b` is no entity."
+    assert api.link_path("/api/@s/+page/$lib.qmd") == "/api/@s/+page/$lib.qmd"
+    assert api.link_path("/api/a&amp;b #?%.qmd") == "/api/a%26amp;b%20%23%3F%25.qmd"

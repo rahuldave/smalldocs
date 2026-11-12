@@ -35,6 +35,7 @@ from dataclasses import dataclass, is_dataclass
 from pathlib import Path
 from pkgutil import walk_packages
 from types import FunctionType, ModuleType
+from urllib.parse import quote
 
 from fastcore.docments import docments
 
@@ -891,13 +892,27 @@ def type_cell(
     return text.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
 
 
+def heading_text(
+    text: str,  # The text of a heading, such as `fn __x__` or `$a.$b`
+) -> str:  # The same text with each sign of Markdown, maths and HTML escaped by a backslash; a `_` between two letters or digits, as in `in_a`, stays as it is, and so does a lone `-` or `.`
+    "Escape a heading's text, so that `__x__` is no bold, `$a.$b` no maths, `Wrapper<B>` no tag and `a--b` no dash; the heading's id is written apart."
+    return re.sub(r"([\\`*$~^\[\]<>&{}#|'\"@!=]|(?<![^\W_])_|_(?![^\W_])|-(?=-)|(?<=-)-|\.(?=\.)|(?<=\.)\.)", r"\\\1", text)
+
+
+def link_path(
+    path: str,  # A path in the site, such as `/api/a#b.qmd`
+) -> str:  # The path with each character that a link would misread percent-encoded: `#` as `%23`, `?` as `%3F`, `%` as `%25`, a space as `%20`, `&` as `%26`
+    "Write a page's path as a link, so that a `#` or a `?` in a file's name starts no fragment or query; `+`, `@` and `$` stay as they are, as Quarto reads them."
+    return quote(path, safe="/:@!$,;~+=")
+
+
 def front_matter(
-    title: str,  # The page's title
+    title: str,  # The page's title, as plain text; it is escaped, because a title is Markdown
     description: str | None = None,  # Its description; `None` writes none
 ) -> str:  # The front matter, with the mark of a build first, and the blank line after it
     "Begin a Rust or TypeScript page, marked as written by a build, so that a lost manifest leaves no page frozen."
     said = f"description: {yaml_text(description.replace('&lt;', '<'))}\n" if description is not None else ""  # a description is plain text, not Markdown
-    return f"---\n{MARK}\ntitle: {yaml_text(title)}\n{said}---\n\n"
+    return f"---\n{MARK}\ntitle: {yaml_text(heading_text(title))}\n{said}---\n\n"
 
 
 def yaml_text(
@@ -983,9 +998,9 @@ def folder_listing(
             continue
         head, sep, _ = rel[len(prefix) :].partition("/")
         if sep:
-            rows.setdefault(head, (head, f"/{out}/{prefix}{head}/index.qmd", summaries.get(f"{prefix}{head}/index.qmd", "")))
+            rows.setdefault(head, (head, link_path(f"/{out}/{prefix}{head}/index.qmd"), summaries.get(f"{prefix}{head}/index.qmd", "")))
         elif head != "index.qmd":
-            rows[head] = (head.removesuffix(".qmd"), f"/{out}/{prefix}{head}", summaries[rel])
+            rows[head] = (head.removesuffix(".qmd"), link_path(f"/{out}/{prefix}{head}"), summaries[rel])
     return listing(sorted(rows.values(), key=lambda r: r[0].casefold()))
 
 
