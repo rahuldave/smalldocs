@@ -23,6 +23,7 @@ import re
 import shutil
 import subprocess
 import tempfile
+import textwrap
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -160,7 +161,7 @@ class Sources:
         line = src.get("line", 0)
         if not 0 < line <= len(lines):
             return ""
-        return lines[line - 1].comment if alone(lines[line - 1].code, src.get("character", 0)) else ""
+        return prose(lines[line - 1].comment) if alone(lines[line - 1].code, src.get("character", 0)) else ""
 
 
 @dataclass
@@ -427,7 +428,7 @@ def declared_fields(
                 doc = jsdoc_at(raws, k)
             while i < len(code):
                 if depth == 1 and cur is None and (f := FIELD.match(text, i)):
-                    cur = Field(f.group(1), "", bool(f.group(2)), (lines[k].comment if alone(code, i) else "") or doc)
+                    cur = Field(f.group(1), "", bool(f.group(2)), prose((lines[k].comment if alone(code, i) else "") or doc))
                     out.append(cur)
                     doc, i = "", f.end()
                     continue
@@ -481,7 +482,7 @@ def header_comment(
     if not m:
         return ""
     lines = [re.sub(r"^\s*\* ?", "", ln) for ln in m.group(1).split("\n")]
-    return "\n".join(lines).strip("\n").rstrip()
+    return prose("\n".join(lines).strip("\n").rstrip())
 
 
 # ---------------------------------------------------------------- writing it as Markdown
@@ -601,6 +602,60 @@ def type_params(
     return f"<{', '.join(out)}>" if out else ""
 
 
+HTML_TAGS = "b|i|u|s|em|strong|code|pre|br|p|ul|ol|li|kbd|sub|sup|img|span|div|table|thead|tbody|tr|td|th|details|summary|hr|blockquote|dl|dt|dd"
+KEPT = re.compile(  # what a comment means as it is: code spans, HTML tags, a link `<a href>`, autolinks, HTML comments, a `>` that quotes
+    rf"(`+[^`]*`+|</?(?:{HTML_TAGS})\b[^<>]*>|<a\s[^<>]*>|</a>|<[a-z][a-z0-9+.-]*:[^<>\s]*>|<!--.*?-->|(?m:^[ \t]*>+))", re.S
+)
+
+
+def prose(
+    text: str,  # A comment's text, as Markdown
+) -> str:  # The same, with `<` and `>` escaped outside code spans and HTML tags
+    "Escape the angle brackets of a comment that are no HTML tag, so `vs <label>` shows rather than vanishing as an unknown tag."
+    parts = KEPT.split(text)
+    return "".join(x if k % 2 else re.sub(r"([<>])", r"\\\1", x) for k, x in enumerate(parts))
+
+
+LIST_ITEM = re.compile(r"\s*(?:[-*+]|\d+[.)])\s")
+
+
+def structure(
+    text: str,  # A comment, whose lines a `*` or the code's indentation may have pushed right
+) -> str:  # The same Markdown: prose at the left, lists as lists with their nesting, fenced code as it is
+    "Keep a comment's paragraphs and lists: an indented `- item` stays a list item, and indented prose is no code block."
+    out: list[str] = []
+    fence, shift, base = "", 0, None  # the open fence and its indent; the indent of the list we are in, or `None`
+    for line in text.split("\n"):
+        indent = len(line) - len(line.lstrip())
+        if fence:
+            if line.strip().startswith(fence):
+                fence = ""
+            out.append(line[min(shift, indent) :])
+            continue
+        if line.lstrip().startswith(("```", "~~~")):
+            fence, shift = line.lstrip()[:3], indent
+            out.append(line.lstrip())
+            continue
+        if not line.strip():
+            base = None if out and not out[-1].strip() else base  # two blank lines, or prose after one, end a list
+            out.append("")
+            continue
+        m = LIST_ITEM.match(line)
+        if m and base is None and out and out[-1].strip():
+            if re.match(r"\s*\d+[.)]", line) and not re.match(r"\s*1[.)]", line):
+                out.append(line.lstrip())  # `2024. was` in prose: only a list from 1 breaks a paragraph
+                continue
+            out.append("")  # a list after a line of prose starts its own block
+        if m and base is None:
+            base = indent
+        if base is not None and (m or indent > base):
+            out.append(line[min(base, indent) :])  # inside a list: keep the nesting
+        else:
+            base = None
+            out.append(line.lstrip())
+    return "\n".join(out)
+
+
 def comment_text(
     parts: list[dict] | None,  # The parts of a comment: text, code and inline tags
 ) -> str:  # The comment as Markdown; a `{@link Name}` becomes `` `Name` ``, which links when linkify is on
@@ -609,8 +664,10 @@ def comment_text(
     for p in parts or []:
         if p.get("kind") == "inline-tag":
             out.append(f"`{p.get('text', '').strip()}`")
-        else:
+        elif p.get("kind") == "code":
             out.append(p.get("text", ""))
+        else:
+            out.append(prose(p.get("text", "")))
     return "".join(out).strip()
 
 
@@ -626,7 +683,7 @@ def doc(
             parts.append(f"Deprecated. {said}".strip())
         elif tag["tag"] in ("@remarks", "@example"):
             parts.append(said)
-    return "\n\n".join(p for p in parts if p)
+    return structure("\n\n".join(p for p in parts if p))
 
 
 def returns_doc(
@@ -776,18 +833,18 @@ class Module:
         if props is not None:
             for f in props:
                 default = f"`{said.defaults[f.name]}`" if f.name in said.defaults else "optional" if f.optional else "required"
-                rows.append([f"`{f.name}`", inline_code(f.type), default, one_line(f.doc)])
+                rows.append([f"`{f.name}`", type_cell(f.type), default, one_line(f.doc)])
                 gaps += [] if f.doc else [f"({f.name}): no comment"]
         else:
             for i, p in enumerate(sig.get("parameters", [])):
                 flags = p.get("flags", {})
                 text = (said.params[i] if i < len(said.params) else "") or doc(p)
                 default = "" if flags.get("isRest") else f"`{p['defaultValue']}`" if p.get("defaultValue") else "optional" if flags.get("isOptional") else "required"
-                rows.append([f"`{param_name(p)}`", inline_code(type_text(p.get("type"))), default, one_line(text)])
+                rows.append([f"`{param_name(p)}`", type_cell(type_text(p.get("type"))), default, one_line(text)])
                 gaps += [] if text else [f"({param_name(p)}): no comment"]
         if not constructor and not is_void(sig.get("type")):
             text = said.returns or returns_doc(sig)
-            rows.append(["returns", inline_code(type_text(sig.get("type"))), "", one_line(text)])
+            rows.append(["returns", type_cell(type_text(sig.get("type"))), "", one_line(text)])
             gaps += [] if text or props is not None else [": no return comment"]  # a component returns what it draws
         return rows, gaps
 
@@ -828,7 +885,7 @@ class Module:
         if kind == ALIAS:
             return self.parts(f"type {short}{type_params(c)} = {type_text(c.get('type'))}", doc(c)), gaps
         if kind == ENUM:
-            rows = [[f"`{m['name']}`", inline_code(type_text(m.get("type"))), one_line(self.src.comment(m) or doc(m))] for m in c.get("children", []) if m["kind"] == MEMBER]
+            rows = [[f"`{m['name']}`", type_cell(type_text(m.get("type"))), one_line(self.src.comment(m) or doc(m))] for m in c.get("children", []) if m["kind"] == MEMBER]
             return self.parts(f"enum {short}", doc(c), table(rows, ["Member", "Value", "Description"])), gaps
         if kind == VARIABLE:
             word = "const" if c.get("flags", {}).get("isConst") else "let"
@@ -850,16 +907,14 @@ def fields_table(
     fields: list[Field],  # The fields of an interface, a type or a class
 ) -> str:  # A Markdown table of them: type and description; empty when there are none
     "Describe an object type by its fields."
-    return table([[f"`{f.name}`" + ("?" if f.optional else ""), inline_code(f.type), one_line(f.doc)] for f in fields], ["Field", "Type", "Description"])
+    return table([[f"`{f.name}`" + ("?" if f.optional else ""), type_cell(f.type), one_line(f.doc)] for f in fields], ["Field", "Type", "Description"])
 
 
-def inline_code(
+def type_cell(
     text: str,  # A type, as TypeScript writes it
-) -> str:  # It as inline code, so that `<T>` is no HTML tag; empty for no type
+) -> str:  # It as plain text, as on the Python pages, with what Markdown would read escaped: `<T>` is no HTML tag
     "Write a type for a table cell."
-    if not text:
-        return ""
-    return f"`` {text} ``" if "`" in text else f"`{text}`"
+    return re.sub(r"([\\`*<>$_\[\]&])", r"\\\1", text)
 
 
 def one_line(
@@ -908,7 +963,7 @@ def modules(
     mods = [c for c in data.get("children", []) if c["kind"] == MODULE]
     if not mods:
         entry = next(iter((data.get("files") or {}).get("entries", {}).values()), "index")
-        name = data.get("name") if data.get("name") not in (None, "", "Documentation") else src.project.name
+        name = str(data.get("name")).rpartition("/")[2] if data.get("name") not in (None, "", "Documentation") else src.project.name
         stem = re.sub(r"\.[cm]?tsx?$", "", Path(entry).name)
         return [Module(name if stem == "index" else stem, data, ids, src)]
     names = [m["name"] for m in mods]
@@ -919,13 +974,79 @@ def modules(
     return [Module(n, m, ids, src) for n, m in zip(names, mods, strict=True)]
 
 
-def stems(
+def page_paths(
     mods: list[Module],  # The modules
-) -> list[str]:  # The file name of each one's page, without `.qmd`: its last part, or its whole name when two share that
-    "Name each module's page; never `index`, which would take the place of the reference's own front page."
-    shorts = [m.name.rpartition("/")[2] for m in mods]
-    out = [short if shorts.count(short) == 1 else m.name.replace("/", "-") for m, short in zip(mods, shorts, strict=True)]
-    return unique([f"{x}-module" if x == "index" else x for x in out])
+) -> list[str]:  # The path of each one's page in `out`, without `.qmd`, as its folders: `components/Badge`
+    "Place each module's page as its file is placed; a module named as a folder, from its `index.ts`, is that folder's `index`."
+    names, spelt = [m.name for m in mods], {}
+    out = []
+    for n in names:
+        parts = n.split("/")
+        if any(part in ("", ".", "..") for part in parts):
+            raise ValueError(f"a TypeScript module has a name that is no path inside api.out: {n!r}")
+        for k in range(1, len(parts)):  # a folder keeps the spelling it first had: `A/x` and `a/y` share one folder, as on macOS
+            parts[k - 1] = spelt.setdefault("/".join(parts[:k]).casefold(), parts[k - 1])
+        if any(o.casefold().startswith(n.casefold() + "/") for o in names):
+            parts.append("index")
+        elif parts[-1].casefold() == "index":
+            parts[-1] += "-module"  # `index.qmd` is the page of its folder
+        out.append("/".join(parts))
+    return unique(out)
+
+
+def folder_index(
+    folder: str,  # A folder of pages in `out`, such as `components`; empty for `out` itself
+    rels: list[str],  # The paths of every page, as `page_paths` gives them
+) -> str:  # The list of the folder's pages and subfolders, each a link, in name order
+    "List what one folder of the reference holds, for its `index.qmd`."
+    pages, subs, prefix = [], set(), f"{folder}/" if folder else ""
+    for rel in rels:
+        parent, _, leaf = rel.rpartition("/")
+        if parent == folder and leaf != "index":
+            pages.append(leaf)
+        elif rel.startswith(prefix) and "/" in rel[len(prefix) :]:
+            subs.add(rel[len(prefix) :].split("/")[0])
+    items = [(n, f"{n}.qmd") for n in pages] + [(n, f"{n}/index.qmd") for n in subs]
+    return "\n".join(f"- [{n}]({href})" for n, href in sorted(items, key=lambda x: x[0].casefold()))
+
+
+def written_pages(
+    s: Settings,  # The settings
+    mods: list[Module],  # The modules
+) -> tuple[dict[str, str], set[str], dict[str, str]]:  # Each page's text by its path in `out`; the folders' own index pages; the index of names
+    "Write every page in memory: one per module, in its folder, and an `index.qmd` for each folder that lists its pages."
+    rels = page_paths(mods)
+    out: dict[str, str] = {}
+    names: dict[str, str] = {}
+    for mod, rel in zip(mods, rels, strict=True):
+        out[f"{rel}.qmd"] = page(s, mod)
+        for id_ in unique([n for _, n, _ in mod.items()]):
+            target = f"/{s.out}/{rel}.qmd#{id_}"
+            names.setdefault(id_, target)
+            names[f"{mod.name}.{id_}"] = target
+    folders = {""} | {"/".join(r.split("/")[:k]) for r in rels for k in range(1, r.count("/") + 1)}
+    made = set()
+    for folder in sorted(folders):
+        key, listing = f"{folder}/index.qmd" if folder else "index.qmd", folder_index(folder, rels)
+        if key in out:
+            out[key] = out[key].rstrip("\n") + "\n\n" + listing + "\n"
+        else:
+            title = folder.rpartition("/")[2] or "Reference"  # `out` itself is the reference, so the sidebar has no section named after its folder
+            out[key] = f"---\ntitle: {json.dumps(title)}\n---\n\n{listing}\n"
+            made.add(key)
+    return out, made, names
+
+
+def inside(
+    out_dir: Path,  # The folder of pages
+    rel: str,  # A path in it, from the manifest or from `page_paths`
+) -> Path | None:  # The file, when the path is a `.qmd` that stays inside the folder; `None` otherwise
+    "Check that a page's path stays inside `out`: relative, no `..`, a `.qmd`."
+    parts = rel.split("/")
+    if not rel.endswith(".qmd") or rel.startswith("/") or "\\" in rel or any(x in ("", ".", "..") for x in parts):
+        return None
+    f = out_dir / rel
+    return f if out_dir in f.resolve().parents else None
 
 
 def unique(
@@ -951,7 +1072,7 @@ def page(
     "Write one module's page: front matter, the module's comment, then an entry for each item, with an id and a source link."
     said = mod.summary()
     head, _, rest = said.partition("\n\n")
-    rest = rest.strip("\n").rstrip()
+    rest = structure(textwrap.dedent(rest.strip("\n"))).rstrip()  # prose indented under a `*` is no code block
     out = [rest] if rest else []
     again = [f"`{c['name']}`" for c in mod.node.get("children", []) if c["kind"] == REFERENCE]
     if again:
@@ -962,7 +1083,7 @@ def page(
         link = source_link(s, mod.src, c)
         body, _ = mod.entry(c, name, level)
         out.append("\n\n".join(p for p in [f"{'#' * level} {word}{name} {{#{id_}}}", link, body] if p))
-    front = f"---\ntitle: {json.dumps(mod.name)}\ndescription: {json.dumps(one_line(head))}\n---\n\n"
+    front = f"---\ntitle: {json.dumps(mod.name.rpartition('/')[2])}\ndescription: {json.dumps(one_line(head))}\n---\n\n"
     return front + "\n\n".join(out) + "\n"
 
 
@@ -981,33 +1102,55 @@ def build(
     out_dir = (s.site / s.out).resolve()
     if s.site.resolve() not in out_dir.parents:
         raise ValueError(f"api.out {s.out!r} must be a folder inside the site, such as api")
-    mods = load(s)
+    texts, made, index = written_pages(s, load(s))
     out_dir.mkdir(parents=True, exist_ok=True)
     manifest = out_dir / ".smalldocs-api"
     before = set(manifest.read_text(encoding="utf-8").split("\n")) if manifest.exists() else set()
-    index: dict[str, str] = {}
-    written = []
-    for mod, stem in zip(mods, stems(mods), strict=True):
-        f = out_dir / f"{stem}.qmd"
-        text = page(s, mod)
-        if not f.exists() or f.read_text(encoding="utf-8") != text:
-            f.write_text(text, encoding="utf-8")
-        written.append(f)
-        for id_ in unique([n for _, n, _ in mod.items()]):
-            target = f"/{s.out}/{stem}.qmd#{id_}"
-            index.setdefault(id_, target)
-            index[f"{mod.name}.{id_}"] = target
-    names = {f.name for f in written}
-    for stale in sorted(before - names):
-        f = out_dir / stale
-        if stale.endswith(".qmd") and "/" not in stale and f.is_file():
-            f.unlink()  # only a page that an earlier build wrote, and this one did not
-    manifest.write_text("\n".join(sorted(names)), encoding="utf-8")
+    written, mine, done = [], set(), False
+    try:
+        write_pages(out_dir, texts, made, before, written, mine)
+        done = True
+    finally:
+        manifest.write_text("\n".join(sorted(mine if done else before | mine)), encoding="utf-8")  # a stopped build keeps what it wrote
+    kept = {m.casefold() for m in mine}
+    for stale in sorted(before - mine):
+        f = inside(out_dir, stale)
+        if f is not None and f.is_file() and stale.casefold() not in kept:
+            f.unlink()  # only a page that an earlier build wrote, and this one did not; `Components/x` is `components/x` on macOS
+            for d in f.parents:
+                if d == out_dir or any(d.iterdir()):
+                    break
+                d.rmdir()  # a folder the pages left empty
     sym = s.site / "_symbols.json"
     text = json.dumps(index, indent=1)
     if not sym.exists() or sym.read_text(encoding="utf-8") != text:
         sym.write_text(text, encoding="utf-8")
     return written
+
+
+def write_pages(
+    out_dir: Path,  # The folder of pages
+    texts: dict[str, str],  # Each page's text by its path in `out_dir`
+    made: set[str],  # The folders' own index pages, which a hand-written one replaces
+    before: set[str],  # The pages the last build wrote, from its manifest
+    written: list[Path],  # In: empty. Out: the files written
+    mine: set[str],  # In: empty. Out: the paths written, for the manifest
+) -> None:
+    "Write the pages; never over a page that no build wrote, except where a hand-written folder index stands, which stays."
+    ours = {b.casefold() for b in before}  # `Components/x` is `components/x` on macOS
+    for rel, text in texts.items():
+        f = inside(out_dir, rel)
+        if f is None:
+            raise ValueError(f"a TypeScript page would leave api.out: {rel!r}")
+        if f.exists() and rel.casefold() not in ours and f.read_text(encoding="utf-8") != text:
+            if rel in made:
+                continue  # a folder's index page that someone wrote: it stays
+            raise ValueError(f"{f} exists and no earlier API build wrote it; move it, or remove it, and build again")
+        f.parent.mkdir(parents=True, exist_ok=True)
+        if not f.exists() or f.read_text(encoding="utf-8") != text:
+            f.write_text(text, encoding="utf-8")
+        written.append(f)
+        mine.add(rel)
 
 
 def check(
