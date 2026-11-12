@@ -1701,6 +1701,153 @@ def test_api_typevars_newtypes_and_callables(tmp_path: Path) -> None:
     assert "f(x: T, u: UID, c: Callable[[int], str]) -> T" in (tmp_path / "docs/api/m.qmd").read_text()
 
 
+MAHA = """\"Module.\"
+from __future__ import annotations
+
+from typing import Any
+
+KEYS = frozenset({"alpha", "beta", "gamma", "delta", "eps"})
+
+
+def f(
+    a: int,  # A
+    *xs: int,  # More
+    **kw: Any,  # The rest
+) -> int:  # R
+    \"F.\"
+    return a
+
+
+def g(
+    a: int,  # A
+) -> None:
+    \"G.\"
+
+
+def h(
+    keys: frozenset = KEYS,  # The keys
+) -> int:  # R
+    \"H.\"
+    return 1
+
+
+class C:
+    \"C.\"
+
+    def discard(self) -> int:  # R
+        \"D.\"
+        return 1
+
+    abandon = discard
+
+
+class Meta(type):
+    \"Meta.\"
+
+    def __call__(cls, *args, **kwargs):
+        return super().__call__(*args, **kwargs)
+
+
+class M(metaclass=Meta):
+    \"M.\"
+
+    def __init__(
+        self,
+        x: int,  # X
+        *items: str,  # The items
+        **opts: int,  # The options
+    ) -> None:
+        self.x = x
+
+
+class Child(M):
+    \"A class that inherits its __init__.\"
+
+
+class Tagged(frozenset):
+    \"A frozenset with its own repr.\"
+
+    def __repr__(self) -> str:
+        return "Tagged<custom>"
+
+
+def k(
+    nums: frozenset = frozenset({100, 2, 10, 1}),  # Numbers
+    tags: frozenset = Tagged({"q", "r"}),  # Tags
+    nest: frozenset = frozenset({frozenset({"a"}), frozenset({"b"}), frozenset({"c"})}),  # Sets of sets
+    pairs: frozenset = frozenset({(frozenset({"a"}),), (frozenset({"b"}),), (frozenset({"c"}),)}),  # Tuples of sets
+) -> int:  # R
+    \"K.\"
+    return 1
+"""
+
+
+def maha(tmp_path: Path):
+    "Import the module of the cases that MahaCata's docs met."
+    import importlib.util
+
+    write(tmp_path, {"maha.py": MAHA})
+    spec = importlib.util.spec_from_file_location("maha", tmp_path / "maha.py")
+    mod = importlib.util.module_from_spec(spec)
+    sys.modules["maha"] = mod
+    spec.loader.exec_module(mod)
+    return mod
+
+
+def test_api_reads_the_docments_of_args_and_kwargs(tmp_path: Path) -> None:
+    "A comment beside `*args` or `**kwargs` is its docment, and such a row has no default and is not required."
+    from smalldocs import api
+
+    m = maha(tmp_path)
+    rows = api.params_table(m.f, m).splitlines()
+    assert "| `xs` | int |  | More |" in rows and "| `kw` | Any |  | The rest |" in rows
+    assert api.gaps_of(m.f) == []
+
+
+def test_api_return_none_needs_no_docment_under_future_annotations(tmp_path: Path) -> None:
+    "`-> None` is the string 'None' under `from __future__ import annotations`; it needs no docment, as the page shows no return row."
+    from smalldocs import api
+
+    m = maha(tmp_path)
+    assert api.gaps_of(m.g) == [] and "returns" not in api.params_table(m.g, m)
+
+
+def test_api_set_defaults_are_sorted(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    "A set default is written in sorted order, numbers as numbers, so the page is the same under any hash seed; a set with its own repr keeps it."
+    write(tmp_path, {"maha.py": MAHA})
+    script = "import sys; sys.path.insert(0, sys.argv[1]); import maha; from smalldocs import api; print(api.params_table(maha.h, maha), api.params_table(maha.k, maha))"
+    outs = set()
+    for seed in ("1", "2", "3", "4", "5", "6", "7", "8"):
+        monkeypatch.setenv("PYTHONHASHSEED", seed)
+        outs.add(subprocess.run([sys.executable, "-c", script, str(tmp_path)], capture_output=True, text=True, check=True).stdout)
+    assert len(outs) == 1 and "frozenset({'alpha', 'beta', 'delta', 'eps', 'gamma'})" in outs.pop()
+    from smalldocs import api
+
+    m = maha(tmp_path)
+    table = api.params_table(m.k, m)
+    assert "frozenset({1, 2, 10, 100})" in table and "Tagged<custom>" in table
+    assert "frozenset({frozenset({'a'}), frozenset({'b'}), frozenset({'c'})})" in table
+    assert "frozenset({(frozenset({'a'}),), (frozenset({'b'}),), (frozenset({'c'}),)})" in table
+
+
+def test_api_method_alias_is_one_entry(tmp_path: Path) -> None:
+    "An alias in a class body, `abandon = discard`, lists the method once."
+    from smalldocs import api
+
+    m = maha(tmp_path)
+    assert [f.__name__ for f in api.methods(m.C)] == ["discard"]
+
+
+def test_api_class_hidden_by_a_metaclass_takes_the_init_signature(tmp_path: Path) -> None:
+    "A class whose metaclass makes its signature `(*args, **kwargs)` is written with the parameters of its `__init__`."
+    from smalldocs import api
+
+    m = maha(tmp_path)
+    assert api.signature(m.M, m) == "(x: int, *items: str, **opts: int)" == api.signature(m.Child, m) and api.signature(m.C, m) == "()"
+    rows = api.params_table(m.M, m).splitlines()
+    assert "| `x` | int | required | X |" in rows and "| `items` | str |  | The items |" in rows and "| `opts` | int |  | The options |" in rows
+
+
 def test_api_function_default_by_name() -> None:
     "A function given as a default is written by its name, with no memory address, so a page is the same at each build."
     from smalldocs import api

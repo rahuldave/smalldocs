@@ -192,7 +192,7 @@ def methods(
     "List the methods a class defines itself, in source order, not what it inherits."
     found = [(n, unwrapped(o)) for n, o in vars(klass).items() if not is_dunder(n)]
     own_ = [o for n, o in found if (private or not n.startswith("_")) and inspect.isfunction(o)]
-    return sorted(own_, key=line_of)
+    return sorted({id(o): o for o in own_}.values(), key=line_of)  # an alias, `abandon = discard`, is one entry
 
 
 def held(
@@ -281,7 +281,25 @@ def default_text(
     "Write a default value; a function's repr holds its memory address, which changes at each build, so a function is written by its name."
     if inspect.isfunction(value) or inspect.isbuiltin(value) or inspect.ismethod(value):
         return value.__qualname__
+    if isinstance(value, (set, frozenset)) and value and type(value).__repr__ in (set.__repr__, frozenset.__repr__):
+        # a set of strings is in the order of the hash seed, so sort it to keep the page the same: numbers as numbers, the rest by
+        # their text, because `<` between sets means "is a subset of" and orders nothing. Only the set at the top level is sorted
+        numbers = all(isinstance(v, (int, float)) for v in value)
+        ordered = sorted(value) if numbers else sorted(value, key=default_text)
+        items = ", ".join(default_text(v) for v in ordered)
+        return f"{{{items}}}" if type(value) is set else f"{type(value).__name__}({{{items}}})"
     return re.sub(r" at 0x[0-9a-f]+", "", repr(value))  # no memory address, as in `type_text`
+
+
+def signature_of(
+    sym: Code,  # A function, method or class
+) -> inspect.Signature:  # Its signature; for a class with an `__init__`, never only `(*args, **kwargs)`
+    "Read a signature; when a metaclass's `__call__` hides a class's `__init__`, read that of `__init__`."
+    sig = inspect.signature(sym)
+    kinds = [p.kind for p in sig.parameters.values()]
+    if inspect.isclass(sym) and kinds == [inspect.Parameter.VAR_POSITIONAL, inspect.Parameter.VAR_KEYWORD] and sym.__init__ is not object.__init__:
+        return inspect.signature(sym.__init__)  # its own `__init__`, or one it inherits
+    return sig
 
 
 def signature(
@@ -289,7 +307,7 @@ def signature(
     mod: ModuleType,  # The module it was written in
 ) -> str:  # Its parameters and return as one line of Python, without the name
     "Write a signature as one line of Python: each parameter with its type and default."
-    sig, parts, star = inspect.signature(sym), [], False
+    sig, parts, star = signature_of(sym), [], False
     for p in sig.parameters.values():
         if p.name in ("self", "cls"):
             continue
@@ -331,7 +349,7 @@ def safe_docments(
 ) -> dict:  # Each parameter's annotation, default and docment, under its name, and `return`
     "Read the docments, or, for code with no source (made by `exec`, or compiled), the signature alone."
     try:
-        return docments(sym, full=True)
+        return docments(sym, full=True, args_kwargs=True)
     except (OSError, TypeError, SyntaxError):
         from types import SimpleNamespace
 
@@ -342,6 +360,17 @@ def safe_docments(
         out = {n: SimpleNamespace(anno=p.annotation, default=p.default, docment=None) for n, p in sig.parameters.items()}
         out["return"] = SimpleNamespace(anno=sig.return_annotation, default=EMPTY, docment=None)
         return out
+
+
+def starred(
+    sym: Code,  # A function, method or class
+) -> set[str]:  # The names of its `*args` and `**kwargs`, which take no default and are never required
+    "Find the names of the `*args` and `**kwargs` of a function."
+    try:
+        params = signature_of(sym).parameters.values()
+    except (TypeError, ValueError):
+        return set()
+    return {p.name for p in params if p.kind in (p.VAR_POSITIONAL, p.VAR_KEYWORD)}
 
 
 def params_table(
@@ -358,7 +387,7 @@ def params_table(
             if d.anno is not EMPTY and d.anno is not None and d.anno != "None":
                 rows.append(["returns", anno, "", d.docment or ""])
             continue
-        default = "required" if d.default is EMPTY else f"`{default_text(d.default)}`"
+        default = "" if name in starred(sym) else "required" if d.default is EMPTY else f"`{default_text(d.default)}`"
         rows.append([f"`{name}`", anno, default, d.docment or ""])
     return table(rows, ["Parameter", "Type", "Default", "Description"])
 
@@ -544,7 +573,7 @@ def gaps_of(
         if pname == "return":
             if d.anno is EMPTY and not is_class:
                 out.append(f"{name}: no return type")
-            elif d.anno is not None and not d.docment and not is_class:
+            elif d.anno is not None and d.anno != "None" and not d.docment and not is_class:  # `None` is a string under `from __future__ import annotations`
                 out.append(f"{name}: no return docment")
             continue
         if d.anno is EMPTY:

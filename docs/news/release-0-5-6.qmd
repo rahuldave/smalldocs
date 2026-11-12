@@ -1,0 +1,28 @@
+---
+title: smalldocs 0.5.6
+subtitle: Fixes to the API reference, and a smaller package
+date: 2026-11-11
+author: Rahul Dave
+categories: [release]
+image: ../images/mark.svg
+---
+
+This release fixes five problems in the API reference. The build of another project's docs showed them.
+
+- A comment beside `*args` or `**kwargs` is now its description. The row of such a parameter shows no
+  default, where it said "required" before. The comment beside `**kwargs` needs fastcore 2.0 or later.
+- Under `from __future__ import annotations`, `-> None` needs no comment. `smalldocs api check` asked
+  for one, but the page shows no row for a return of `None`.
+- The page writes a default that is a set or a frozenset in sorted order. Before, the order of a set of
+  strings changed with each build, so the page changed too.
+- The page lists a method that has an alias in its class, such as `abandon = discard`, once. Before, it
+  listed the method twice.
+- A class whose metaclass hides its signature shows the parameters of its `__init__`, not
+  `(*args, **kwargs)`.
+
+A page changes only where it has one of these cases. The most common case is a row for `*args` or
+`**kwargs`, which now has an empty Default column.
+
+The source package on PyPI, the `.tar.gz` file, now leaves out the folders `.agents`, `.claude` and
+`.gest`. The source package of 0.5.5 held the folder `.gest`, which has the task notes of an agent. The
+wheel never held them.
