@@ -80,6 +80,7 @@ api:
   root: ..                           # the root of the repository, from the folder of the project
   source: https://github.com/me/mypkg/blob/main   # each entry links to its line here
   check: ["*.py", "tests/**/*.py"]   # more files that `smalldocs api check` holds to the convention
+  check-shown: true                  # `smalldocs api check` holds the packages only to what the pages show
 ```
 
 In a `_quarto.yml`, write the same section under `smalldocs:`, as `smalldocs.api`.
@@ -91,6 +92,7 @@ In a `_quarto.yml`, write the same section under `smalldocs:`, as `smalldocs.api
 | `root` | The root of the repository, from the folder of the project. The globs of `check` start here | `..`, or `.` when the folder of the project holds `pyproject.toml` or `.git` |
 | `source` | The address of the code. Each entry links to its line there | None: no links to the code |
 | `check` | Globs of more files that `smalldocs api check` holds to the convention | None: only the packages |
+| `check-shown` | `smalldocs api check` holds the packages only to what the pages show, as `--shown` does. Write `true` or `false` with no quotes | Off: every name |
 | `linkify` | Names in backticks link to their entries. The top-level `linkify` wins over it | On |
 
 Each build then writes a page `api/<module>.qmd` for each public module. A module is public when no
@@ -173,6 +175,7 @@ smalldocs api build --dir docs        # write the pages and the index
 smalldocs api module site --dir docs  # print one module as Markdown, for people and agents
 smalldocs api list --dir docs         # every module, class, method and function, one line each
 smalldocs api check --dir docs        # what is typed and documented, and every gap; exit 1 if any
+smalldocs api check --shown --dir docs  # the same, for only what the pages show
 ```
 
 `check` reports each gap in the code:
@@ -183,6 +186,16 @@ smalldocs api check --dir docs        # what is typed and documented, and every 
 - a return value without a type or a docment
 - a field of a pydantic model without a description or a comment
 - a key of a `TypedDict` without a comment
+
+By default, `check` looks at every function, class and method of a package, the private ones too. A
+private name starts with `_`. With `--shown`, or with `check-shown: true` in the `api` section, it looks
+only at what the pages show:
+
+- the public functions and classes of each module. When a module has `__all__`, only the public names in it
+- the public methods of each of these classes
+
+`--shown` does not change the files of the `check` globs, because they have no pages. `check` still
+looks at every name in them.
 
 The globs of `api.check` start at the root of the repository. In them, `*` stays inside one folder,
 and `**/` is any number of folders, or none. So `*.py` finds the files at the root only, and

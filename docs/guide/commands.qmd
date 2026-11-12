@@ -47,11 +47,13 @@ If it finds anything, the exit code is 1.
 
 ```bash
 smalldocs api build|check|list [--dir DIR]
+smalldocs api check --shown [--dir DIR]
 smalldocs api module NAME [--dir DIR]
 ```
 
 `api` makes the reference pages, checks the docments, lists the documented names, or prints one module as
-Markdown. See [The API reference](api.qmd).
+Markdown. With `--shown`, `check` looks only at what the pages show, and leaves out private names and
+names outside `__all__`. See [The API reference](api.qmd).
 
 ## publish
 

@@ -1,0 +1,24 @@
+---
+title: smalldocs 0.5.7
+subtitle: api check can hold only what the pages show
+date: 2026-11-11
+author: Rahul Dave
+categories: [release]
+image: ../images/mark.svg
+---
+
+`smalldocs api check` has a new option, `--shown`. With it, `check` looks only at what the reference
+pages show:
+
+- the public functions and classes of each module. When a module has `__all__`, only the public names in it
+- the public methods of each of these classes
+
+So a private helper without a docstring is no longer a gap. A private name starts with `_`.
+
+The setting `check-shown: true` in the `api` section of `_smalldocs.yml` does the same. A project can
+then use it in its tests or in CI with no change to the command.
+
+The option does not change the files of the `check` globs, such as the tests. They have no pages, so
+`check` still looks at every name in them.
+
+Without the option, `check` works as before. The pages do not change.

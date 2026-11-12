@@ -1861,3 +1861,153 @@ def test_api_function_default_by_name() -> None:
 
     assert api.signature(add, sys.modules[__name__]) == "(x: int = 1, ask = test_api_function_default_by_name.<locals>.ask) -> None"
     assert api.default_text(print) == "print" and api.default_text("a") == "'a'"
+
+
+SHOWNPKG = {
+    "src/shownpkg/__init__.py": '"A package for `api check --shown`."\n',
+    "src/shownpkg/withall.py": '''
+        "A module with `__all__`."
+
+        __all__ = ["Pub"]
+
+
+        class Pub:
+            "A public class."
+
+            def go(self) -> int:  # One
+                "Go."
+                return 1
+
+            def _helper(self, y):
+                return y
+
+
+        def outside(x):
+            return x
+
+
+        def _helper(x):
+            return x
+        ''',
+    "src/shownpkg/noall.py": '''
+        "A module with no `__all__`."
+
+
+        class K:
+            "A class."
+
+            def run(self) -> None:  # Nothing
+                "Run."
+
+            def _priv(self, y):
+                return y
+
+
+        def bare(x):
+            return x
+
+
+        def _hidden(x):
+            return x
+        ''',
+    "tests/test_t.py": '"Tests."\n\n\ndef _t(x):\n    return x\n',
+    "docs/_smalldocs.yml": """
+        api:
+          packages: [shownpkg]
+          check: ["tests/*.py"]
+        """,
+    "clean/_smalldocs.yml": """
+        api:
+          packages: [shownpkg]
+          root: ..
+          check-shown: true
+        """,
+}
+
+
+def shownpkg(
+    tmp_path: Path,  # The folder to write the package in
+    monkeypatch: pytest.MonkeyPatch,  # Puts its `src` on the path
+) -> tuple:  # The modules `withall` and `noall`
+    "Write and import the package of the `--shown` cases."
+    write(tmp_path, SHOWNPKG)
+    for m in [m for m in sys.modules if m.startswith("shownpkg")]:
+        monkeypatch.delitem(sys.modules, m)
+    monkeypatch.syspath_prepend(str(tmp_path / "src"))
+    import importlib
+
+    return importlib.import_module("shownpkg.withall"), importlib.import_module("shownpkg.noall")
+
+
+def test_api_check_shown_holds_all_and_leaves_private_names(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    "With `shown`, check holds only the names in `__all__` and their public methods; by default it still holds the private ones and the rest."
+    from smalldocs import api
+
+    withall, _ = shownpkg(tmp_path, monkeypatch)
+    assert [g for gs in api.gaps(withall, shown=True).values() for g in gs] == []
+    found = [g for gs in api.gaps(withall).values() for g in gs]
+    assert "shownpkg.withall:_helper: no docstring" in found and "shownpkg.withall:outside: no docstring" in found
+    assert "shownpkg.withall:Pub._helper: no docstring" in found
+
+
+def test_api_check_shown_without_all_holds_every_public_name(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    "A module with no `__all__`: `shown` holds every public name and leaves out the private ones."
+    from smalldocs import api
+
+    _, noall = shownpkg(tmp_path, monkeypatch)
+    found = [g for gs in api.gaps(noall, shown=True).values() for g in gs]
+    assert "shownpkg.noall:bare: no docstring" in found and "shownpkg.noall:bare(x): no type" in found
+    assert not [g for g in found if "_hidden" in g or "_priv" in g]
+    assert "shownpkg.noall:_hidden: no docstring" in [g for gs in api.gaps(noall).values() for g in gs]
+
+
+def test_api_check_shown_and_a_private_method(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    "A class's private method is held by default and left out with `shown`, as its page leaves it out; the public one is held in both."
+    from smalldocs import api
+
+    withall, noall = shownpkg(tmp_path, monkeypatch)
+    names = lambda mod, shown: [s.__qualname__ for s in api.held(mod, shown)]  # noqa: E731
+    assert names(noall, False) == ["K", "K.run", "K._priv", "bare", "_hidden"] and names(noall, True) == ["K", "K.run", "bare"]
+    assert names(withall, False) == ["Pub", "Pub.go", "Pub._helper", "outside", "_helper"] and names(withall, True) == ["Pub", "Pub.go"]
+    for mod in (withall, noall):
+        page = [x.name for x in api.inventory(["shownpkg"]) if x.name and x.module == mod.__name__]
+        assert names(mod, True) == page, "check and the page list the same symbols"
+        assert [line.split(" ", 1)[1] for line in api.module_markdown(mod).splitlines() if line.startswith(("## ", "### "))] == [
+            ("class " if isinstance(s, type) else "") + s.__qualname__ for s in api.held(mod, True)
+        ]
+
+
+def test_api_check_shown_flag_and_setting(tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture) -> None:
+    "`--shown` and `check-shown: true` hold the packages only to what the pages show; the files of `check` are still held in full."
+    shownpkg(tmp_path, monkeypatch)
+    d, clean = str(tmp_path / "docs"), str(tmp_path / "clean")
+    assert main(["api", "check", "--dir", d]) == 1
+    out = capsys.readouterr().out
+    assert "shownpkg.withall:_helper: no docstring" in out and "tests/test_t.py:_t: no docstring" in out
+    assert main(["api", "check", "--shown", "--dir", d]) == 1
+    out = capsys.readouterr().out
+    assert "_helper" not in out and "shownpkg.withall:outside" not in out and "shownpkg.noall:bare: no docstring" in out
+    assert "tests/test_t.py:_t: no docstring" in out, "a file of `check` is not a page, so it is held in full"
+    assert main(["api", "check", "--dir", clean]) == 1
+    out = capsys.readouterr().out
+    assert "_hidden" not in out and "_priv" not in out and "shownpkg.noall:bare: no docstring" in out
+    (tmp_path / "clean/_smalldocs.yml").write_text("api:\n  packages: [shownpkg]\n  root: ..\n  check-shown: false\n")
+    assert main(["api", "check", "--dir", clean]) == 1
+    assert "shownpkg.noall:_hidden: no docstring" in capsys.readouterr().out
+
+
+def test_api_check_shown_setting_in_quarto_and_bad_values(tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture) -> None:
+    "`smalldocs.api.check-shown` works in a `_quarto.yml`; a value that is not true or false, and `--shown` on another action, stop with exit 2."
+    shownpkg(tmp_path, monkeypatch)
+    write(tmp_path, {"q/_quarto.yml": "project:\n  type: website\nsmalldocs:\n  api:\n    packages: [shownpkg]\n    root: ..\n    check-shown: true\n"})
+    q = str(tmp_path / "q")
+    assert main(["api", "check", "--dir", q]) == 1
+    out = capsys.readouterr().out
+    assert "shownpkg.noall:bare: no docstring" in out and "_hidden" not in out and "_priv" not in out
+    (tmp_path / "q/_quarto.yml").write_text("project:\n  type: website\nsmalldocs:\n  api:\n    packages: [shownpkg]\n    root: ..\n    check-shown: \"true\"\n")
+    assert main(["api", "check", "--dir", q]) == 2
+    assert "check-shown must be true or false, not 'true'" in capsys.readouterr().err
+    d = str(tmp_path / "docs")
+    for action in (["list"], ["build"], ["module", "noall"]):
+        assert main(["api", *action, "--shown", "--dir", d]) == 2
+        assert "--shown is for check only" in capsys.readouterr().err

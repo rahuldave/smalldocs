@@ -45,7 +45,7 @@ def cmd_api(
     "Make or check the API reference."
     from .api import main as api_main
 
-    return api_main(args.dir, args.action, args.name)
+    return api_main(args.dir, args.action, args.name, args.shown)
 
 
 def cmd_publish(
@@ -132,6 +132,7 @@ def parser() -> argparse.ArgumentParser:  # The parser for every command
     a.add_argument("action", choices=["build", "check", "module", "list"], help="build: the pages; check: the gaps; module NAME: one module; list: every symbol")
     a.add_argument("name", nargs="?", help="the module, for `module`")
     a.add_argument("--dir", default=".", help="the project folder, whose config has the api settings")
+    a.add_argument("--shown", action="store_true", help="for `check`: hold the packages only to what their pages show: no private names, and only `__all__` when a module has one")
     a.set_defaults(func=cmd_api)
 
     g = sub.add_parser("publish", help="build and push the site to the gh-pages branch")

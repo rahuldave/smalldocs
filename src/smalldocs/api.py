@@ -195,12 +195,20 @@ def methods(
     return sorted({id(o): o for o in own_}.values(), key=line_of)  # an alias, `abandon = discard`, is one entry
 
 
+def entries(
+    mod: ModuleType,  # An imported module
+    private: bool = False,  # Include private names, and names outside `__all__`
+) -> list[tuple[Code, int]]:  # Each function, class and method, with its heading level: 2 at the top, 3 for a method
+    "List the symbols of a module in the order of its page, each class followed by its methods."
+    return [(s, lvl) for t in own(mod, private=private) for s, lvl in [(t, 2), *((m, 3) for m in (methods(t, private=private) if inspect.isclass(t) else []))]]
+
+
 def held(
     mod: ModuleType,  # An imported module
-) -> list[Code]:  # Every function, class and method in it, private ones too
-    "List everything `check` holds to the convention: every function, class and method."
-    tops = own(mod, private=True)
-    return [s for t in tops for s in [t, *(methods(t, private=True) if inspect.isclass(t) else [])]]
+    shown: bool = False,  # Hold only what the module's page shows
+) -> list[Code]:  # Every function, class and method in it, private ones and those outside `__all__` too; or only those its page shows
+    "List everything `check` holds to the convention: every function, class and method, or only what the page shows."
+    return [s for s, _ in entries(mod, private=not shown)]
 
 
 def inventory(
@@ -533,10 +541,7 @@ def module_markdown(
 ) -> str:  # The whole module as plain Markdown
     "Write one module as plain Markdown: its docstring, then an entry for each public symbol."
     parts = [f"# {mod.__name__}", doc(mod)]
-    for top in own(mod):
-        parts.append(entry(top, 2))
-        if inspect.isclass(top):
-            parts += [entry(m, 3) for m in methods(top)]
+    parts += [entry(sym, level) for sym, level in entries(mod)]
     return "\n\n".join(p for p in parts if p) + "\n"
 
 
@@ -585,10 +590,11 @@ def gaps_of(
 
 def gaps(
     mod: ModuleType,  # An imported module
+    shown: bool = False,  # Look only at what the module's page shows
 ) -> dict[str, list[str]]:  # The gaps of each symbol under its name, the module's under its own
     "Find every gap in a module, under the module's name and then under each symbol's."
     out = {mod.__name__: [] if doc(mod) else [f"{mod.__name__}: no module docstring"]}
-    for sym in held(mod):
+    for sym in held(mod, shown):
         out[sym.__qualname__] = gaps_of(sym)
     return out
 
@@ -597,13 +603,15 @@ def check(
     packages: list[str],  # The packages to hold to the convention
     files: list[Path],  # More Python files to hold to it, such as the tests
     root: Path | None = None,  # The folder that the names of the files start from
+    shown: bool = False,  # Hold the packages only to what their pages show; the files are held in full
 ) -> int:  # The exit code: 0 when nothing is missing, 1 otherwise
     "Print how much of each module is typed and documented, then every gap, then the total."
     found, done, total = [], 0, 0
-    mods = [m for p in packages for m in package_modules(p)] + file_modules(files, root)
+    pkg_mods = [m for p in packages for m in package_modules(p)]
+    mods = pkg_mods + file_modules(files, root)
     width = max((len(m.__name__) for m in mods), default=10)
-    for mod in mods:
-        missing = gaps(mod)
+    for i, mod in enumerate(mods):
+        missing = gaps(mod, shown and i < len(pkg_mods))
         found += missing.pop(mod.__name__)
         complete = sum(not g for g in missing.values())
         print(f"{mod.__name__:{width}s} {complete:3d} of {len(missing):3d}")
@@ -628,6 +636,7 @@ class Settings:
     source: str = ""  # The URL that a file's path is added to for its `source` link
     check: tuple[str, ...] = ()  # Globs, from the root, of more files that `check` holds to the convention; `**/` is any folders or none
     linkify: bool = True  # Whether a name in backticks links to its entry
+    shown: bool = False  # Whether `check` holds the packages only to what their pages show, from `check-shown`
 
     @classmethod
     def read(
@@ -643,7 +652,10 @@ class Settings:
         at_root = (site / "pyproject.toml").exists() or (site / ".git").exists()
         root = (site / str(conf.get("root", "." if at_root else ".."))).resolve()
         chk = conf.get("check") or []
-        return cls(site, pkgs, str(conf.get("out", "api")).strip("/"), root, str(conf.get("source", "")).rstrip("/"), tuple([chk] if isinstance(chk, str) else chk), conf.get("linkify", True) is not False)
+        shown = conf.get("check-shown", False)
+        if not isinstance(shown, bool):
+            raise ValueError(f"check-shown must be true or false, not {shown!r}")
+        return cls(site, pkgs, str(conf.get("out", "api")).strip("/"), root, str(conf.get("source", "")).rstrip("/"), tuple([chk] if isinstance(chk, str) else chk), conf.get("linkify", True) is not False, shown)
 
     def importable(self) -> None:
         "Let the packages import from the repository: its root and its `src` folder go on `sys.path`."
@@ -784,6 +796,7 @@ def main(
     site: str,  # The site's folder, whose config has the api settings
     action: str,  # `build`, `check`, `module` or `list`
     name: str | None = None,  # The module, for `module`
+    shown: bool = False,  # For `check`: hold the packages only to what their pages show, as `check-shown: true` does
 ) -> int:  # The exit code
     "Run one `smalldocs api` command."
     from .config import load
@@ -795,7 +808,12 @@ def main(
         print(f"smalldocs api: {project.file} has no {where} section; see `smalldocs api --help`", file=sys.stderr)
         return 2
     try:
-        return run(Settings.read(project.root, conf), action, name)
+        if shown and action != "check":
+            print(f"smalldocs api {action}: --shown is for check only", file=sys.stderr)
+            return 2
+        s = Settings.read(project.root, conf)
+        s.shown = s.shown or shown
+        return run(s, action, name)
     except (ValueError, ImportError) as e:
         print(f"smalldocs api: {e}", file=sys.stderr)
         return 2
@@ -813,7 +831,7 @@ def run(
         print(f"wrote {len(pages)} page(s) to {s.site / s.out}")
         return 0
     if action == "check":
-        return check(s.packages, s.check_files(), s.root)
+        return check(s.packages, s.check_files(), s.root, s.shown)
     if action == "list":
         found = inventory(s.packages)
         names = [f"{x.module}.{x.name}" if x.name else x.module for x in found]
