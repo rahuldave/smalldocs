@@ -54,7 +54,13 @@ KEYWORDS = set(  # A name that is one of these is written `r#name` in the source
         "static struct super trait true try type unsafe use where while abstract become box do final macro override priv typeof unsized virtual yield",
     )
 )
-DISAMBIGUATOR = re.compile(r"^(`?)(?:struct|enum|trait|union|mod|module|const|constant|fn|function|method|derive|type|value|macro|prim|primitive|static|field|variant|tymethod|attr)@")
+HTML_START = re.compile(  # what may follow a `<` that starts HTML on purpose: a common tag in lower case, an autolink or a comment
+    r"(?:/?(?:a|b|i|p|s|u|br|hr|h[1-6]|em|strong|del|ins|abbr|code|pre|kbd|sub|sup|span|div|img|details|summary|table|thead|tbody|tr|td|th|ul|ol|li|dl|dt|dd"
+    r"|blockquote)(?=[\s>/])|https?://|mailto:|[^\s<>@`]+@[^\s<>@`]+>|!--)"
+)  # in lower case only, so that a generic such as `Wrapper<B>` is text
+LIST_ITEM = re.compile(r"^(?:[*+-]|\d{1,9}[.)])(?:\s|$)")  # A line that starts a list item, at the left edge
+MARK = "# written by smalldocs api build; a build writes over it"  # The first line of the front matter of each page a build writes
+DISAMBIGUATOR =re.compile(r"^(`?)(?:struct|enum|trait|union|mod|module|const|constant|fn|function|method|derive|type|value|macro|prim|primitive|static|field|variant|tymethod|attr)@")
 REF_DEF = re.compile(r"^( {0,3}\[[^\]]+\]:\s*)(\S+)(.*)$")
 ARG_LINE = re.compile(r"^\s*[*-]\s+`?([A-Za-z_][A-Za-z0-9_]*)`?\s*(?:-|:|–|—)\s*(.*)$")
 
@@ -519,10 +525,39 @@ class Page:
 
     id: str  # The module's id in rustdoc's JSON
     path: str  # Its full name, such as `mycrate::parse`
-    stem: str = ""  # The page's file name, without `.qmd`
+    file: str = ""  # The page's file, from the folder of pages, such as `cli/commands/index.qmd`
     entries: list[Entry] = field(default_factory=list)  # Its entries, in the order of the page
     reexports: list[tuple[str, str]] = field(default_factory=list)  # The names it re-exports from elsewhere, with the id of each
     modules: list[str] = field(default_factory=list)  # The ids of its own modules
+
+
+def page_file(
+    page: Page,  # A module's page, with its modules found
+    taken: set[str] = frozenset(),  # Pages that someone wrote, which a build never writes over
+) -> str:  # Its file, from the folder of pages: the folders follow the modules
+    "Place a module's page: the crate's root at `mycrate.qmd`, a module with modules in `a/b/index.qmd`, and one without at `a/b.qmd`."
+    names = page.path.split("::")
+    if len(names) == 1:
+        return f"{names[0]}.qmd"  # never `index.qmd`, which is the folder's
+    folder, name = "/".join(names[1:-1]), names[-1]
+    at = f"{folder}/" if folder else ""
+    if page.modules:
+        index = f"{at}{name}/index.qmd"
+        return index if index not in taken else f"{at}{name}/{name}.qmd"  # a hand-written index keeps its place
+    return f"{at}{name if name != 'index' else 'index-module'}.qmd"
+
+
+def unique(
+    file: str,  # A page's file, from the folder of pages
+    used: set[str],  # The files that other pages have, in lower case, as a disk may not tell `A.qmd` from `a.qmd`; the new file joins it
+) -> str:  # The file, or `name-module.qmd`, `name-module-2.qmd` and so on when another page has it
+    "Give a page a file that no other page has, such as a module `mycrate::mycrate` beside the root `mycrate.qmd`."
+    stem, n, out = file.removesuffix(".qmd"), 1, file
+    while out.casefold() in used:
+        out = f"{stem}-module{'' if n == 1 else f'-{n}'}.qmd"
+        n += 1
+    used.add(out.casefold())
+    return out
 
 
 class Crate:
@@ -533,6 +568,7 @@ class Crate:
         data: dict,  # rustdoc's JSON
         root: Path,  # The folder that the file names of the spans start from
         out: str = "api",  # The folder of the pages, inside the site
+        taken: set[str] = frozenset(),  # Pages in that folder that someone wrote, from the folder, such as `cli/index.qmd`
     ) -> None:
         "Read the JSON: find each module's page, and the page and the anchor of each item."
         self.data, self.root, self.out = data, root, out
@@ -554,9 +590,9 @@ class Crate:
             elif "struct" in inner or "union" in inner:
                 self.owners.update({str(i): k for i in self.field_ids(v)})
         self.walk(str(data["root"]), [])
-        shorts = [p.path.rpartition("::")[2] for p in self.pages]
-        for p, short in zip(self.pages, shorts, strict=True):
-            p.stem = short if shorts.count(short) == 1 else p.path.replace("::", ".")
+        used = {f.casefold() for f in taken} | {"index.qmd"}  # the folder's index is written last
+        for p in self.pages:
+            p.file = unique(page_file(p, taken), used)
         for p in self.pages:
             for e in p.entries:
                 self.where[e.id] = (p, e.anchor)
@@ -775,14 +811,14 @@ class Crate:
         id = str(id)
         if id in self.where:
             page, anchor = self.where[id]
-            return f"/{self.out}/{page.stem}.qmd#{anchor}"
+            return f"/{self.out}/{page.file}#{anchor}"
         page = next((p for p in self.pages if p.id == id), None)
         if page is not None:
-            return f"/{self.out}/{page.stem}.qmd"
+            return f"/{self.out}/{page.file}"
         owner = self.owners.get(id)
         if owner and owner in self.where:
             page, anchor = self.where[owner]
-            return f"/{self.out}/{page.stem}.qmd#{anchor}"
+            return f"/{self.out}/{page.file}#{anchor}"
         return self.external_url(id)
 
     def external_url(
@@ -887,15 +923,48 @@ def link_docs(
     return "\n".join(out)
 
 
+def escape_angles(
+    line: str,  # Some lines of Markdown prose, outside a code block
+) -> str:  # The same line with each `<` that starts no HTML tag, autolink or comment written `&lt;`; code spans stay as they are
+    "Escape a stray `<`, such as in `Vec<u8>` written outside backticks, so that it shows as text and does not start HTML."
+
+    def one(
+        m: re.Match,  # A code span, or a `<`
+    ) -> str:  # The code span as it is, or the `<`, escaped unless it starts a tag
+        "Escape one `<`."
+        if m.group(1):
+            return m.group(1)
+        return "<" if HTML_START.match(line, m.end()) else "&lt;"
+
+    return re.sub(r"((`+)(?:(?!\n[ \t]*\n)[\s\S])*?(?<!`)\2(?!`))|<", one, line)
+
+
 def tidy_docs(
     text: str,  # A doc comment, as Markdown
     shift: int,  # How many levels to move its headings down, so that they sit under the entry's heading
 ) -> str:  # The same Markdown, with its headings moved down and its Rust examples as rustdoc shows them
     "Make a doc comment fit a page: its headings under the entry's, a code block with no language as Rust, and no lines hidden with `# `."
-    out, fence, rust = [], "", False
+    out, prose, fence, rust, listed = [], [], "", False, False
+
+    def flush() -> None:
+        "Escape the stray `<` of the prose so far, as a whole, so that a code span may run over lines."
+        if prose:
+            out.extend(escape_angles("\n".join(prose)).split("\n"))
+            prose.clear()
+
     for line in text.split("\n"):
         stripped = line.lstrip()
         run = fence_run(stripped)
+        last = (prose or out or [""])[-1]
+        if not fence and stripped and not line.startswith((" ", "\t")):
+            listed = bool(LIST_ITEM.match(line))  # an indented line after a list item continues the item, and is no code
+        indented = line.startswith(("    ", "\t")) and not listed
+        if not fence and indented and (not last.strip() or (not prose and out and out[-1].startswith(("    ", "\t")))):
+            flush()
+            out.append(line)  # an indented code block, as it is
+            continue
+        if run or fence:
+            flush()
         if run:
             if not fence:
                 fence = run
@@ -913,7 +982,8 @@ def tidy_docs(
             out.append(line.replace("##", "#", 1) if rust and stripped.startswith("##") else line)
             continue
         m = re.match(r"^(#{1,6})(\s.*)$", line)
-        out.append("#" * min(6, len(m.group(1)) + shift) + m.group(2) if m else line)
+        prose.append("#" * min(6, len(m.group(1)) + shift) + m.group(2) if m else line)
+    flush()
     return "\n".join(out)
 
 
@@ -925,7 +995,7 @@ def summary(
     if not first or first.startswith(("#", "```", "~~~", "|")):
         return ""
     plain = LINK.sub(lambda m: m.group(1) or DISAMBIGUATOR.sub(r"\1", m.group(2)), first)  # a code span, such as `&[u8]`, stays as it is
-    return " ".join(plain.split())
+    return escape_angles(" ".join(plain.split()))
 
 
 def source_link(
@@ -954,9 +1024,10 @@ def code(
 
 def type_cell(
     text: str,  # A type as Rust writes it
-) -> str:  # It as inline code, with enough backticks
-    "Write a type in a table cell, as code, so that its `<` and `&` stay as they are."
-    return f"`{text}`" if text else ""
+) -> str:  # It as plain text, as the Python pages write types, with Markdown's and HTML's signs escaped; `table` escapes `|`
+    "Write a type in a table cell as plain text, so that `&`, `<`, `>`, `*`, `_`, `[` and `]` show as they are."
+    text = re.sub(r"([\\`*_\[\]])", r"\\\1", text)
+    return text.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
 
 
 def fn_table(
@@ -988,7 +1059,7 @@ def describe(
     "Describe a field or a variant: its doc comment, with its links, or the comment after it, on a line that holds only it."
     docs = " ".join((item.get("docs") or "").split())
     if docs:
-        return link_docs(docs, item.get("links") or {}, crate)
+        return escape_angles(link_docs(docs, item.get("links") or {}, crate))
     return line_comment(crate.source(item), item, crate.shared_lines(item["id"]))
 
 
@@ -1097,7 +1168,7 @@ def entry_markdown(
     "Write one entry: a heading with its id, a source link, the signature, the doc comment and the table of its parameters, fields or variants."
     item = crate.item(e.id)
     kind = crate.kind(e.id)
-    label = {"function": "", "macro": "macro ", "type_alias": "type ", "constant": "const ", "assoc_type": "type ", "assoc_const": "const "}.get(kind, f"{kind} ")
+    label = {"function": "fn " if e.level == 2 else "", "macro": "macro ","type_alias": "type ", "constant": "const ", "assoc_type": "type ", "assoc_const": "const "}.get(kind, f"{kind} ")
     parts = [f"{'#' * e.level} {label}{e.name} {{#{e.anchor}}}", source_link(s, crate, item)]
     docs = item.get("docs") or ""
     args: dict[str, str] = {}
@@ -1137,20 +1208,34 @@ def page_markdown(
     first = docs.split("\n\n", 1)
     if said and len(first) and " ".join(re.sub(r"\[([^\]]+)\](\([^)]*\))?", r"\1", first[0]).split()) == said:
         docs = first[1] if len(first) > 1 else ""
-    parts = [docs.strip()]
-    rows = []
-    for m in page.modules:
-        sub = next(p for p in crate.pages if p.id == m)
-        rows.append([f"[`{sub.path.rpartition('::')[2]}`]({sub.stem}.qmd)", summary(crate.item(m).get("docs") or "")])
-    parts.append(table(rows, ["Module", "Summary"]))
+    parts = [docs.strip(), modules_table(crate, [next(p for p in crate.pages if p.id == m) for m in page.modules])]
     names = []
     for name, target in page.reexports:
         url = crate.url(target)
         names.append(f"[`{name}`]({url})" if url else f"`{name}`")
     parts.append(f"Re-exports {', '.join(names)}." if names else "")
     parts += [entry_markdown(s, crate, e) for e in page.entries]
-    front = f"---\ntitle: {json.dumps(page.path)}\ndescription: {json.dumps(said)}\n---\n\n"
+    front = f"---\n{MARK}\ntitle: {json.dumps(page.path.rpartition('::')[2])}\ndescription: {json.dumps(said)}\n---\n\n"
     return front + "\n\n".join(p for p in parts if p) + "\n"
+
+
+def modules_table(
+    crate: Crate,  # The crate
+    pages: list[Page],  # The pages of some modules
+) -> str:  # A Markdown table with a link to each, by its name, and its summary
+    "List some modules, each by its own name, linked to its page, with its summary."
+    rows = [[f"[`{p.path.rpartition('::')[2]}`](/{crate.out}/{p.file})", summary(crate.item(p.id).get("docs") or "")] for p in pages]
+    return table(rows, ["Module", "Summary"])
+
+
+def index_markdown(
+    crate: Crate,  # The crate
+) -> str:  # The text of the folder's `index.qmd`: the crate's summary and links to the pages at the top
+    "Write the index of the folder of pages, which heads its section of the sidebar: the crate's summary, and a link to its root page and to each of its modules."
+    root = crate.pages[0]
+    said = summary(crate.item(root.id).get("docs") or "")
+    tops = [root, *(next(p for p in crate.pages if p.id == m) for m in root.modules)]
+    return f"---\n{MARK}\ntitle: \"API\"\ndescription: {json.dumps(said)}\n---\n\n" + modules_table(crate, tops) + "\n"
 
 
 def write_pages(
@@ -1163,19 +1248,24 @@ def write_pages(
     if s.site.resolve() not in out_dir.parents:
         raise ValueError(f"api.out {s.out!r} must be a folder inside the site, such as api")
     out_dir.mkdir(parents=True, exist_ok=True)
-    manifest = out_dir / ".smalldocs-api"
-    before = set(manifest.read_text(encoding="utf-8").split("\n")) if manifest.exists() else set()
+    before = written_before(out_dir)
     written = []
     for name, text in pages.items():
         f = out_dir / name
+        f.parent.mkdir(parents=True, exist_ok=True)
         if not f.exists() or f.read_text(encoding="utf-8") != text:
             f.write_text(text, encoding="utf-8")
         written.append(f)
     names = set(pages)
     for stale in sorted(before - names):
-        f = out_dir / stale
-        if stale.endswith(".qmd") and "/" not in stale and f.is_file():
-            f.unlink()  # only a page that an earlier build wrote, and this one did not
+        f = (out_dir / stale).resolve()
+        if stale.endswith(".qmd") and not Path(stale).is_absolute() and ".." not in Path(stale).parts and out_dir in f.parents and f.is_file():
+            f.unlink()  # only a page that an earlier build wrote, inside the folder of pages, and this one did not
+            for folder in f.parents:
+                if folder == out_dir or any(folder.iterdir()):
+                    break
+                folder.rmdir()  # a folder that the stale page leaves empty
+    manifest = out_dir / ".smalldocs-api"
     manifest.write_text("\n".join(sorted(names)), encoding="utf-8")
     sym = s.site / "_symbols.json"
     text = json.dumps(index, indent=1)
@@ -1191,31 +1281,61 @@ def symbols(
     index: dict[str, str] = {}
     for page in crate.pages:
         for e in page.entries:
-            target = f"/{crate.out}/{page.stem}.qmd#{e.anchor}"
+            target = f"/{crate.out}/{page.file}#{e.anchor}"
             index.setdefault(e.name.rpartition("::")[2] if e.level == 2 else e.name, target)
             index.setdefault(e.name.replace("::", "."), target)
             index.setdefault(f"{page.path}::{e.name}", target)
     return index
 
 
+def written_before(
+    out_dir: Path,  # The folder of pages
+) -> set[str]:  # The pages that the last build wrote, from its manifest, as paths from the folder
+    "Read the manifest of the last build."
+    manifest = out_dir / ".smalldocs-api"
+    return set(manifest.read_text(encoding="utf-8").split("\n")) - {""} if manifest.exists() else set()
+
+
+def hand_written(
+    out_dir: Path,  # The folder of pages
+) -> set[str]:  # The pages in it that no build wrote, as paths from the folder
+    "Find the pages that someone wrote in the folder of pages, which a build never writes over: not in the manifest, and without the mark of a build."
+    if not out_dir.is_dir():
+        return set()
+    before = written_before(out_dir)
+
+    def ours(
+        f: Path,  # A page
+    ) -> bool:  # Whether a build wrote it, by its mark, so that a lost manifest leaves no page frozen
+        "Read a page's mark."
+        with f.open(encoding="utf-8", errors="replace") as h:
+            return h.read(len(MARK) + 5) == f"---\n{MARK}\n"
+
+    return {n for f in out_dir.rglob("*.qmd") if (n := f.relative_to(out_dir).as_posix()) not in before and f.is_file() and not ours(f)}
+
+
 def load(
     s: Settings,  # The settings
     private: bool = False,  # Document private items too
+    taken: set[str] = frozenset(),  # Pages that someone wrote in the folder of pages
 ) -> Crate:  # The crate, read from rustdoc's JSON
     "Run rustdoc and read its JSON."
     data, root = rustdoc(s, private or s.private)
-    return Crate(data, root, s.out)
+    return Crate(data, root, s.out, taken)
 
 
 def build(
     s: Settings,  # The settings
 ) -> list[Path]:  # The pages written
-    "Write one reference page per module of the crate, and `_symbols.json`, the index of names that links use."
+    "Write a reference page per module of the crate, in folders that follow the modules, an `index.qmd` for the folder of pages, and `_symbols.json`."
     out_dir = (s.site / s.out).resolve()
     if s.site.resolve() not in out_dir.parents:
         raise ValueError(f"api.out {s.out!r} must be a folder inside the site, such as api")  # before rustdoc runs
-    crate = load(s)
-    pages = {f"{p.stem}.qmd": page_markdown(s, crate, p) for p in crate.pages}
+    taken = hand_written(out_dir)
+    crate = load(s, taken=taken)
+    pages = {p.file: page_markdown(s, crate, p) for p in crate.pages if p.file not in taken}
+    if "index.qmd" not in taken:
+        pages["index.qmd"] = index_markdown(crate)
     return write_pages(s, pages, symbols(crate))
 
 

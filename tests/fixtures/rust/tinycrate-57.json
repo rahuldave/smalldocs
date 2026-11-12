@@ -85,12 +85,12 @@
    },
    "visibility": "public"
   },
-  "101": {
+  "105": {
    "attrs": [],
    "crate_id": 0,
    "deprecation": null,
    "docs": null,
-   "id": 101,
+   "id": 105,
    "inner": {
     "impl": {
      "blanket_impl": {
@@ -99,7 +99,7 @@
      "for": {
       "resolved_path": {
        "args": null,
-       "id": 82,
+       "id": 86,
        "path": "Point"
       }
      },
@@ -170,7 +170,7 @@
    "span": null,
    "visibility": "default"
   },
-  "120": {
+  "124": {
    "attrs": [
     {
      "other": "#[attr = Inline(Hint)]"
@@ -179,7 +179,7 @@
    "crate_id": 0,
    "deprecation": null,
    "docs": null,
-   "id": 120,
+   "id": 124,
    "inner": {
     "function": {
      "generics": {
@@ -225,7 +225,7 @@
               "constraints": []
              }
             },
-            "id": 121,
+            "id": 125,
             "path": "$crate::fmt::Formatter"
            }
           }
@@ -237,7 +237,7 @@
       "output": {
        "resolved_path": {
         "args": null,
-        "id": 122,
+        "id": 126,
         "path": "$crate::fmt::Result"
        }
       }
@@ -248,32 +248,32 @@
    "name": "fmt",
    "span": {
     "begin": [
-     43,
+     44,
      10
     ],
     "end": [
-     43,
+     44,
      15
     ],
     "filename": "src/lib.rs"
    },
    "visibility": "default"
   },
-  "123": {
+  "127": {
    "attrs": [
     "automatically_derived"
    ],
    "crate_id": 0,
    "deprecation": null,
    "docs": null,
-   "id": 123,
+   "id": 127,
    "inner": {
     "impl": {
      "blanket_impl": null,
      "for": {
       "resolved_path": {
        "args": null,
-       "id": 82,
+       "id": 86,
        "path": "Point"
       }
      },
@@ -285,12 +285,12 @@
      "is_synthetic": false,
      "is_unsafe": false,
      "items": [
-      120
+      124
      ],
      "provided_trait_methods": [],
      "trait": {
       "args": null,
-      "id": 124,
+      "id": 128,
       "path": "Debug"
      }
     }
@@ -299,18 +299,18 @@
    "name": null,
    "span": {
     "begin": [
-     43,
+     44,
      10
     ],
     "end": [
-     43,
+     44,
      15
     ],
     "filename": "src/lib.rs"
    },
    "visibility": "default"
   },
-  "125": {
+  "129": {
    "attrs": [
     {
      "other": "#[attr = Inline(Hint)]"
@@ -319,7 +319,7 @@
    "crate_id": 0,
    "deprecation": null,
    "docs": null,
-   "id": 125,
+   "id": 129,
    "inner": {
     "function": {
      "generics": {
@@ -352,7 +352,7 @@
       "output": {
        "resolved_path": {
         "args": null,
-        "id": 82,
+        "id": 86,
         "path": "Point"
        }
       }
@@ -363,32 +363,32 @@
    "name": "clone",
    "span": {
     "begin": [
-     43,
+     44,
      17
     ],
     "end": [
-     43,
+     44,
      22
     ],
     "filename": "src/lib.rs"
    },
    "visibility": "default"
   },
-  "126": {
+  "130": {
    "attrs": [
     "automatically_derived"
    ],
    "crate_id": 0,
    "deprecation": null,
    "docs": null,
-   "id": 126,
+   "id": 130,
    "inner": {
     "impl": {
      "blanket_impl": null,
      "for": {
       "resolved_path": {
        "args": null,
-       "id": 82,
+       "id": 86,
        "path": "Point"
       }
      },
@@ -400,14 +400,14 @@
      "is_synthetic": false,
      "is_unsafe": false,
      "items": [
-      125
+      129
      ],
      "provided_trait_methods": [
       "clone_from"
      ],
      "trait": {
       "args": null,
-      "id": 105,
+      "id": 109,
       "path": "Clone"
      }
     }
@@ -416,32 +416,32 @@
    "name": null,
    "span": {
     "begin": [
-     43,
+     44,
      17
     ],
     "end": [
-     43,
+     44,
      22
     ],
     "filename": "src/lib.rs"
    },
    "visibility": "default"
   },
-  "127": {
+  "131": {
    "attrs": [
     "automatically_derived"
    ],
    "crate_id": 0,
    "deprecation": null,
    "docs": null,
-   "id": 127,
+   "id": 131,
    "inner": {
     "impl": {
      "blanket_impl": null,
      "for": {
       "resolved_path": {
        "args": null,
-       "id": 82,
+       "id": 86,
        "path": "Point"
       }
      },
@@ -456,7 +456,7 @@
      "provided_trait_methods": [],
      "trait": {
       "args": null,
-      "id": 128,
+      "id": 132,
       "path": "Copy"
      }
     }
@@ -465,32 +465,32 @@
    "name": null,
    "span": {
     "begin": [
-     43,
+     44,
      24
     ],
     "end": [
-     43,
+     44,
      28
     ],
     "filename": "src/lib.rs"
    },
    "visibility": "default"
   },
-  "129": {
+  "133": {
    "attrs": [
     "automatically_derived"
    ],
    "crate_id": 0,
    "deprecation": null,
    "docs": null,
-   "id": 129,
+   "id": 133,
    "inner": {
     "impl": {
      "blanket_impl": null,
      "for": {
       "resolved_path": {
        "args": null,
-       "id": 82,
+       "id": 86,
        "path": "Point"
       }
      },
@@ -505,7 +505,7 @@
      "provided_trait_methods": [],
      "trait": {
       "args": null,
-      "id": 130,
+      "id": 134,
       "path": "StructuralPartialEq"
      }
     }
@@ -514,18 +514,18 @@
    "name": null,
    "span": {
     "begin": [
-     43,
+     44,
      30
     ],
     "end": [
-     43,
+     44,
      39
     ],
     "filename": "src/lib.rs"
    },
    "visibility": "default"
   },
-  "131": {
+  "135": {
    "attrs": [
     {
      "other": "#[attr = Inline(Hint)]"
@@ -534,7 +534,7 @@
    "crate_id": 0,
    "deprecation": null,
    "docs": null,
-   "id": 131,
+   "id": 135,
    "inner": {
     "function": {
      "generics": {
@@ -571,7 +571,7 @@
           "type": {
            "resolved_path": {
             "args": null,
-            "id": 82,
+            "id": 86,
             "path": "Point"
            }
           }
@@ -590,32 +590,32 @@
    "name": "eq",
    "span": {
     "begin": [
-     43,
+     44,
      30
     ],
     "end": [
-     43,
+     44,
      39
     ],
     "filename": "src/lib.rs"
    },
    "visibility": "default"
   },
-  "132": {
+  "136": {
    "attrs": [
     "automatically_derived"
    ],
    "crate_id": 0,
    "deprecation": null,
    "docs": null,
-   "id": 132,
+   "id": 136,
    "inner": {
     "impl": {
      "blanket_impl": null,
      "for": {
       "resolved_path": {
        "args": null,
-       "id": 82,
+       "id": 86,
        "path": "Point"
       }
      },
@@ -627,14 +627,14 @@
      "is_synthetic": false,
      "is_unsafe": false,
      "items": [
-      131
+      135
      ],
      "provided_trait_methods": [
       "ne"
      ],
      "trait": {
       "args": null,
-      "id": 133,
+      "id": 137,
       "path": "PartialEq"
      }
     }
@@ -643,23 +643,23 @@
    "name": null,
    "span": {
     "begin": [
-     43,
+     44,
      30
     ],
     "end": [
-     43,
+     44,
      39
     ],
     "filename": "src/lib.rs"
    },
    "visibility": "default"
   },
-  "134": {
+  "138": {
    "attrs": [],
    "crate_id": 0,
    "deprecation": null,
    "docs": null,
-   "id": 134,
+   "id": 138,
    "inner": {
     "function": {
      "generics": {
@@ -705,7 +705,7 @@
               "constraints": []
              }
             },
-            "id": 121,
+            "id": 125,
             "path": "std::fmt::Formatter"
            }
           }
@@ -717,7 +717,7 @@
       "output": {
        "resolved_path": {
         "args": null,
-        "id": 122,
+        "id": 126,
         "path": "std::fmt::Result"
        }
       }
@@ -728,143 +728,12 @@
    "name": "fmt",
    "span": {
     "begin": [
-     70,
+     71,
      5
-    ],
-    "end": [
-     72,
-     6
-    ],
-    "filename": "src/lib.rs"
-   },
-   "visibility": "default"
-  },
-  "135": {
-   "attrs": [],
-   "crate_id": 0,
-   "deprecation": null,
-   "docs": null,
-   "id": 135,
-   "inner": {
-    "impl": {
-     "blanket_impl": null,
-     "for": {
-      "resolved_path": {
-       "args": null,
-       "id": 82,
-       "path": "Point"
-      }
-     },
-     "generics": {
-      "params": [],
-      "where_predicates": []
-     },
-     "is_negative": false,
-     "is_synthetic": false,
-     "is_unsafe": false,
-     "items": [
-      134
-     ],
-     "provided_trait_methods": [],
-     "trait": {
-      "args": null,
-      "id": 83,
-      "path": "Display"
-     }
-    }
-   },
-   "links": {},
-   "name": null,
-   "span": {
-    "begin": [
-     69,
-     1
     ],
     "end": [
      73,
-     2
-    ],
-    "filename": "src/lib.rs"
-   },
-   "visibility": "default"
-  },
-  "136": {
-   "attrs": [],
-   "crate_id": 0,
-   "deprecation": null,
-   "docs": null,
-   "id": 136,
-   "inner": {
-    "variant": {
-     "discriminant": null,
-     "kind": "plain"
-    }
-   },
-   "links": {},
-   "name": "Green",
-   "span": {
-    "begin": [
-     79,
-     5
-    ],
-    "end": [
-     79,
-     10
-    ],
-    "filename": "src/lib.rs"
-   },
-   "visibility": "default"
-  },
-  "137": {
-   "attrs": [],
-   "crate_id": 0,
-   "deprecation": null,
-   "docs": "Pure red, not [`Colour::Green`].",
-   "id": 137,
-   "inner": {
-    "variant": {
-     "discriminant": null,
-     "kind": "plain"
-    }
-   },
-   "links": {
-    "`Colour::Green`": 136
-   },
-   "name": "Red",
-   "span": {
-    "begin": [
-     78,
-     5
-    ],
-    "end": [
-     78,
-     8
-    ],
-    "filename": "src/lib.rs"
-   },
-   "visibility": "default"
-  },
-  "138": {
-   "attrs": [],
-   "crate_id": 0,
-   "deprecation": null,
-   "docs": null,
-   "id": 138,
-   "inner": {
-    "struct_field": {
-     "primitive": "u8"
-    }
-   },
-   "links": {},
-   "name": "0",
-   "span": {
-    "begin": [
-     81,
-     9
-    ],
-    "end": [
-     81,
-     11
+     6
     ],
     "filename": "src/lib.rs"
    },
@@ -877,20 +746,43 @@
    "docs": null,
    "id": 139,
    "inner": {
-    "struct_field": {
-     "primitive": "u8"
+    "impl": {
+     "blanket_impl": null,
+     "for": {
+      "resolved_path": {
+       "args": null,
+       "id": 86,
+       "path": "Point"
+      }
+     },
+     "generics": {
+      "params": [],
+      "where_predicates": []
+     },
+     "is_negative": false,
+     "is_synthetic": false,
+     "is_unsafe": false,
+     "items": [
+      138
+     ],
+     "provided_trait_methods": [],
+     "trait": {
+      "args": null,
+      "id": 87,
+      "path": "Display"
+     }
     }
    },
    "links": {},
-   "name": "1",
+   "name": null,
    "span": {
     "begin": [
-     81,
-     13
+     70,
+     1
     ],
     "end": [
-     81,
-     15
+     74,
+     2
     ],
     "filename": "src/lib.rs"
    },
@@ -903,20 +795,21 @@
    "docs": null,
    "id": 140,
    "inner": {
-    "struct_field": {
-     "primitive": "u8"
+    "variant": {
+     "discriminant": null,
+     "kind": "plain"
     }
    },
    "links": {},
-   "name": "2",
+   "name": "Green",
    "span": {
     "begin": [
-     81,
-     17
+     80,
+     5
     ],
     "end": [
-     81,
-     19
+     80,
+     10
     ],
     "filename": "src/lib.rs"
    },
@@ -926,30 +819,26 @@
    "attrs": [],
    "crate_id": 0,
    "deprecation": null,
-   "docs": "A colour by its parts.",
+   "docs": "Pure red, not [`Colour::Green`].",
    "id": 141,
    "inner": {
     "variant": {
      "discriminant": null,
-     "kind": {
-      "tuple": [
-       138,
-       139,
-       140
-      ]
-     }
+     "kind": "plain"
     }
    },
-   "links": {},
-   "name": "Rgb",
+   "links": {
+    "`Colour::Green`": 140
+   },
+   "name": "Red",
    "span": {
     "begin": [
-     81,
+     79,
      5
     ],
     "end": [
-     81,
-     20
+     79,
+     8
     ],
     "filename": "src/lib.rs"
    },
@@ -963,23 +852,19 @@
    "id": 142,
    "inner": {
     "struct_field": {
-     "resolved_path": {
-      "args": null,
-      "id": 52,
-      "path": "String"
-     }
+     "primitive": "u8"
     }
    },
    "links": {},
-   "name": "name",
+   "name": "0",
    "span": {
     "begin": [
-     83,
-     13
+     82,
+     9
     ],
     "end": [
-     83,
-     25
+     82,
+     11
     ],
     "filename": "src/lib.rs"
    },
@@ -989,31 +874,23 @@
    "attrs": [],
    "crate_id": 0,
    "deprecation": null,
-   "docs": "A named colour.",
+   "docs": null,
    "id": 143,
    "inner": {
-    "variant": {
-     "discriminant": null,
-     "kind": {
-      "struct": {
-       "fields": [
-        142
-       ],
-       "has_stripped_fields": false
-      }
-     }
+    "struct_field": {
+     "primitive": "u8"
     }
    },
    "links": {},
-   "name": "Named",
+   "name": "1",
    "span": {
     "begin": [
-     83,
-     5
+     82,
+     13
     ],
     "end": [
-     83,
-     27
+     82,
+     15
     ],
     "filename": "src/lib.rs"
    },
@@ -1027,23 +904,19 @@
    "id": 144,
    "inner": {
     "struct_field": {
-     "resolved_path": {
-      "args": null,
-      "id": 52,
-      "path": "String"
-     }
+     "primitive": "u8"
     }
    },
    "links": {},
-   "name": "first",
+   "name": "2",
    "span": {
     "begin": [
-     85,
-     11
+     82,
+     17
     ],
     "end": [
-     85,
-     24
+     82,
+     19
     ],
     "filename": "src/lib.rs"
    },
@@ -1053,27 +926,30 @@
    "attrs": [],
    "crate_id": 0,
    "deprecation": null,
-   "docs": null,
+   "docs": "A colour by its parts.",
    "id": 145,
    "inner": {
-    "struct_field": {
-     "resolved_path": {
-      "args": null,
-      "id": 52,
-      "path": "String"
+    "variant": {
+     "discriminant": null,
+     "kind": {
+      "tuple": [
+       142,
+       143,
+       144
+      ]
      }
     }
    },
    "links": {},
-   "name": "second",
+   "name": "Rgb",
    "span": {
     "begin": [
-     85,
-     26
+     82,
+     5
     ],
     "end": [
-     85,
-     40
+     82,
+     20
     ],
     "filename": "src/lib.rs"
    },
@@ -1089,21 +965,21 @@
     "struct_field": {
      "resolved_path": {
       "args": null,
-      "id": 52,
+      "id": 56,
       "path": "String"
      }
     }
    },
    "links": {},
-   "name": "third",
+   "name": "name",
    "span": {
     "begin": [
-     85,
-     42
+     84,
+     13
     ],
     "end": [
-     85,
-     55
+     84,
+     25
     ],
     "filename": "src/lib.rs"
    },
@@ -1113,23 +989,31 @@
    "attrs": [],
    "crate_id": 0,
    "deprecation": null,
-   "docs": null,
+   "docs": "A named colour.",
    "id": 147,
    "inner": {
-    "struct_field": {
-     "primitive": "f64"
+    "variant": {
+     "discriminant": null,
+     "kind": {
+      "struct": {
+       "fields": [
+        146
+       ],
+       "has_stripped_fields": false
+      }
+     }
     }
    },
    "links": {},
-   "name": "weight",
+   "name": "Named",
    "span": {
     "begin": [
-     85,
-     57
+     84,
+     5
     ],
     "end": [
-     85,
-     68
+     84,
+     27
     ],
     "filename": "src/lib.rs"
    },
@@ -1139,18 +1023,134 @@
    "attrs": [],
    "crate_id": 0,
    "deprecation": null,
-   "docs": "A mix of three named colours.",
+   "docs": null,
    "id": 148,
+   "inner": {
+    "struct_field": {
+     "resolved_path": {
+      "args": null,
+      "id": 56,
+      "path": "String"
+     }
+    }
+   },
+   "links": {},
+   "name": "first",
+   "span": {
+    "begin": [
+     86,
+     11
+    ],
+    "end": [
+     86,
+     24
+    ],
+    "filename": "src/lib.rs"
+   },
+   "visibility": "default"
+  },
+  "149": {
+   "attrs": [],
+   "crate_id": 0,
+   "deprecation": null,
+   "docs": null,
+   "id": 149,
+   "inner": {
+    "struct_field": {
+     "resolved_path": {
+      "args": null,
+      "id": 56,
+      "path": "String"
+     }
+    }
+   },
+   "links": {},
+   "name": "second",
+   "span": {
+    "begin": [
+     86,
+     26
+    ],
+    "end": [
+     86,
+     40
+    ],
+    "filename": "src/lib.rs"
+   },
+   "visibility": "default"
+  },
+  "150": {
+   "attrs": [],
+   "crate_id": 0,
+   "deprecation": null,
+   "docs": null,
+   "id": 150,
+   "inner": {
+    "struct_field": {
+     "resolved_path": {
+      "args": null,
+      "id": 56,
+      "path": "String"
+     }
+    }
+   },
+   "links": {},
+   "name": "third",
+   "span": {
+    "begin": [
+     86,
+     42
+    ],
+    "end": [
+     86,
+     55
+    ],
+    "filename": "src/lib.rs"
+   },
+   "visibility": "default"
+  },
+  "151": {
+   "attrs": [],
+   "crate_id": 0,
+   "deprecation": null,
+   "docs": null,
+   "id": 151,
+   "inner": {
+    "struct_field": {
+     "primitive": "f64"
+    }
+   },
+   "links": {},
+   "name": "weight",
+   "span": {
+    "begin": [
+     86,
+     57
+    ],
+    "end": [
+     86,
+     68
+    ],
+    "filename": "src/lib.rs"
+   },
+   "visibility": "default"
+  },
+  "152": {
+   "attrs": [],
+   "crate_id": 0,
+   "deprecation": null,
+   "docs": "A mix of three named colours.",
+   "id": 152,
    "inner": {
     "variant": {
      "discriminant": null,
      "kind": {
       "struct": {
        "fields": [
-        144,
-        145,
-        146,
-        147
+        148,
+        149,
+        150,
+        151
        ],
        "has_stripped_fields": false
       }
@@ -1161,23 +1161,23 @@
    "name": "Mix",
    "span": {
     "begin": [
-     85,
+     86,
      5
     ],
     "end": [
-     85,
+     86,
      70
     ],
     "filename": "src/lib.rs"
    },
    "visibility": "default"
   },
-  "149": {
+  "153": {
    "attrs": [],
    "crate_id": 0,
    "deprecation": null,
    "docs": "A colour.",
-   "id": 149,
+   "id": 153,
    "inner": {
     "enum": {
      "generics": {
@@ -1186,15 +1186,15 @@
      },
      "has_stripped_variants": false,
      "impls": [
-      150,
-      157
+      154,
+      161
      ],
      "variants": [
-      137,
-      136,
       141,
-      143,
-      148
+      140,
+      145,
+      147,
+      152
      ]
     }
    },
@@ -1202,30 +1202,30 @@
    "name": "Colour",
    "span": {
     "begin": [
-     76,
+     77,
      1
     ],
     "end": [
-     86,
+     87,
      2
     ],
     "filename": "src/lib.rs"
    },
    "visibility": "public"
   },
-  "150": {
+  "154": {
    "attrs": [],
    "crate_id": 0,
    "deprecation": null,
    "docs": null,
-   "id": 150,
+   "id": 154,
    "inner": {
     "impl": {
      "blanket_impl": null,
      "for": {
       "resolved_path": {
        "args": null,
-       "id": 149,
+       "id": 153,
        "path": "Colour"
       }
      },
@@ -1250,12 +1250,12 @@
    "span": null,
    "visibility": "default"
   },
-  "157": {
+  "161": {
    "attrs": [],
    "crate_id": 0,
    "deprecation": null,
    "docs": null,
-   "id": 157,
+   "id": 161,
    "inner": {
     "impl": {
      "blanket_impl": {
@@ -1264,7 +1264,7 @@
      "for": {
       "resolved_path": {
        "args": null,
-       "id": 149,
+       "id": 153,
        "path": "Colour"
       }
      },
@@ -1335,12 +1335,12 @@
    "span": null,
    "visibility": "default"
   },
-  "164": {
+  "168": {
    "attrs": [],
    "crate_id": 0,
    "deprecation": null,
    "docs": "The area.",
-   "id": 164,
+   "id": 168,
    "inner": {
     "function": {
      "generics": {
@@ -1380,23 +1380,23 @@
    "name": "area",
    "span": {
     "begin": [
-     91,
+     92,
      5
     ],
     "end": [
-     91,
+     92,
      27
     ],
     "filename": "src/lib.rs"
    },
    "visibility": "default"
   },
-  "165": {
+  "169": {
    "attrs": [],
    "crate_id": 0,
    "deprecation": null,
    "docs": "The name of the shape.",
-   "id": 165,
+   "id": 169,
    "inner": {
     "function": {
      "generics": {
@@ -1429,7 +1429,7 @@
       "output": {
        "resolved_path": {
         "args": null,
-        "id": 52,
+        "id": 56,
         "path": "String"
        }
       }
@@ -1440,190 +1440,16 @@
    "name": "name",
    "span": {
     "begin": [
-     94,
+     95,
      5
     ],
     "end": [
-     96,
+     97,
      6
     ],
     "filename": "src/lib.rs"
    },
    "visibility": "default"
-  },
-  "166": {
-   "attrs": [],
-   "crate_id": 0,
-   "deprecation": null,
-   "docs": "A number type.",
-   "id": 166,
-   "inner": {
-    "type_alias": {
-     "generics": {
-      "params": [],
-      "where_predicates": []
-     },
-     "type": {
-      "primitive": "f64"
-     }
-    }
-   },
-   "links": {},
-   "name": "Number",
-   "span": {
-    "begin": [
-     100,
-     1
-    ],
-    "end": [
-     100,
-     23
-    ],
-    "filename": "src/lib.rs"
-   },
-   "visibility": "public"
-  },
-  "167": {
-   "attrs": [],
-   "crate_id": 0,
-   "deprecation": null,
-   "docs": "The largest number.",
-   "id": 167,
-   "inner": {
-    "constant": {
-     "const": {
-      "expr": "100",
-      "is_literal": true,
-      "value": "100i32"
-     },
-     "type": {
-      "primitive": "i32"
-     }
-    }
-   },
-   "links": {},
-   "name": "MAX",
-   "span": {
-    "begin": [
-     103,
-     1
-    ],
-    "end": [
-     103,
-     26
-    ],
-    "filename": "src/lib.rs"
-   },
-   "visibility": "public"
-  },
-  "168": {
-   "attrs": [],
-   "crate_id": 0,
-   "deprecation": null,
-   "docs": "Wrap a value.",
-   "id": 168,
-   "inner": {
-    "function": {
-     "generics": {
-      "params": [
-       {
-        "kind": {
-         "type": {
-          "bounds": [],
-          "default": null,
-          "is_synthetic": false
-         }
-        },
-        "name": "T"
-       }
-      ],
-      "where_predicates": [
-       {
-        "bound_predicate": {
-         "bounds": [
-          {
-           "trait_bound": {
-            "generic_params": [],
-            "modifier": "none",
-            "trait": {
-             "args": null,
-             "id": 124,
-             "path": "std::fmt::Debug"
-            }
-           }
-          },
-          {
-           "trait_bound": {
-            "generic_params": [],
-            "modifier": "none",
-            "trait": {
-             "args": null,
-             "id": 105,
-             "path": "Clone"
-            }
-           }
-          }
-         ],
-         "generic_params": [],
-         "type": {
-          "generic": "T"
-         }
-        }
-       }
-      ]
-     },
-     "has_body": true,
-     "header": {
-      "abi": "Rust",
-      "is_async": false,
-      "is_const": false,
-      "is_unsafe": false
-     },
-     "sig": {
-      "inputs": [
-       [
-        "value",
-        {
-         "generic": "T"
-        }
-       ]
-      ],
-      "is_c_variadic": false,
-      "output": {
-       "resolved_path": {
-        "args": {
-         "angle_bracketed": {
-          "args": [
-           {
-            "type": {
-             "generic": "T"
-            }
-           }
-          ],
-          "constraints": []
-         }
-        },
-        "id": 169,
-        "path": "Option"
-       }
-      }
-     }
-    }
-   },
-   "links": {},
-   "name": "wrap",
-   "span": {
-    "begin": [
-     106,
-     1
-    ],
-    "end": [
-     112,
-     2
-    ],
-    "filename": "src/lib.rs"
-   },
-   "visibility": "public"
   },
   "17": {
    "attrs": [],
@@ -1714,26 +1540,29 @@
    "attrs": [],
    "crate_id": 0,
    "deprecation": null,
-   "docs": null,
+   "docs": "A number type.",
    "id": 170,
    "inner": {
-    "use": {
-     "id": 69,
-     "is_glob": false,
-     "name": "deep",
-     "source": "hidden::deep"
+    "type_alias": {
+     "generics": {
+      "params": [],
+      "where_predicates": []
+     },
+     "type": {
+      "primitive": "f64"
+     }
     }
    },
    "links": {},
-   "name": null,
+   "name": "Number",
    "span": {
     "begin": [
-     129,
+     101,
      1
     ],
     "end": [
-     129,
-     22
+     101,
+     23
     ],
     "filename": "src/lib.rs"
    },
@@ -1743,14 +1572,156 @@
    "attrs": [],
    "crate_id": 0,
    "deprecation": null,
-   "docs": null,
+   "docs": "The largest number.",
    "id": 171,
    "inner": {
+    "constant": {
+     "const": {
+      "expr": "100",
+      "is_literal": true,
+      "value": "100i32"
+     },
+     "type": {
+      "primitive": "i32"
+     }
+    }
+   },
+   "links": {},
+   "name": "MAX",
+   "span": {
+    "begin": [
+     104,
+     1
+    ],
+    "end": [
+     104,
+     26
+    ],
+    "filename": "src/lib.rs"
+   },
+   "visibility": "public"
+  },
+  "172": {
+   "attrs": [],
+   "crate_id": 0,
+   "deprecation": null,
+   "docs": "Wrap a value.",
+   "id": 172,
+   "inner": {
+    "function": {
+     "generics": {
+      "params": [
+       {
+        "kind": {
+         "type": {
+          "bounds": [],
+          "default": null,
+          "is_synthetic": false
+         }
+        },
+        "name": "T"
+       }
+      ],
+      "where_predicates": [
+       {
+        "bound_predicate": {
+         "bounds": [
+          {
+           "trait_bound": {
+            "generic_params": [],
+            "modifier": "none",
+            "trait": {
+             "args": null,
+             "id": 128,
+             "path": "std::fmt::Debug"
+            }
+           }
+          },
+          {
+           "trait_bound": {
+            "generic_params": [],
+            "modifier": "none",
+            "trait": {
+             "args": null,
+             "id": 109,
+             "path": "Clone"
+            }
+           }
+          }
+         ],
+         "generic_params": [],
+         "type": {
+          "generic": "T"
+         }
+        }
+       }
+      ]
+     },
+     "has_body": true,
+     "header": {
+      "abi": "Rust",
+      "is_async": false,
+      "is_const": false,
+      "is_unsafe": false
+     },
+     "sig": {
+      "inputs": [
+       [
+        "value",
+        {
+         "generic": "T"
+        }
+       ]
+      ],
+      "is_c_variadic": false,
+      "output": {
+       "resolved_path": {
+        "args": {
+         "angle_bracketed": {
+          "args": [
+           {
+            "type": {
+             "generic": "T"
+            }
+           }
+          ],
+          "constraints": []
+         }
+        },
+        "id": 173,
+        "path": "Option"
+       }
+      }
+     }
+    }
+   },
+   "links": {},
+   "name": "wrap",
+   "span": {
+    "begin": [
+     107,
+     1
+    ],
+    "end": [
+     113,
+     2
+    ],
+    "filename": "src/lib.rs"
+   },
+   "visibility": "public"
+  },
+  "174": {
+   "attrs": [],
+   "crate_id": 0,
+   "deprecation": null,
+   "docs": null,
+   "id": 174,
+   "inner": {
     "use": {
-     "id": 70,
+     "id": 73,
      "is_glob": false,
-     "name": "plus",
-     "source": "hidden::add_two"
+     "name": "deep",
+     "source": "hidden::deep"
     }
    },
    "links": {},
@@ -1762,18 +1733,47 @@
     ],
     "end": [
      130,
+     22
+    ],
+    "filename": "src/lib.rs"
+   },
+   "visibility": "public"
+  },
+  "175": {
+   "attrs": [],
+   "crate_id": 0,
+   "deprecation": null,
+   "docs": null,
+   "id": 175,
+   "inner": {
+    "use": {
+     "id": 74,
+     "is_glob": false,
+     "name": "plus",
+     "source": "hidden::add_two"
+    }
+   },
+   "links": {},
+   "name": null,
+   "span": {
+    "begin": [
+     131,
+     1
+    ],
+    "end": [
+     131,
      33
     ],
     "filename": "src/lib.rs"
    },
    "visibility": "public"
   },
-  "172": {
+  "176": {
    "attrs": [],
    "crate_id": 0,
    "deprecation": null,
    "docs": null,
-   "id": 172,
+   "id": 176,
    "inner": {
     "struct_field": {
      "generic": "T"
@@ -1783,23 +1783,23 @@
    "name": "0",
    "span": {
     "begin": [
-     147,
+     148,
      22
     ],
     "end": [
-     147,
+     148,
      27
     ],
     "filename": "src/lib.rs"
    },
    "visibility": "public"
   },
-  "173": {
+  "177": {
    "attrs": [],
    "crate_id": 0,
    "deprecation": null,
    "docs": "A value of either width.",
-   "id": 173,
+   "id": 177,
    "inner": {
     "struct": {
      "generics": {
@@ -1818,14 +1818,14 @@
       "where_predicates": []
      },
      "impls": [
-      175,
-      177,
-      178,
-      185
+      179,
+      181,
+      182,
+      189
      ],
      "kind": {
       "tuple": [
-       172
+       176
       ]
      }
     }
@@ -1834,23 +1834,23 @@
    "name": "Holder",
    "span": {
     "begin": [
-     147,
+     148,
      1
     ],
     "end": [
-     147,
+     148,
      29
     ],
     "filename": "src/lib.rs"
    },
    "visibility": "public"
   },
-  "174": {
+  "178": {
    "attrs": [],
    "crate_id": 0,
    "deprecation": null,
    "docs": "Hold a byte.",
-   "id": 174,
+   "id": 178,
    "inner": {
     "function": {
      "generics": {
@@ -1884,23 +1884,23 @@
    "name": "new",
    "span": {
     "begin": [
-     151,
+     152,
      5
     ],
     "end": [
-     153,
+     154,
      6
     ],
     "filename": "src/lib.rs"
    },
    "visibility": "public"
   },
-  "175": {
+  "179": {
    "attrs": [],
    "crate_id": 0,
    "deprecation": null,
    "docs": null,
-   "id": 175,
+   "id": 179,
    "inner": {
     "impl": {
      "blanket_impl": null,
@@ -1918,7 +1918,7 @@
          "constraints": []
         }
        },
-       "id": 173,
+       "id": 177,
        "path": "Holder"
       }
      },
@@ -1930,7 +1930,7 @@
      "is_synthetic": false,
      "is_unsafe": false,
      "items": [
-      174
+      178
      ],
      "provided_trait_methods": [],
      "trait": null
@@ -1940,23 +1940,23 @@
    "name": null,
    "span": {
     "begin": [
-     149,
+     150,
      1
     ],
     "end": [
-     154,
+     155,
      2
     ],
     "filename": "src/lib.rs"
    },
    "visibility": "default"
   },
-  "176": {
+  "180": {
    "attrs": [],
    "crate_id": 0,
    "deprecation": null,
    "docs": "Hold a word.",
-   "id": 176,
+   "id": 180,
    "inner": {
     "function": {
      "generics": {
@@ -1990,23 +1990,23 @@
    "name": "new",
    "span": {
     "begin": [
-     158,
+     159,
      5
     ],
     "end": [
-     160,
+     161,
      6
     ],
     "filename": "src/lib.rs"
    },
    "visibility": "public"
   },
-  "177": {
+  "181": {
    "attrs": [],
    "crate_id": 0,
    "deprecation": null,
    "docs": null,
-   "id": 177,
+   "id": 181,
    "inner": {
     "impl": {
      "blanket_impl": null,
@@ -2024,7 +2024,7 @@
          "constraints": []
         }
        },
-       "id": 173,
+       "id": 177,
        "path": "Holder"
       }
      },
@@ -2036,7 +2036,7 @@
      "is_synthetic": false,
      "is_unsafe": false,
      "items": [
-      176
+      180
      ],
      "provided_trait_methods": [],
      "trait": null
@@ -2046,23 +2046,23 @@
    "name": null,
    "span": {
     "begin": [
-     156,
+     157,
      1
     ],
     "end": [
-     161,
+     162,
      2
     ],
     "filename": "src/lib.rs"
    },
    "visibility": "default"
   },
-  "178": {
+  "182": {
    "attrs": [],
    "crate_id": 0,
    "deprecation": null,
    "docs": null,
-   "id": 178,
+   "id": 182,
    "inner": {
     "impl": {
      "blanket_impl": null,
@@ -2080,7 +2080,7 @@
          "constraints": []
         }
        },
-       "id": 173,
+       "id": 177,
        "path": "Holder"
       }
      },
@@ -2138,12 +2138,12 @@
    "span": null,
    "visibility": "default"
   },
-  "185": {
+  "189": {
    "attrs": [],
    "crate_id": 0,
    "deprecation": null,
    "docs": null,
-   "id": 185,
+   "id": 189,
    "inner": {
     "impl": {
      "blanket_impl": {
@@ -2163,7 +2163,7 @@
          "constraints": []
         }
        },
-       "id": 173,
+       "id": 177,
        "path": "Holder"
       }
      },
@@ -2234,12 +2234,12 @@
    "span": null,
    "visibility": "default"
   },
-  "192": {
+  "196": {
    "attrs": [],
    "crate_id": 0,
    "deprecation": null,
    "docs": "Apply a function, see [fn@add] and [struct@Point].",
-   "id": 192,
+   "id": 196,
    "inner": {
     "function": {
      "generics": {
@@ -2265,7 +2265,7 @@
             "modifier": "none",
             "trait": {
              "args": null,
-             "id": 128,
+             "id": 132,
              "path": "Copy"
             }
            }
@@ -2287,7 +2287,7 @@
                }
               }
              },
-             "id": 193,
+             "id": 197,
              "path": "Fn"
             }
            }
@@ -2331,29 +2331,29 @@
     }
    },
    "links": {
-    "fn@add": 84,
-    "struct@Point": 82
+    "fn@add": 88,
+    "struct@Point": 86
    },
    "name": "apply",
    "span": {
     "begin": [
-     164,
+     165,
      1
     ],
     "end": [
-     171,
+     172,
      2
     ],
     "filename": "src/lib.rs"
    },
    "visibility": "public"
   },
-  "194": {
+  "198": {
    "attrs": [],
    "crate_id": 0,
    "deprecation": null,
    "docs": "Add a pair.",
-   "id": 194,
+   "id": 198,
    "inner": {
     "function": {
      "generics": {
@@ -2394,23 +2394,23 @@
    "name": "pair",
    "span": {
     "begin": [
-     174,
+     175,
      1
     ],
     "end": [
-     177,
+     178,
      2
     ],
     "filename": "src/lib.rs"
    },
    "visibility": "public"
   },
-  "195": {
+  "199": {
    "attrs": [],
    "crate_id": 0,
    "deprecation": null,
    "docs": "Quote a character.",
-   "id": 195,
+   "id": 199,
    "inner": {
     "function": {
      "generics": {
@@ -2437,7 +2437,7 @@
       "output": {
        "resolved_path": {
         "args": null,
-        "id": 52,
+        "id": 56,
         "path": "String"
        }
       }
@@ -2448,147 +2448,12 @@
    "name": "quote",
    "span": {
     "begin": [
-     180,
+     181,
      1
     ],
     "end": [
-     183,
+     184,
      2
-    ],
-    "filename": "src/lib.rs"
-   },
-   "visibility": "public"
-  },
-  "196": {
-   "attrs": [],
-   "crate_id": 0,
-   "deprecation": null,
-   "docs": "A function with a keyword for its name.",
-   "id": 196,
-   "inner": {
-    "function": {
-     "generics": {
-      "params": [],
-      "where_predicates": []
-     },
-     "has_body": true,
-     "header": {
-      "abi": "Rust",
-      "is_async": false,
-      "is_const": false,
-      "is_unsafe": false
-     },
-     "sig": {
-      "inputs": [],
-      "is_c_variadic": false,
-      "output": null
-     }
-    }
-   },
-   "links": {},
-   "name": "type",
-   "span": {
-    "begin": [
-     186,
-     1
-    ],
-    "end": [
-     186,
-     19
-    ],
-    "filename": "src/lib.rs"
-   },
-   "visibility": "public"
-  },
-  "197": {
-   "attrs": [],
-   "crate_id": 0,
-   "deprecation": null,
-   "docs": null,
-   "id": 197,
-   "inner": {
-    "struct_field": {
-     "primitive": "u32"
-    }
-   },
-   "links": {},
-   "name": "w",
-   "span": {
-    "begin": [
-     189,
-     19
-    ],
-    "end": [
-     189,
-     29
-    ],
-    "filename": "src/lib.rs"
-   },
-   "visibility": "public"
-  },
-  "198": {
-   "attrs": [],
-   "crate_id": 0,
-   "deprecation": null,
-   "docs": null,
-   "id": 198,
-   "inner": {
-    "struct_field": {
-     "primitive": "u32"
-    }
-   },
-   "links": {},
-   "name": "h",
-   "span": {
-    "begin": [
-     189,
-     31
-    ],
-    "end": [
-     189,
-     41
-    ],
-    "filename": "src/lib.rs"
-   },
-   "visibility": "public"
-  },
-  "199": {
-   "attrs": [],
-   "crate_id": 0,
-   "deprecation": null,
-   "docs": "A size.",
-   "id": 199,
-   "inner": {
-    "struct": {
-     "generics": {
-      "params": [],
-      "where_predicates": []
-     },
-     "impls": [
-      200,
-      207
-     ],
-     "kind": {
-      "plain": {
-       "fields": [
-        197,
-        198
-       ],
-       "has_stripped_fields": false
-      }
-     }
-    }
-   },
-   "links": {},
-   "name": "Size",
-   "span": {
-    "begin": [
-     189,
-     1
-    ],
-    "end": [
-     189,
-     43
     ],
     "filename": "src/lib.rs"
    },
@@ -2635,15 +2500,150 @@
    "attrs": [],
    "crate_id": 0,
    "deprecation": null,
-   "docs": null,
+   "docs": "A function with a keyword for its name.",
    "id": 200,
+   "inner": {
+    "function": {
+     "generics": {
+      "params": [],
+      "where_predicates": []
+     },
+     "has_body": true,
+     "header": {
+      "abi": "Rust",
+      "is_async": false,
+      "is_const": false,
+      "is_unsafe": false
+     },
+     "sig": {
+      "inputs": [],
+      "is_c_variadic": false,
+      "output": null
+     }
+    }
+   },
+   "links": {},
+   "name": "type",
+   "span": {
+    "begin": [
+     187,
+     1
+    ],
+    "end": [
+     187,
+     19
+    ],
+    "filename": "src/lib.rs"
+   },
+   "visibility": "public"
+  },
+  "201": {
+   "attrs": [],
+   "crate_id": 0,
+   "deprecation": null,
+   "docs": null,
+   "id": 201,
+   "inner": {
+    "struct_field": {
+     "primitive": "u32"
+    }
+   },
+   "links": {},
+   "name": "w",
+   "span": {
+    "begin": [
+     190,
+     19
+    ],
+    "end": [
+     190,
+     29
+    ],
+    "filename": "src/lib.rs"
+   },
+   "visibility": "public"
+  },
+  "202": {
+   "attrs": [],
+   "crate_id": 0,
+   "deprecation": null,
+   "docs": null,
+   "id": 202,
+   "inner": {
+    "struct_field": {
+     "primitive": "u32"
+    }
+   },
+   "links": {},
+   "name": "h",
+   "span": {
+    "begin": [
+     190,
+     31
+    ],
+    "end": [
+     190,
+     41
+    ],
+    "filename": "src/lib.rs"
+   },
+   "visibility": "public"
+  },
+  "203": {
+   "attrs": [],
+   "crate_id": 0,
+   "deprecation": null,
+   "docs": "A size.",
+   "id": 203,
+   "inner": {
+    "struct": {
+     "generics": {
+      "params": [],
+      "where_predicates": []
+     },
+     "impls": [
+      204,
+      211
+     ],
+     "kind": {
+      "plain": {
+       "fields": [
+        201,
+        202
+       ],
+       "has_stripped_fields": false
+      }
+     }
+    }
+   },
+   "links": {},
+   "name": "Size",
+   "span": {
+    "begin": [
+     190,
+     1
+    ],
+    "end": [
+     190,
+     43
+    ],
+    "filename": "src/lib.rs"
+   },
+   "visibility": "public"
+  },
+  "204": {
+   "attrs": [],
+   "crate_id": 0,
+   "deprecation": null,
+   "docs": null,
+   "id": 204,
    "inner": {
     "impl": {
      "blanket_impl": null,
      "for": {
       "resolved_path": {
        "args": null,
-       "id": 199,
+       "id": 203,
        "path": "Size"
       }
      },
@@ -2668,12 +2668,12 @@
    "span": null,
    "visibility": "default"
   },
-  "207": {
+  "211": {
    "attrs": [],
    "crate_id": 0,
    "deprecation": null,
    "docs": null,
-   "id": 207,
+   "id": 211,
    "inner": {
     "impl": {
      "blanket_impl": {
@@ -2682,7 +2682,7 @@
      "for": {
       "resolved_path": {
        "args": null,
-       "id": 199,
+       "id": 203,
        "path": "Size"
       }
      },
@@ -2753,12 +2753,12 @@
    "span": null,
    "visibility": "default"
   },
-  "214": {
+  "218": {
    "attrs": [],
    "crate_id": 0,
    "deprecation": null,
    "docs": "Show fences.\n\n````text\n```\nnot closed\n````\n\n# Panics\n\nNever.",
-   "id": 214,
+   "id": 218,
    "inner": {
     "function": {
      "generics": {
@@ -2783,23 +2783,23 @@
    "name": "fences",
    "span": {
     "begin": [
-     201,
+     202,
      1
     ],
     "end": [
-     201,
+     202,
      19
     ],
     "filename": "src/lib.rs"
    },
    "visibility": "public"
   },
-  "215": {
+  "219": {
    "attrs": [],
    "crate_id": 0,
    "deprecation": null,
    "docs": "Make a point from its parts.",
-   "id": 215,
+   "id": 219,
    "inner": {
     "function": {
      "generics": {
@@ -2832,7 +2832,7 @@
       "output": {
        "resolved_path": {
         "args": null,
-        "id": 82,
+        "id": 86,
         "path": "Point"
        }
       }
@@ -2843,23 +2843,23 @@
    "name": "point",
    "span": {
     "begin": [
-     204,
+     205,
      1
     ],
     "end": [
-     208,
+     209,
      2
     ],
     "filename": "src/lib.rs"
    },
    "visibility": "public"
   },
-  "216": {
+  "220": {
    "attrs": [],
    "crate_id": 0,
    "deprecation": null,
    "docs": null,
-   "id": 216,
+   "id": 220,
    "inner": {
     "struct_field": {
      "borrowed_ref": {
@@ -2875,23 +2875,23 @@
    "name": "inner",
    "span": {
     "begin": [
-     220,
+     221,
      5
     ],
     "end": [
-     220,
+     221,
      21
     ],
     "filename": "src/lib.rs"
    },
    "visibility": "public"
   },
-  "217": {
+  "221": {
    "attrs": [],
    "crate_id": 0,
    "deprecation": null,
    "docs": "A borrowed value.\n\n# Examples\n\n```\n# use tinycrate::Wrapper;\nlet w = Wrapper { inner: &3 };\nassert_eq!(*w.get(), 3);\n```",
-   "id": 217,
+   "id": 221,
    "inner": {
     "struct": {
      "generics": {
@@ -2918,14 +2918,14 @@
       "where_predicates": []
      },
      "impls": [
-      219,
-      220,
-      227
+      223,
+      224,
+      231
      ],
      "kind": {
       "plain": {
        "fields": [
-        216
+        220
        ],
        "has_stripped_fields": false
       }
@@ -2936,23 +2936,23 @@
    "name": "Wrapper",
    "span": {
     "begin": [
-     219,
+     220,
      1
     ],
     "end": [
-     221,
+     222,
      2
     ],
     "filename": "src/lib.rs"
    },
    "visibility": "public"
   },
-  "218": {
+  "222": {
    "attrs": [],
    "crate_id": 0,
    "deprecation": null,
    "docs": "The value inside.",
-   "id": 218,
+   "id": 222,
    "inner": {
     "function": {
      "generics": {
@@ -2998,23 +2998,23 @@
    "name": "get",
    "span": {
     "begin": [
-     225,
+     226,
      5
     ],
     "end": [
-     227,
+     228,
      6
     ],
     "filename": "src/lib.rs"
    },
    "visibility": "public"
   },
-  "219": {
+  "223": {
    "attrs": [],
    "crate_id": 0,
    "deprecation": null,
    "docs": null,
-   "id": 219,
+   "id": 223,
    "inner": {
     "impl": {
      "blanket_impl": null,
@@ -3035,7 +3035,7 @@
          "constraints": []
         }
        },
-       "id": 217,
+       "id": 221,
        "path": "Wrapper"
       }
      },
@@ -3059,7 +3059,7 @@
              "modifier": "none",
              "trait": {
               "args": null,
-              "id": 105,
+              "id": 109,
               "path": "Clone"
              }
             }
@@ -3078,7 +3078,7 @@
      "is_synthetic": false,
      "is_unsafe": false,
      "items": [
-      218
+      222
      ],
      "provided_trait_methods": [],
      "trait": null
@@ -3088,23 +3088,23 @@
    "name": null,
    "span": {
     "begin": [
-     223,
+     224,
      1
     ],
     "end": [
-     228,
+     229,
      2
     ],
     "filename": "src/lib.rs"
    },
    "visibility": "default"
   },
-  "220": {
+  "224": {
    "attrs": [],
    "crate_id": 0,
    "deprecation": null,
    "docs": null,
-   "id": 220,
+   "id": 224,
    "inner": {
     "impl": {
      "blanket_impl": null,
@@ -3125,7 +3125,7 @@
          "constraints": []
         }
        },
-       "id": 217,
+       "id": 221,
        "path": "Wrapper"
       }
      },
@@ -3191,12 +3191,12 @@
    "span": null,
    "visibility": "default"
   },
-  "227": {
+  "231": {
    "attrs": [],
    "crate_id": 0,
    "deprecation": null,
    "docs": null,
-   "id": 227,
+   "id": 231,
    "inner": {
     "impl": {
      "blanket_impl": {
@@ -3219,7 +3219,7 @@
          "constraints": []
         }
        },
-       "id": 217,
+       "id": 221,
        "path": "Wrapper"
       }
      },
@@ -3290,14 +3290,14 @@
    "span": null,
    "visibility": "default"
   },
-  "234": {
+  "238": {
    "attrs": [
     "macro_export"
    ],
    "crate_id": 0,
    "deprecation": null,
    "docs": "Make a point from two numbers.",
-   "id": 234,
+   "id": 238,
    "inner": {
     "macro": "macro_rules! point {\n    ($x:expr, $y:expr) => { ... };\n}"
    },
@@ -3305,26 +3305,26 @@
    "name": "point",
    "span": {
     "begin": [
-     232,
+     233,
      1
     ],
     "end": [
-     236,
+     237,
      2
     ],
     "filename": "src/lib.rs"
    },
    "visibility": "public"
   },
-  "235": {
+  "239": {
    "attrs": [],
    "crate_id": 0,
    "deprecation": null,
    "docs": null,
-   "id": 235,
+   "id": 239,
    "inner": {
     "use": {
-     "id": 50,
+     "id": 54,
      "is_glob": true,
      "name": "helpers",
      "source": "inner::helpers"
@@ -3334,26 +3334,26 @@
    "name": null,
    "span": {
     "begin": [
-     10,
+     11,
      1
     ],
     "end": [
-     10,
+     11,
      27
     ],
     "filename": "src/lib.rs"
    },
    "visibility": "public"
   },
-  "236": {
+  "240": {
    "attrs": [],
    "crate_id": 0,
    "deprecation": null,
    "docs": null,
-   "id": 236,
+   "id": 240,
    "inner": {
     "use": {
-     "id": 75,
+     "id": 79,
      "is_glob": true,
      "name": "cyc_a",
      "source": "cyc_a"
@@ -3363,56 +3363,57 @@
    "name": null,
    "span": {
     "begin": [
-     144,
+     145,
      1
     ],
     "end": [
-     144,
+     145,
      18
     ],
     "filename": "src/lib.rs"
    },
    "visibility": "public"
   },
-  "237": {
+  "241": {
    "attrs": [],
    "crate_id": 0,
    "deprecation": null,
    "docs": "A tiny crate for the tests of smalldocs.\n\nIt has a function, a struct, an enum, a trait and a module.",
-   "id": 237,
+   "id": 241,
    "inner": {
     "module": {
      "is_crate": true,
      "is_stripped": false,
      "items": [
       47,
-      78,
-      79,
-      80,
-      84,
-      85,
-      86,
-      87,
+      51,
       82,
-      149,
+      83,
+      84,
+      88,
+      89,
+      90,
+      91,
+      86,
+      153,
       45,
-      166,
-      167,
-      168,
       170,
       171,
-      173,
-      192,
-      194,
-      195,
+      172,
+      174,
+      175,
+      177,
       196,
+      198,
       199,
-      214,
-      215,
-      217,
-      234,
-      235,
-      236
+      200,
+      203,
+      218,
+      219,
+      221,
+      238,
+      239,
+      240
      ]
     }
    },
@@ -3424,7 +3425,7 @@
      1
     ],
     "end": [
-     236,
+     237,
      2
     ],
     "filename": "src/lib.rs"
@@ -3558,8 +3559,8 @@
      "is_dyn_compatible": true,
      "is_unsafe": false,
      "items": [
-      164,
-      165
+      168,
+      169
      ]
     }
    },
@@ -3567,11 +3568,11 @@
    "name": "Shape",
    "span": {
     "begin": [
-     89,
+     90,
      1
     ],
     "end": [
-     97,
+     98,
      2
     ],
     "filename": "src/lib.rs"
@@ -3660,8 +3661,181 @@
    "attrs": [],
    "crate_id": 0,
    "deprecation": null,
-   "docs": "Count the tokens.",
+   "docs": "The area of a rectangle.",
    "id": 48,
+   "inner": {
+    "function": {
+     "generics": {
+      "params": [],
+      "where_predicates": []
+     },
+     "has_body": true,
+     "header": {
+      "abi": "Rust",
+      "is_async": false,
+      "is_const": false,
+      "is_unsafe": false
+     },
+     "sig": {
+      "inputs": [
+       [
+        "w",
+        {
+         "primitive": "f64"
+        }
+       ],
+       [
+        "h",
+        {
+         "primitive": "f64"
+        }
+       ]
+      ],
+      "is_c_variadic": false,
+      "output": {
+       "primitive": "f64"
+      }
+     }
+    }
+   },
+   "links": {},
+   "name": "rect",
+   "span": {
+    "begin": [
+     13,
+     5
+    ],
+    "end": [
+     17,
+     6
+    ],
+    "filename": "src/geo.rs"
+   },
+   "visibility": "public"
+  },
+  "49": {
+   "attrs": [],
+   "crate_id": 0,
+   "deprecation": null,
+   "docs": "Things on a plane.",
+   "id": 49,
+   "inner": {
+    "module": {
+     "is_crate": false,
+     "is_stripped": false,
+     "items": [
+      48
+     ]
+    }
+   },
+   "links": {},
+   "name": "plane",
+   "span": {
+    "begin": [
+     11,
+     1
+    ],
+    "end": [
+     11,
+     14
+    ],
+    "filename": "src/geo.rs"
+   },
+   "visibility": "public"
+  },
+  "50": {
+   "attrs": [],
+   "crate_id": 0,
+   "deprecation": null,
+   "docs": "The distance between two numbers.",
+   "id": 50,
+   "inner": {
+    "function": {
+     "generics": {
+      "params": [],
+      "where_predicates": []
+     },
+     "has_body": true,
+     "header": {
+      "abi": "Rust",
+      "is_async": false,
+      "is_const": false,
+      "is_unsafe": false
+     },
+     "sig": {
+      "inputs": [
+       [
+        "a",
+        {
+         "primitive": "f64"
+        }
+       ],
+       [
+        "b",
+        {
+         "primitive": "f64"
+        }
+       ]
+      ],
+      "is_c_variadic": false,
+      "output": {
+       "primitive": "f64"
+      }
+     }
+    }
+   },
+   "links": {},
+   "name": "gap",
+   "span": {
+    "begin": [
+     4,
+     1
+    ],
+    "end": [
+     8,
+     2
+    ],
+    "filename": "src/geo.rs"
+   },
+   "visibility": "public"
+  },
+  "51": {
+   "attrs": [],
+   "crate_id": 0,
+   "deprecation": null,
+   "docs": "Geometry, with a module inside.",
+   "id": 51,
+   "inner": {
+    "module": {
+     "is_crate": false,
+     "is_stripped": false,
+     "items": [
+      49,
+      50
+     ]
+    }
+   },
+   "links": {},
+   "name": "geo",
+   "span": {
+    "begin": [
+     1,
+     1
+    ],
+    "end": [
+     18,
+     2
+    ],
+    "filename": "src/geo.rs"
+   },
+   "visibility": "public"
+  },
+  "52": {
+   "attrs": [],
+   "crate_id": 0,
+   "deprecation": null,
+   "docs": "Count the tokens.",
+   "id": 52,
    "inner": {
     "function": {
      "generics": {
@@ -3687,7 +3861,7 @@
            "slice": {
             "resolved_path": {
              "args": null,
-             "id": 49,
+             "id": 53,
              "path": "super::Token"
             }
            }
@@ -3718,12 +3892,12 @@
    },
    "visibility": "public"
   },
-  "49": {
+  "53": {
    "attrs": [],
    "crate_id": 0,
    "deprecation": null,
    "docs": "A token of text.",
-   "id": 49,
+   "id": 53,
    "inner": {
     "struct": {
      "generics": {
@@ -3731,12 +3905,12 @@
       "where_predicates": []
      },
      "impls": [
-      53,
-      60
+      57,
+      64
      ],
      "kind": {
       "tuple": [
-       51
+       55
       ]
      }
     }
@@ -3756,18 +3930,18 @@
    },
    "visibility": "public"
   },
-  "50": {
+  "54": {
    "attrs": [],
    "crate_id": 0,
    "deprecation": null,
    "docs": null,
-   "id": 50,
+   "id": 54,
    "inner": {
     "module": {
      "is_crate": false,
      "is_stripped": true,
      "items": [
-      48
+      52
      ]
     }
    },
@@ -3786,17 +3960,17 @@
    },
    "visibility": "public"
   },
-  "51": {
+  "55": {
    "attrs": [],
    "crate_id": 0,
    "deprecation": null,
    "docs": null,
-   "id": 51,
+   "id": 55,
    "inner": {
     "struct_field": {
      "resolved_path": {
       "args": null,
-      "id": 52,
+      "id": 56,
       "path": "String"
      }
     }
@@ -3816,19 +3990,19 @@
    },
    "visibility": "public"
   },
-  "53": {
+  "57": {
    "attrs": [],
    "crate_id": 0,
    "deprecation": null,
    "docs": null,
-   "id": 53,
+   "id": 57,
    "inner": {
     "impl": {
      "blanket_impl": null,
      "for": {
       "resolved_path": {
        "args": null,
-       "id": 49,
+       "id": 53,
        "path": "Token"
       }
      },
@@ -3853,12 +4027,12 @@
    "span": null,
    "visibility": "default"
   },
-  "60": {
+  "64": {
    "attrs": [],
    "crate_id": 0,
    "deprecation": null,
    "docs": null,
-   "id": 60,
+   "id": 64,
    "inner": {
     "impl": {
      "blanket_impl": {
@@ -3867,7 +4041,7 @@
      "for": {
       "resolved_path": {
        "args": null,
-       "id": 49,
+       "id": 53,
        "path": "Token"
       }
      },
@@ -3938,12 +4112,12 @@
    "span": null,
    "visibility": "default"
   },
-  "68": {
+  "72": {
    "attrs": [],
    "crate_id": 0,
    "deprecation": null,
    "docs": "A function deep inside.",
-   "id": 68,
+   "id": 72,
    "inner": {
     "function": {
      "generics": {
@@ -3968,29 +4142,29 @@
    "name": "deepfn",
    "span": {
     "begin": [
-     118,
+     119,
      9
     ],
     "end": [
-     118,
+     119,
      27
     ],
     "filename": "src/lib.rs"
    },
    "visibility": "public"
   },
-  "69": {
+  "73": {
    "attrs": [],
    "crate_id": 0,
    "deprecation": null,
    "docs": "A public module inside a private one.",
-   "id": 69,
+   "id": 73,
    "inner": {
     "module": {
      "is_crate": false,
      "is_stripped": false,
      "items": [
-      68
+      72
      ]
     }
    },
@@ -3998,23 +4172,23 @@
    "name": "deep",
    "span": {
     "begin": [
-     116,
+     117,
      5
     ],
     "end": [
-     116,
+     117,
      17
     ],
     "filename": "src/lib.rs"
    },
    "visibility": "public"
   },
-  "70": {
+  "74": {
    "attrs": [],
    "crate_id": 0,
    "deprecation": null,
    "docs": "Add, under another name.",
-   "id": 70,
+   "id": 74,
    "inner": {
     "function": {
      "generics": {
@@ -4054,23 +4228,23 @@
    "name": "add_two",
    "span": {
     "begin": [
-     122,
+     123,
      5
     ],
     "end": [
-     126,
+     127,
      6
     ],
     "filename": "src/lib.rs"
    },
    "visibility": "public"
   },
-  "72": {
+  "76": {
    "attrs": [],
    "crate_id": 0,
    "deprecation": null,
    "docs": "In a.",
-   "id": 72,
+   "id": 76,
    "inner": {
     "function": {
      "generics": {
@@ -4095,26 +4269,26 @@
    "name": "in_a",
    "span": {
     "begin": [
-     135,
+     136,
      5
     ],
     "end": [
-     135,
+     136,
      21
     ],
     "filename": "src/lib.rs"
    },
    "visibility": "public"
   },
-  "73": {
+  "77": {
    "attrs": [],
    "crate_id": 0,
    "deprecation": null,
    "docs": null,
-   "id": 73,
+   "id": 77,
    "inner": {
     "use": {
-     "id": 74,
+     "id": 78,
      "is_glob": true,
      "name": "cyc_b",
      "source": "super::cyc_b"
@@ -4124,23 +4298,54 @@
    "name": null,
    "span": {
     "begin": [
-     133,
+     134,
      5
     ],
     "end": [
-     133,
+     134,
      29
     ],
     "filename": "src/lib.rs"
    },
    "visibility": "public"
   },
-  "74": {
+  "78": {
    "attrs": [],
    "crate_id": 0,
    "deprecation": null,
    "docs": null,
-   "id": 74,
+   "id": 78,
+   "inner": {
+    "module": {
+     "is_crate": false,
+     "is_stripped": true,
+     "items": [
+      80,
+      81
+     ]
+    }
+   },
+   "links": {},
+   "name": "cyc_b",
+   "span": {
+    "begin": [
+     139,
+     1
+    ],
+    "end": [
+     139,
+     10
+    ],
+    "filename": "src/lib.rs"
+   },
+   "visibility": "crate"
+  },
+  "79": {
+   "attrs": [],
+   "crate_id": 0,
+   "deprecation": null,
+   "docs": null,
+   "id": 79,
    "inner": {
     "module": {
      "is_crate": false,
@@ -4152,57 +4357,26 @@
     }
    },
    "links": {},
-   "name": "cyc_b",
-   "span": {
-    "begin": [
-     138,
-     1
-    ],
-    "end": [
-     138,
-     10
-    ],
-    "filename": "src/lib.rs"
-   },
-   "visibility": "crate"
-  },
-  "75": {
-   "attrs": [],
-   "crate_id": 0,
-   "deprecation": null,
-   "docs": null,
-   "id": 75,
-   "inner": {
-    "module": {
-     "is_crate": false,
-     "is_stripped": true,
-     "items": [
-      72,
-      73
-     ]
-    }
-   },
-   "links": {},
    "name": "cyc_a",
    "span": {
     "begin": [
-     132,
+     133,
      1
     ],
     "end": [
-     132,
+     133,
      10
     ],
     "filename": "src/lib.rs"
    },
    "visibility": "crate"
   },
-  "76": {
+  "80": {
    "attrs": [],
    "crate_id": 0,
    "deprecation": null,
    "docs": "In b.",
-   "id": 76,
+   "id": 80,
    "inner": {
     "function": {
      "generics": {
@@ -4227,26 +4401,26 @@
    "name": "in_b",
    "span": {
     "begin": [
-     141,
+     142,
      5
     ],
     "end": [
-     141,
+     142,
      21
     ],
     "filename": "src/lib.rs"
    },
    "visibility": "public"
   },
-  "77": {
+  "81": {
    "attrs": [],
    "crate_id": 0,
    "deprecation": null,
    "docs": null,
-   "id": 77,
+   "id": 81,
    "inner": {
     "use": {
-     "id": 75,
+     "id": 79,
      "is_glob": true,
      "name": "cyc_a",
      "source": "super::cyc_a"
@@ -4256,23 +4430,23 @@
    "name": null,
    "span": {
     "begin": [
-     139,
+     140,
      5
     ],
     "end": [
-     139,
+     140,
      29
     ],
     "filename": "src/lib.rs"
    },
    "visibility": "public"
   },
-  "78": {
+  "82": {
    "attrs": [],
    "crate_id": 0,
    "deprecation": null,
    "docs": null,
-   "id": 78,
+   "id": 82,
    "inner": {
     "use": {
      "id": 1,
@@ -4285,26 +4459,26 @@
    "name": null,
    "span": {
     "begin": [
-     8,
+     9,
      1
     ],
     "end": [
-     8,
+     9,
      24
     ],
     "filename": "src/lib.rs"
    },
    "visibility": "public"
   },
-  "79": {
+  "83": {
    "attrs": [],
    "crate_id": 0,
    "deprecation": null,
    "docs": null,
-   "id": 79,
+   "id": 83,
    "inner": {
     "use": {
-     "id": 49,
+     "id": 53,
      "is_glob": false,
      "name": "Token",
      "source": "inner::Token"
@@ -4314,26 +4488,26 @@
    "name": null,
    "span": {
     "begin": [
-     9,
+     10,
      1
     ],
     "end": [
-     9,
+     10,
      22
     ],
     "filename": "src/lib.rs"
    },
    "visibility": "public"
   },
-  "80": {
+  "84": {
    "attrs": [],
    "crate_id": 0,
    "deprecation": null,
    "docs": null,
-   "id": 80,
+   "id": 84,
    "inner": {
     "use": {
-     "id": 81,
+     "id": 85,
      "is_glob": false,
      "name": "Map",
      "source": "std::collections::HashMap"
@@ -4343,23 +4517,23 @@
    "name": null,
    "span": {
     "begin": [
-     11,
+     12,
      1
     ],
     "end": [
-     11,
+     12,
      42
     ],
     "filename": "src/lib.rs"
    },
    "visibility": "public"
   },
-  "82": {
+  "86": {
    "attrs": [],
    "crate_id": 0,
    "deprecation": null,
    "docs": "A point in the plane.",
-   "id": 82,
+   "id": 86,
    "inner": {
     "struct": {
      "generics": {
@@ -4367,21 +4541,21 @@
       "where_predicates": []
      },
      "impls": [
-      93,
-      94,
-      101,
-      123,
-      126,
+      97,
+      98,
+      105,
       127,
-      129,
-      132,
-      135
+      130,
+      131,
+      133,
+      136,
+      139
      ],
      "kind": {
       "plain": {
        "fields": [
-        88,
-        89
+        92,
+        93
        ],
        "has_stripped_fields": true
       }
@@ -4392,23 +4566,23 @@
    "name": "Point",
    "span": {
     "begin": [
-     44,
+     45,
      1
     ],
     "end": [
-     49,
+     50,
      2
     ],
     "filename": "src/lib.rs"
    },
    "visibility": "public"
   },
-  "84": {
+  "88": {
    "attrs": [],
    "crate_id": 0,
    "deprecation": null,
    "docs": "Add two numbers.\n\nSee [`Point`] and [`std::fmt::Display`].",
-   "id": 84,
+   "id": 88,
    "inner": {
     "function": {
      "generics": {
@@ -4445,29 +4619,29 @@
     }
    },
    "links": {
-    "`Point`": 82,
-    "`std::fmt::Display`": 83
+    "`Point`": 86,
+    "`std::fmt::Display`": 87
    },
    "name": "add",
    "span": {
     "begin": [
-     16,
+     17,
      1
     ],
     "end": [
-     20,
+     21,
      2
     ],
     "filename": "src/lib.rs"
    },
    "visibility": "public"
   },
-  "85": {
+  "89": {
    "attrs": [],
    "crate_id": 0,
    "deprecation": null,
    "docs": "Scale a number.\n\n# Arguments\n\n* `x` - the number\n* `by` - the factor",
-   "id": 85,
+   "id": 89,
    "inner": {
     "function": {
      "generics": {
@@ -4507,23 +4681,23 @@
    "name": "scale",
    "span": {
     "begin": [
-     28,
+     29,
      1
     ],
     "end": [
-     30,
+     31,
      2
     ],
     "filename": "src/lib.rs"
    },
    "visibility": "public"
   },
-  "86": {
+  "90": {
    "attrs": [],
    "crate_id": 0,
    "deprecation": null,
    "docs": "Print a greeting.",
-   "id": 86,
+   "id": 90,
    "inner": {
     "function": {
      "generics": {
@@ -4544,7 +4718,7 @@
         {
          "resolved_path": {
           "args": null,
-          "id": 52,
+          "id": 56,
           "path": "String"
          }
         }
@@ -4559,23 +4733,23 @@
    "name": "greet",
    "span": {
     "begin": [
-     33,
+     34,
      1
     ],
     "end": [
-     36,
+     37,
      2
     ],
     "filename": "src/lib.rs"
    },
    "visibility": "public"
   },
-  "87": {
+  "91": {
    "attrs": [],
    "crate_id": 0,
    "deprecation": null,
    "docs": null,
-   "id": 87,
+   "id": 91,
    "inner": {
     "function": {
      "generics": {
@@ -4609,23 +4783,23 @@
    "name": "undocumented",
    "span": {
     "begin": [
-     38,
+     39,
      1
     ],
     "end": [
-     40,
+     41,
      2
     ],
     "filename": "src/lib.rs"
    },
    "visibility": "public"
   },
-  "88": {
+  "92": {
    "attrs": [],
    "crate_id": 0,
    "deprecation": null,
    "docs": "Across.",
-   "id": 88,
+   "id": 92,
    "inner": {
     "struct_field": {
      "primitive": "f64"
@@ -4635,23 +4809,23 @@
    "name": "x",
    "span": {
     "begin": [
-     46,
+     47,
      5
     ],
     "end": [
-     46,
+     47,
      15
     ],
     "filename": "src/lib.rs"
    },
    "visibility": "public"
   },
-  "89": {
+  "93": {
    "attrs": [],
    "crate_id": 0,
    "deprecation": null,
    "docs": null,
-   "id": 89,
+   "id": 93,
    "inner": {
     "struct_field": {
      "primitive": "f64"
@@ -4661,23 +4835,23 @@
    "name": "y",
    "span": {
     "begin": [
-     47,
+     48,
      5
     ],
     "end": [
-     47,
+     48,
      15
     ],
     "filename": "src/lib.rs"
    },
    "visibility": "public"
   },
-  "91": {
+  "95": {
    "attrs": [],
    "crate_id": 0,
    "deprecation": null,
    "docs": "Make a point at the origin.",
-   "id": 91,
+   "id": 95,
    "inner": {
     "function": {
      "generics": {
@@ -4704,23 +4878,23 @@
    "name": "origin",
    "span": {
     "begin": [
-     53,
+     54,
      5
     ],
     "end": [
-     55,
+     56,
      6
     ],
     "filename": "src/lib.rs"
    },
    "visibility": "public"
   },
-  "92": {
+  "96": {
    "attrs": [],
    "crate_id": 0,
    "deprecation": null,
    "docs": "The distance to another point.",
-   "id": 92,
+   "id": 96,
    "inner": {
     "function": {
      "generics": {
@@ -4757,7 +4931,7 @@
           "type": {
            "resolved_path": {
             "args": null,
-            "id": 82,
+            "id": 86,
             "path": "Point"
            }
           }
@@ -4776,30 +4950,30 @@
    "name": "distance",
    "span": {
     "begin": [
-     58,
+     59,
      5
     ],
     "end": [
-     62,
+     63,
      6
     ],
     "filename": "src/lib.rs"
    },
    "visibility": "public"
   },
-  "93": {
+  "97": {
    "attrs": [],
    "crate_id": 0,
    "deprecation": null,
    "docs": null,
-   "id": 93,
+   "id": 97,
    "inner": {
     "impl": {
      "blanket_impl": null,
      "for": {
       "resolved_path": {
        "args": null,
-       "id": 82,
+       "id": 86,
        "path": "Point"
       }
      },
@@ -4811,8 +4985,8 @@
      "is_synthetic": false,
      "is_unsafe": false,
      "items": [
-      91,
-      92
+      95,
+      96
      ],
      "provided_trait_methods": [],
      "trait": null
@@ -4822,30 +4996,30 @@
    "name": null,
    "span": {
     "begin": [
-     51,
+     52,
      1
     ],
     "end": [
-     67,
+     68,
      2
     ],
     "filename": "src/lib.rs"
    },
    "visibility": "default"
   },
-  "94": {
+  "98": {
    "attrs": [],
    "crate_id": 0,
    "deprecation": null,
    "docs": null,
-   "id": 94,
+   "id": 98,
    "inner": {
     "impl": {
      "blanket_impl": null,
      "for": {
       "resolved_path": {
        "args": null,
-       "id": 82,
+       "id": 86,
        "path": "Point"
       }
      },
@@ -4881,7 +5055,7 @@
     "Circle"
    ]
   },
-  "105": {
+  "109": {
    "crate_id": 2,
    "kind": "trait",
    "path": [
@@ -4890,7 +5064,7 @@
     "Clone"
    ]
   },
-  "121": {
+  "125": {
    "crate_id": 2,
    "kind": "struct",
    "path": [
@@ -4899,7 +5073,7 @@
     "Formatter"
    ]
   },
-  "122": {
+  "126": {
    "crate_id": 2,
    "kind": "type_alias",
    "path": [
@@ -4908,7 +5082,7 @@
     "Result"
    ]
   },
-  "124": {
+  "128": {
    "crate_id": 2,
    "kind": "trait",
    "path": [
@@ -4917,7 +5091,7 @@
     "Debug"
    ]
   },
-  "128": {
+  "132": {
    "crate_id": 2,
    "kind": "trait",
    "path": [
@@ -4926,7 +5100,7 @@
     "Copy"
    ]
   },
-  "130": {
+  "134": {
    "crate_id": 2,
    "kind": "trait",
    "path": [
@@ -4935,7 +5109,7 @@
     "StructuralPartialEq"
    ]
   },
-  "133": {
+  "137": {
    "crate_id": 2,
    "kind": "trait",
    "path": [
@@ -4944,7 +5118,7 @@
     "PartialEq"
    ]
   },
-  "136": {
+  "140": {
    "crate_id": 0,
    "kind": "variant",
    "path": [
@@ -4953,7 +5127,7 @@
     "Green"
    ]
   },
-  "137": {
+  "141": {
    "crate_id": 0,
    "kind": "variant",
    "path": [
@@ -4962,7 +5136,7 @@
     "Red"
    ]
   },
-  "141": {
+  "145": {
    "crate_id": 0,
    "kind": "variant",
    "path": [
@@ -4971,7 +5145,7 @@
     "Rgb"
    ]
   },
-  "143": {
+  "147": {
    "crate_id": 0,
    "kind": "variant",
    "path": [
@@ -4980,7 +5154,7 @@
     "Named"
    ]
   },
-  "148": {
+  "152": {
    "crate_id": 0,
    "kind": "variant",
    "path": [
@@ -4989,7 +5163,7 @@
     "Mix"
    ]
   },
-  "149": {
+  "153": {
    "crate_id": 0,
    "kind": "enum",
    "path": [
@@ -4997,7 +5171,7 @@
     "Colour"
    ]
   },
-  "166": {
+  "170": {
    "crate_id": 0,
    "kind": "type_alias",
    "path": [
@@ -5005,7 +5179,7 @@
     "Number"
    ]
   },
-  "167": {
+  "171": {
    "crate_id": 0,
    "kind": "constant",
    "path": [
@@ -5013,7 +5187,7 @@
     "MAX"
    ]
   },
-  "168": {
+  "172": {
    "crate_id": 0,
    "kind": "function",
    "path": [
@@ -5021,7 +5195,7 @@
     "wrap"
    ]
   },
-  "169": {
+  "173": {
    "crate_id": 2,
    "kind": "enum",
    "path": [
@@ -5030,7 +5204,7 @@
     "Option"
    ]
   },
-  "173": {
+  "177": {
    "crate_id": 0,
    "kind": "struct",
    "path": [
@@ -5056,7 +5230,7 @@
     "Borrow"
    ]
   },
-  "192": {
+  "196": {
    "crate_id": 0,
    "kind": "function",
    "path": [
@@ -5064,7 +5238,7 @@
     "apply"
    ]
   },
-  "193": {
+  "197": {
    "crate_id": 2,
    "kind": "trait",
    "path": [
@@ -5074,7 +5248,7 @@
     "Fn"
    ]
   },
-  "194": {
+  "198": {
    "crate_id": 0,
    "kind": "function",
    "path": [
@@ -5082,7 +5256,7 @@
     "pair"
    ]
   },
-  "195": {
+  "199": {
    "crate_id": 0,
    "kind": "function",
    "path": [
@@ -5090,7 +5264,7 @@
     "quote"
    ]
   },
-  "196": {
+  "200": {
    "crate_id": 0,
    "kind": "function",
    "path": [
@@ -5098,7 +5272,7 @@
     "type"
    ]
   },
-  "199": {
+  "203": {
    "crate_id": 0,
    "kind": "struct",
    "path": [
@@ -5106,7 +5280,7 @@
     "Size"
    ]
   },
-  "214": {
+  "218": {
    "crate_id": 0,
    "kind": "function",
    "path": [
@@ -5114,7 +5288,7 @@
     "fences"
    ]
   },
-  "215": {
+  "219": {
    "crate_id": 0,
    "kind": "function",
    "path": [
@@ -5122,7 +5296,7 @@
     "point"
    ]
   },
-  "217": {
+  "221": {
    "crate_id": 0,
    "kind": "struct",
    "path": [
@@ -5130,7 +5304,7 @@
     "Wrapper"
    ]
   },
-  "234": {
+  "238": {
    "crate_id": 0,
    "kind": "macro",
    "path": [
@@ -5138,7 +5312,7 @@
     "point"
    ]
   },
-  "237": {
+  "241": {
    "crate_id": 0,
    "kind": "module",
    "path": [
@@ -5184,18 +5358,18 @@
    "kind": "function",
    "path": [
     "tinycrate",
-    "inner",
-    "helpers",
-    "count"
+    "geo",
+    "plane",
+    "rect"
    ]
   },
   "49": {
    "crate_id": 0,
-   "kind": "struct",
+   "kind": "module",
    "path": [
     "tinycrate",
-    "inner",
-    "Token"
+    "geo",
+    "plane"
    ]
   },
   "5": {
@@ -5207,7 +5381,43 @@
     "Sync"
    ]
   },
+  "50": {
+   "crate_id": 0,
+   "kind": "function",
+   "path": [
+    "tinycrate",
+    "geo",
+    "gap"
+   ]
+  },
+  "51": {
+   "crate_id": 0,
+   "kind": "module",
+   "path": [
+    "tinycrate",
+    "geo"
+   ]
+  },
   "52": {
+   "crate_id": 0,
+   "kind": "function",
+   "path": [
+    "tinycrate",
+    "inner",
+    "helpers",
+    "count"
+   ]
+  },
+  "53": {
+   "crate_id": 0,
+   "kind": "struct",
+   "path": [
+    "tinycrate",
+    "inner",
+    "Token"
+   ]
+  },
+  "56": {
    "crate_id": 3,
    "kind": "struct",
    "path": [
@@ -5216,7 +5426,7 @@
     "String"
    ]
   },
-  "68": {
+  "72": {
    "crate_id": 0,
    "kind": "function",
    "path": [
@@ -5226,7 +5436,7 @@
     "deepfn"
    ]
   },
-  "69": {
+  "73": {
    "crate_id": 0,
    "kind": "module",
    "path": [
@@ -5235,7 +5445,7 @@
     "deep"
    ]
   },
-  "70": {
+  "74": {
    "crate_id": 0,
    "kind": "function",
    "path": [
@@ -5244,7 +5454,7 @@
     "add_two"
    ]
   },
-  "72": {
+  "76": {
    "crate_id": 0,
    "kind": "function",
    "path": [
@@ -5253,7 +5463,7 @@
     "in_a"
    ]
   },
-  "76": {
+  "80": {
    "crate_id": 0,
    "kind": "function",
    "path": [
@@ -5262,7 +5472,7 @@
     "in_b"
    ]
   },
-  "81": {
+  "85": {
    "crate_id": 1,
    "kind": "struct",
    "path": [
@@ -5273,7 +5483,7 @@
     "HashMap"
    ]
   },
-  "82": {
+  "86": {
    "crate_id": 0,
    "kind": "struct",
    "path": [
@@ -5281,7 +5491,7 @@
     "Point"
    ]
   },
-  "83": {
+  "87": {
    "crate_id": 2,
    "kind": "trait",
    "path": [
@@ -5290,7 +5500,7 @@
     "Display"
    ]
   },
-  "84": {
+  "88": {
    "crate_id": 0,
    "kind": "function",
    "path": [
@@ -5298,7 +5508,7 @@
     "add"
    ]
   },
-  "85": {
+  "89": {
    "crate_id": 0,
    "kind": "function",
    "path": [
@@ -5306,7 +5516,7 @@
     "scale"
    ]
   },
-  "86": {
+  "90": {
    "crate_id": 0,
    "kind": "function",
    "path": [
@@ -5314,7 +5524,7 @@
     "greet"
    ]
   },
-  "87": {
+  "91": {
    "crate_id": 0,
    "kind": "function",
    "path": [
@@ -5323,5 +5533,5 @@
    ]
   }
  },
- "root": 237
+ "root": 241
 }

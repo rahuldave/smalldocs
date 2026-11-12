@@ -2,6 +2,7 @@
 
 import json
 import os
+import re
 import shutil
 import subprocess
 import sys
@@ -17,6 +18,7 @@ from smalldocs.site import build
 
 FIXTURES = Path(__file__).parent / "fixtures" / "rust"
 CRATE = FIXTURES / "tinycrate"
+TOP = f"---\n{api_rust.MARK}\n"  # The start of each page that a build writes
 
 
 @pytest.fixture(autouse=True)
@@ -55,7 +57,7 @@ def pages(
 ) -> dict[str, str]:  # The text of each page that `api build` wrote, under its file name
     "Build the API pages of the site and read them."
     assert main(["api", "build", "--dir", str(site)]) == 0
-    return {p.name: p.read_text() for p in sorted((site / "api").glob("*.qmd"))}
+    return {p.relative_to(site / "api").as_posix(): p.read_text() for p in sorted((site / "api").rglob("*.qmd"))}
 
 
 def entry(
@@ -101,22 +103,22 @@ def test_comments_after_parameters_by_line(site: Path) -> None:
     "The comment after a parameter describes it; the one on the line of `->` describes the return."
     add = entry(pages(site)["tinycrate.qmd"], "add")
     assert "```rust\npub fn add(a: i32, b: i32) -> i32\n```" in add
-    assert "| `a` | `i32` | the first number |\n| `b` | `i32` | the second number |\n| returns | `i32` | the sum |" in add
+    assert "| `a` | i32 | the first number |\n| `b` | i32 | the second number |\n| returns | i32 | the sum |" in add
 
 
 def test_comment_on_a_one_line_signature_and_the_body_line(site: Path) -> None:
     "On a line with one parameter and no `->`, the comment is the parameter's; on a line of `->` with no parameter, or of the `{`, it is the return's."
     p = pages(site)["tinycrate.qmd"]
-    assert "| `name` | `String` | the name, which is changed |" in entry(p, "greet")
-    assert "| returns | `Self` | the point (0, 0) |" in entry(p, "Point.origin")
-    assert "| `value` | `T` | the value |\n| returns | `Option<T>` | the value, wrapped |" in entry(p, "wrap")
-    assert "| returns | `f64` | the area, in square units |" in entry(p, "Shape.area")
+    assert "| `name` | String | the name, which is changed |" in entry(p, "greet")
+    assert "| returns | Self | the point (0, 0) |" in entry(p, "Point.origin")
+    assert "| `value` | T | the value |\n| returns | Option&lt;T&gt; | the value, wrapped |" in entry(p, "wrap")
+    assert "| returns | f64 | the area, in square units |" in entry(p, "Shape.area")
 
 
 def test_arguments_list_when_there_is_no_comment(site: Path) -> None:
     "Without a comment, a parameter's description comes from the doc comment's `# Arguments` list, which leaves the text."
     scale = entry(pages(site)["tinycrate.qmd"], "scale")
-    assert "| `x` | `f64` | the number |\n| `by` | `f64` | the factor |" in scale
+    assert "| `x` | f64 | the number |\n| `by` | f64 | the factor |" in scale
     assert "Arguments" not in scale
 
 
@@ -124,9 +126,9 @@ def test_struct_fields_and_inherent_methods(site: Path) -> None:
     "A struct has a table of its public fields, with the doc comment or the comment after each; its own methods are entries under it."
     p = pages(site)["tinycrate.qmd"]
     point = entry(p, "Point")
-    assert "| `x` | `f64` | Across. |\n| `y` | `f64` | Up |" in point and "hidden" not in point
+    assert "| `x` | f64 | Across. |\n| `y` | f64 | Up |" in point and "hidden" not in point
     assert "### Point::distance {#Point.distance}" in p and "pub fn distance(&self, other: &Point) -> f64" in p
-    assert "| `other` | `&Point` | the other point |" in entry(p, "Point.distance")
+    assert "| `other` | &amp;Point | the other point |" in entry(p, "Point.distance")
     assert "secret" not in p, "a private method is left out of a library's pages"
 
 
@@ -167,8 +169,8 @@ def test_reexports_have_one_entry(site: Path) -> None:
     assert "## struct Circle {#Circle}" in p["shapes.qmd"] and "{#Circle}" not in root
     assert "Re-exports [`Circle`](/api/shapes.qmd#Circle), [`Map`](https://doc.rust-lang.org/nightly/std/collections/hash/map/struct.HashMap.html)." in root
     assert "## struct Token {#Token}" in root and "pub struct Token(pub String);" in root, "from a private module"
-    assert "## count {#count}" in root, "from a glob re-export of a private module"
-    assert set(p) == {"tinycrate.qmd", "shapes.qmd", "deep.qmd"}, "a private module has no page; a public module inside it has one"
+    assert "## fn count {#count}" in root, "from a glob re-export of a private module"
+    assert set(p) == {"index.qmd", "tinycrate.qmd", "shapes.qmd", "deep.qmd", "geo/index.qmd", "geo/plane.qmd"}, "a private module has no page; a public module inside it has one"
 
 
 def test_intra_doc_links(site: Path) -> None:
@@ -192,8 +194,8 @@ def test_page_front_matter_module_docs_and_examples(site: Path) -> None:
     "A page has the module's title and summary, its other docs, a table of its modules; a doc example is Rust, without its hidden lines, under the entry's heading."
     p = pages(site)
     root = p["tinycrate.qmd"]
-    assert root.startswith('---\ntitle: "tinycrate"\ndescription: "A tiny crate for the tests of smalldocs."\n---\n\nIt has a function')
-    assert "| [`shapes`](shapes.qmd) | Shapes, read from `&[u8]`. |" in root, "a code span in a summary keeps its brackets"
+    assert root.startswith(TOP + 'title: "tinycrate"\ndescription: "A tiny crate for the tests of smalldocs."\n---\n\nIt has a function')
+    assert "| [`shapes`](/api/shapes.qmd) | Shapes, read from `&[u8]`. |" in root, "a code span in a summary keeps its brackets"
     wrapper = entry(root, "Wrapper")
     assert "#### Examples\n\n```rust\nlet w = Wrapper { inner: &3 };" in wrapper and "# use" not in wrapper
     assert "[source](https://example.com/tiny/blob/main/src/lib.rs#L" in wrapper
@@ -230,7 +232,7 @@ def test_build_deletes_only_its_own_pages(site: Path) -> None:
     (site / "api/.smalldocs-api").write_text("gone.qmd")
     pages(site)
     assert (site / "api/index.qmd").exists() and not (site / "api/gone.qmd").exists()
-    assert (site / "api/.smalldocs-api").read_text() == "deep.qmd\nshapes.qmd\ntinycrate.qmd"
+    assert (site / "api/.smalldocs-api").read_text() == "deep.qmd\ngeo/index.qmd\ngeo/plane.qmd\nshapes.qmd\ntinycrate.qmd"
 
 
 @pytest.mark.parametrize("out", [".", "..", "../x"])
@@ -247,10 +249,10 @@ def test_binary_documents_private_items(site: Path) -> None:
     conf = (site / "_smalldocs.yml").read_text().replace("language: rust", "language: rust\n  private: true")
     (site / "_smalldocs.yml").write_text(conf)
     p = pages(site)
-    assert "### Point::secret {#Point.secret}" in p["tinycrate.qmd"] and "| `hidden` | `bool` |  |" in p["tinycrate.qmd"]
+    assert "### Point::secret {#Point.secret}" in p["tinycrate.qmd"] and "| `hidden` | bool |  |" in p["tinycrate.qmd"]
     assert "```rust\nfn secret(&self) -> bool\n```" in p["tinycrate.qmd"], "a private item, which rustdoc restricts to its own module, has no `pub`"
     assert api_rust.visibility({"visibility": {"restricted": {"parent": 7, "path": "::a::b"}}}, "9") == "pub(in crate::a::b) "
-    assert {"inner.qmd", "helpers.qmd"} <= set(p) and "## struct Token {#Token}" in p["inner.qmd"]
+    assert {"inner/index.qmd", "inner/helpers.qmd"} <= set(p) and "## struct Token {#Token}" in p["inner/index.qmd"], "a module with modules is its folder's index"
 
 
 def test_check_lists_gaps(site: Path, capsys: pytest.CaptureFixture) -> None:
@@ -267,7 +269,7 @@ def test_check_lists_gaps(site: Path, capsys: pytest.CaptureFixture) -> None:
         "tinycrate::inner::helpers: no module doc comment",
     ]:
         assert gap in out
-    assert "tinycrate:add:" not in out and "tinycrate:add(" not in out and "of 36 items are documented" in out
+    assert "tinycrate:add:" not in out and "tinycrate:add(" not in out and "of 38 items are documented" in out
     assert main(["api", "check", "--shown", "--dir", str(site)]) == 1
     shown = capsys.readouterr().out
     assert "secret" not in shown and "hidden" not in shown and "tinycrate:undocumented(x): no docment" in shown
@@ -361,20 +363,20 @@ def test_real_rustdoc(tmp_path: Path) -> None:
 def test_glob_cycle_ends(site: Path) -> None:
     "Two hidden modules that glob-import each other, `pub use a::*` and `pub use b::*`, give each item one entry, and the build ends."
     root = pages(site)["tinycrate.qmd"]
-    assert root.count("## in_a {#in_a}") == 1 and root.count("## in_b {#in_b}") == 1
+    assert root.count("## fn in_a {#in_a}") == 1 and root.count("## fn in_b {#in_b}") == 1
 
 
 def test_public_module_inside_a_private_one(site: Path) -> None:
     "`pub use hidden::deep`, a public module inside a private one, gives the module its page, listed with the root's modules."
     p = pages(site)
-    assert "## deepfn {#deepfn}" in p["deep.qmd"] and p["deep.qmd"].startswith('---\ntitle: "tinycrate::deep"')
-    assert "| [`deep`](deep.qmd) | A public module inside a private one. |" in p["tinycrate.qmd"]
+    assert "## fn deepfn {#deepfn}" in p["deep.qmd"] and p["deep.qmd"].startswith(TOP + 'title: "deep"')
+    assert "| [`deep`](/api/deep.qmd) | A public module inside a private one. |" in p["tinycrate.qmd"]
 
 
 def test_renamed_reexport_keeps_its_comments(site: Path, capsys: pytest.CaptureFixture) -> None:
     "`pub use hidden::add_two as plus` reads the comments from `fn add_two` in the source, so `check` finds no gap."
     plus = entry(pages(site)["tinycrate.qmd"], "plus")
-    assert "pub fn plus(a: i32, b: i32) -> i32" in plus and "| `a` | `i32` | the first |\n| `b` | `i32` | the second |\n| returns | `i32` | the sum |" in plus
+    assert "pub fn plus(a: i32, b: i32) -> i32" in plus and "| `a` | i32 | the first |\n| `b` | i32 | the second |\n| returns | i32 | the sum |" in plus
     main(["api", "check", "--shown", "--dir", str(site)])
     assert "plus" not in capsys.readouterr().out
 
@@ -388,19 +390,19 @@ def test_methods_of_two_impls_with_one_name(site: Path) -> None:
 def test_arrow_in_generics_and_where_is_not_the_return(site: Path) -> None:
     "A `->` inside `<F: Fn(u8) -> u8>` or a `where` clause is not the return's, so their comments go to the parameter or nowhere."
     apply = entry(pages(site)["tinycrate.qmd"], "apply")
-    assert "| `f` | `F` | the function |\n| `x` | `u8` | the input |\n| returns | `u8` |  |" in apply and "a bound" not in apply
+    assert "| `f` | F | the function |\n| `x` | u8 | the input |\n| returns | u8 |  |" in apply and "a bound" not in apply
 
 
 def test_pattern_parameter(site: Path, capsys: pytest.CaptureFixture) -> None:
     "A parameter written as a pattern, `(b, c): (u8, u8)`, gets the comment after it, and `check` finds no gap."
-    assert "| `(b, c)` | `(u8, u8)` | the pair |" in entry(pages(site)["tinycrate.qmd"], "pair")
+    assert "| `(b, c)` | (u8, u8) | the pair |" in entry(pages(site)["tinycrate.qmd"], "pair")
     main(["api", "check", "--shown", "--dir", str(site)])
     assert "pair" not in capsys.readouterr().out
 
 
 def test_character_literal_and_block_comment(site: Path) -> None:
     "A `'\"'` in a `/* */` comment starts no string, so the comment after the parameter is still read."
-    assert "| `c` | `char` | the character |" in entry(pages(site)["tinycrate.qmd"], "quote")
+    assert "| `c` | char | the character |" in entry(pages(site)["tinycrate.qmd"], "quote")
     assert api_rust.split_comment("let c = '\"'; // a quote") == ("let c = '\"'; ", "a quote")
     assert api_rust.split_comment("fn f<'a>(x: &'a str) // a") == ("fn f<'a>(x: &'a str) ", "a")
 
@@ -421,7 +423,7 @@ def test_disambiguators_and_keyword_names(site: Path) -> None:
 def test_one_line_struct_comment_belongs_to_no_field(site: Path) -> None:
     "The comment after `pub struct Size { pub w: u32, pub h: u32 }` describes no single field."
     size = entry(pages(site)["tinycrate.qmd"], "Size")
-    assert "| `w` | `u32` |  |\n| `h` | `u32` |  |" in size
+    assert "| `w` | u32 |  |\n| `h` | u32 |  |" in size
 
 
 def test_function_and_macro_of_one_name(site: Path) -> None:
@@ -490,3 +492,137 @@ def test_json_where_cargo_writes_it(tmp_path: Path, monkeypatch: pytest.MonkeyPa
     (fake_cargo_dir / "cargo").chmod(0o755)
     assert main(["api", "build", "--dir", str(s)]) == 2, "the JSON of the run before is deleted, not read"
     assert "wrote no tinycrate.json" in capsys.readouterr().err
+
+
+# ---------------------------------------------------------------- the layout: folders that follow the modules
+
+
+def test_pages_follow_the_module_tree(site: Path) -> None:
+    "A module with modules is its folder's `index.qmd`, one without is a page in its parent's folder, and the root is `mycrate.qmd`; each title is the module's own name."
+    p = pages(site)
+    assert p["geo/index.qmd"].startswith(TOP + 'title: "geo"\ndescription: "Geometry, with a module inside."')
+    assert "## fn gap {#gap}" in p["geo/index.qmd"] and "| [`plane`](/api/geo/plane.qmd) | Things on a plane. |" in p["geo/index.qmd"]
+    assert p["geo/plane.qmd"].startswith(TOP + 'title: "plane"') and "## fn rect {#rect}" in p["geo/plane.qmd"]
+    assert p["tinycrate.qmd"].startswith(TOP + 'title: "tinycrate"')
+    index = json.loads((site / "_symbols.json").read_text())
+    assert index["rect"] == index["tinycrate::geo::plane::rect"] == "/api/geo/plane.qmd#rect" and index["gap"] == "/api/geo/index.qmd#gap"
+
+
+def test_folder_index_page(site: Path) -> None:
+    "The folder of pages gets an `index.qmd` that heads its sidebar section: the crate's summary and a link to each page at the top."
+    top = pages(site)["index.qmd"]
+    assert top.startswith(TOP + 'title: "API"\ndescription: "A tiny crate for the tests of smalldocs."')
+    assert "| [`tinycrate`](/api/tinycrate.qmd) | A tiny crate" in top and "| [`geo`](/api/geo/index.qmd) | Geometry" in top
+    assert "index.qmd" in (site / "api/.smalldocs-api").read_text().split("\n")
+
+
+def test_hand_written_index_pages_are_kept(site: Path) -> None:
+    "A hand-written `index.qmd`, of the folder of pages or of a module's folder, is never written over; the module's page then sits beside it."
+    (site / "api/geo").mkdir(parents=True)
+    (site / "api/index.qmd").write_text("---\ntitle: Mine\n---\n")
+    (site / "api/geo/index.qmd").write_text("---\ntitle: My geo\n---\n")
+    p = pages(site)
+    assert p["index.qmd"] == "---\ntitle: Mine\n---\n" and p["geo/index.qmd"] == "---\ntitle: My geo\n---\n"
+    assert "## fn gap {#gap}" in p["geo/geo.qmd"] and json.loads((site / "_symbols.json").read_text())["gap"] == "/api/geo/geo.qmd#gap"
+    assert pages(site)["geo/index.qmd"] == "---\ntitle: My geo\n---\n", "a second build keeps it too"
+
+
+def test_stale_pages_in_subfolders(site: Path) -> None:
+    "The build deletes a page in a subfolder that its manifest lists and this build did not write, and the folder it leaves empty; never a hand-written page, nor a file outside the folder of pages."
+    (site / "api/geo").mkdir(parents=True)
+    (site / "api/gone").mkdir()
+    (site / "api/geo/old.qmd").write_text("x")
+    (site / "api/gone/x.qmd").write_text("x")
+    (site / "api/geo/mine.qmd").write_text("x")
+    (site / "outside.qmd").write_text("x")
+    (site / "api/.smalldocs-api").write_text("geo/old.qmd\ngone/x.qmd\n../outside.qmd\n" + str(site / "outside.qmd"))
+    pages(site)
+    assert not (site / "api/geo/old.qmd").exists() and not (site / "api/gone").exists()
+    assert (site / "api/geo/mine.qmd").exists() and (site / "outside.qmd").exists()
+
+
+def test_types_are_plain_text(site: Path) -> None:
+    "Types in tables are plain text, as on the Python pages, with `&`, `<`, `>` and `[` escaped, and show as Rust writes them."
+    p = pages(site)["tinycrate.qmd"]
+    assert "| `other` | &amp;Point | the other point |" in p and "| returns | Option&lt;T&gt; | the value, wrapped |" in p
+    assert "| `tokens` | &amp;\\[Token\\] | the tokens |" in p
+    s = build(site, quiet=True)
+    html = (s.out / "api/tinycrate.html").read_text()
+    assert "<td>Option&lt;T&gt;</td>" in html and "<td>&amp;[Token]</td>" in html
+
+
+def test_sidebar_shows_names_and_folders(site: Path) -> None:
+    "With `auto: api/**`, the sidebar has a section for each folder, nested, and each page by its module's name, never a path."
+    conf = (site / "_smalldocs.yml").read_text().replace("project:\n  type: website\n", "project:\n  type: website\nwebsite:\n  sidebar:\n    contents:\n      - auto: api/**\n")
+    (site / "_smalldocs.yml").write_text(conf)
+    pages(site)
+    s = build(site, quiet=True)
+    html = (s.out / "api/geo/plane.html").read_text()
+    bar = html[html.index('id="quarto-sidebar"') :]
+    bar = bar[: bar.index("</nav>")]
+    texts = re.findall(r'class="menu-text">([^<]*)<', bar)
+    assert {"tinycrate", "shapes", "geo", "plane"} <= set(texts) and "API" not in texts and not any("::" in t or "/" in t for t in texts)
+    assert bar.index(">geo<") < bar.index(">plane<"), "plane is inside the geo section"
+
+
+def test_stray_angle_brackets_are_escaped() -> None:
+    "A `<` in prose that starts no HTML, such as `Vec<u8>` outside backticks, shows as text; code, tags, autolinks and comments stay."
+    assert api_rust.escape_angles("a Vec<u8> and `Vec<u8>`") == "a Vec&lt;u8> and `Vec<u8>`"
+    assert api_rust.escape_angles("<br> <https://x.org> <!-- c --> </details>") == "<br> <https://x.org> <!-- c --> </details>"
+    assert api_rust.tidy_docs("Takes <T>.\n\n```\nlet v: Vec<u8>;\n```", 1) == "Takes &lt;T>.\n\n```rust\nlet v: Vec<u8>;\n```"
+
+
+def renamed(
+    data: dict,  # rustdoc's JSON
+    old: str,  # A module's name
+    new: str,  # Its new name
+) -> dict:  # The JSON with that module renamed, in its item and its path
+    "Rename a module in rustdoc's JSON, to make a crate whose page names clash."
+    for v in data["index"].values():
+        if v.get("name") == old and isinstance(v["inner"], dict) and "module" in v["inner"]:
+            v["name"] = new
+    for v in data["paths"].values():
+        if v.get("crate_id") == 0 and old in v["path"]:
+            v["path"] = [new if x == old else x for x in v["path"]]
+    return data
+
+
+def test_page_files_never_clash() -> None:
+    "A module that would take another page's file, the root's or the folder's index, or one that differs only in case, gets a file of its own."
+    crate = api_rust.Crate(renamed(fixture(), "shapes", "tinycrate"), CRATE)
+    files = [p.file for p in crate.pages]
+    assert files[0] == "tinycrate.qmd" and "tinycrate-module.qmd" in files and len({f.casefold() for f in files}) == len(files)
+    crate = api_rust.Crate(renamed(renamed(fixture(), "tinycrate", "index"), "shapes", "Index"), CRATE)
+    files = [p.file for p in crate.pages]
+    assert files[0] == "index-module.qmd" and "Index-module-2.qmd" in files and "index.qmd" not in files
+    crate = api_rust.Crate(renamed(fixture(), "plane", "geo"), CRATE, taken={"geo/index.qmd"})
+    files = [p.file for p in crate.pages]
+    assert "geo/geo.qmd" in files and "geo/geo-module.qmd" in files, "a module's page beside a hand-written index, and its module of the same name"
+
+
+def test_lost_manifest_freezes_nothing(site: Path) -> None:
+    "A page that a build wrote carries a mark, so that a build writes over it even when the manifest is lost; a page without the mark is kept."
+    pages(site)
+    (site / "api/.smalldocs-api").unlink()
+    (site / "api/shapes.qmd").write_text(TOP + "title: old\n---\n")
+    (site / "api/mine.qmd").write_text("---\ntitle: Mine\n---\n")
+    p = pages(site)
+    assert p["shapes.qmd"].startswith(TOP + 'title: "shapes"') and p["mine.qmd"] == "---\ntitle: Mine\n---\n"
+    assert "shapes.qmd" in (site / "api/.smalldocs-api").read_text().split("\n")
+
+
+def test_generics_and_code_are_not_html() -> None:
+    "A one-letter generic such as `Wrapper<B>` is text, in any case; code in an indented block or in a span over two lines is left as it is; real tags stay."
+    assert api_rust.escape_angles("Wrapper<B> and Parser<I>, Box<P>, Foo<A>") == "Wrapper&lt;B> and Parser&lt;I>, Box&lt;P>, Foo&lt;A>"
+    assert api_rust.escape_angles("<b>bold</b> <u>u</u> <h2>x</h2> <a@b.com>") == "<b>bold</b> <u>u</u> <h2>x</h2> <a@b.com>"
+    assert api_rust.tidy_docs("Text Vec<u8>.\n\n    let v: Vec<u8> = vec![];\n    v<1\n\nMore <T>.", 1) == (
+        "Text Vec&lt;u8>.\n\n    let v: Vec<u8> = vec![];\n    v<1\n\nMore &lt;T>."
+    )
+    assert api_rust.tidy_docs("A `Vec<\nu8>` span, then <T>.", 1) == "A `Vec<\nu8>` span, then &lt;T>."
+    assert api_rust.tidy_docs("A `Vec\n\n<T>` here.", 1) == "A `Vec\n\n&lt;T>` here.", "a code span ends at a blank line"
+
+
+def test_list_item_paragraph_is_not_code() -> None:
+    "An indented paragraph inside a list item is prose, so its stray `<` is escaped; after the list ends, an indented block is code again."
+    text = "* a list item\n\n    about Vec<u8> here.\n\nAfter.\n\n    let v: Vec<u8>;"
+    assert api_rust.tidy_docs(text, 1) == "* a list item\n\n    about Vec&lt;u8> here.\n\nAfter.\n\n    let v: Vec<u8>;"

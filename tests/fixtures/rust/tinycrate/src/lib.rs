@@ -3,6 +3,7 @@
 //! It has a function, a struct, an enum, a trait and a module.
 
 pub mod shapes;
+pub mod geo;
 mod inner;
 
 pub use shapes::Circle;

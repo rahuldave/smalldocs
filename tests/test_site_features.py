@@ -550,3 +550,14 @@ def test_several_sidebars_logo_name_and_hidden_title(tmp_path: Path) -> None:
     h = out(tmp_path, "b/two.html")
     assert "navbar-title" not in h and "sd-brand-split" not in h
     assert ".sd-brand-split .navbar-brand-logo { margin-right: 0; }" in (tmp_path / "_site/site_libs/smalldocs.css").read_text(encoding="utf-8")
+
+
+def test_auto_folder_pattern_is_no_section(tmp_path: Path) -> None:
+    "`auto: api/**` lists api's pages at the level of the entry and its folders as sections, without a section for api or its index, as Quarto does."
+    cfg = "project: {type: website}\nwebsite:\n  sidebar:\n    contents:\n      - index.qmd\n      - section: Reference\n        contents:\n          - auto: api/**\n"
+    pages = {"api/index.qmd": "---\ntitle: API\n---\n", "api/alpha.qmd": "---\ntitle: alpha\n---\n", "api/sub/index.qmd": "---\ntitle: sub\n---\n"}
+    site(tmp_path, cfg, {**pages, "api/sub/beta.qmd": "---\ntitle: beta\n---\n"})
+    h = out(tmp_path, "api/alpha.html")
+    bar = h[h.index('id="quarto-sidebar"') :]
+    texts = re.findall(r'class="menu-text">([^<]*)<', bar[: bar.index("</nav>")])
+    assert texts[-4:] == ["Reference", "alpha", "sub", "beta"] and "API" not in texts
