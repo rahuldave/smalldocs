@@ -1,0 +1,645 @@
+{
+ "schemaVersion": "2.0",
+ "id": 0,
+ "name": "Documentation",
+ "variant": "project",
+ "kind": 1,
+ "flags": {},
+ "children": [
+  {
+   "id": 1,
+   "name": "src/components/Badge",
+   "variant": "declaration",
+   "kind": 2,
+   "flags": {},
+   "children": [
+    {
+     "id": 26,
+     "name": "default",
+     "variant": "declaration",
+     "kind": 64,
+     "flags": {},
+     "sources": [
+      {
+       "fileName": "src/components/Badge.ts",
+       "line": 18,
+       "character": 24
+      }
+     ],
+     "signatures": [
+      {
+       "id": 27,
+       "name": "default",
+       "variant": "signature",
+       "kind": 4096,
+       "flags": {},
+       "comment": {
+        "summary": [
+         {
+          "kind": "text",
+          "text": "Draw a badge."
+         }
+        ]
+       },
+       "sources": [
+        {
+         "fileName": "src/components/Badge.ts",
+         "line": 18,
+         "character": 24
+        }
+       ],
+       "parameters": [
+        {
+         "id": 28,
+         "name": "__namedParameters",
+         "variant": "param",
+         "kind": 32768,
+         "flags": {},
+         "type": {
+          "type": "reference",
+          "target": {
+           "packageName": "<unknown>",
+           "packagePath": "/Users/rahul/Projects/smalldocs/.claude/worktrees/agent-a8e13a4c070a160f8/tests/fixtures/ts/app/src/components/Badge.ts",
+           "qualifiedName": "Props"
+          },
+          "name": "Props"
+         }
+        }
+       ],
+       "type": {
+        "type": "intrinsic",
+        "name": "string"
+       }
+      }
+     ]
+    }
+   ],
+   "groups": [
+    {
+     "title": "Functions",
+     "children": [
+      26
+     ]
+    }
+   ],
+   "sources": [
+    {
+     "fileName": "src/components/Badge.ts",
+     "line": 1,
+     "character": 0
+    }
+   ]
+  },
+  {
+   "id": 2,
+   "name": "src/components/format",
+   "variant": "declaration",
+   "kind": 2,
+   "flags": {},
+   "children": [
+    {
+     "id": 3,
+     "name": "badgeText",
+     "variant": "declaration",
+     "kind": 64,
+     "flags": {},
+     "sources": [
+      {
+       "fileName": "src/components/format.ts",
+       "line": 2,
+       "character": 16
+      }
+     ],
+     "signatures": [
+      {
+       "id": 4,
+       "name": "badgeText",
+       "variant": "signature",
+       "kind": 4096,
+       "flags": {},
+       "comment": {
+        "summary": [
+         {
+          "kind": "text",
+          "text": "Format a count as a badge's text."
+         }
+        ]
+       },
+       "sources": [
+        {
+         "fileName": "src/components/format.ts",
+         "line": 2,
+         "character": 16
+        }
+       ],
+       "parameters": [
+        {
+         "id": 5,
+         "name": "n",
+         "variant": "param",
+         "kind": 32768,
+         "flags": {},
+         "type": {
+          "type": "intrinsic",
+          "name": "number"
+         }
+        }
+       ],
+       "type": {
+        "type": "intrinsic",
+        "name": "string"
+       }
+      }
+     ]
+    }
+   ],
+   "groups": [
+    {
+     "title": "Functions",
+     "children": [
+      3
+     ]
+    }
+   ],
+   "sources": [
+    {
+     "fileName": "src/components/format.ts",
+     "line": 1,
+     "character": 0
+    }
+   ]
+  },
+  {
+   "id": 6,
+   "name": "src/components",
+   "variant": "declaration",
+   "kind": 2,
+   "flags": {},
+   "comment": {
+    "summary": [
+     {
+      "kind": "text",
+      "text": "The components, in one place."
+     }
+    ]
+   },
+   "children": [
+    {
+     "id": 29,
+     "name": "Badge",
+     "variant": "reference",
+     "kind": 4194304,
+     "flags": {},
+     "sources": [
+      {
+       "fileName": "src/components/index.ts",
+       "line": 5,
+       "character": 20
+      }
+     ],
+     "target": 26
+    },
+    {
+     "id": 30,
+     "name": "badgeText",
+     "variant": "reference",
+     "kind": 4194304,
+     "flags": {},
+     "sources": [
+      {
+       "fileName": "src/components/index.ts",
+       "line": 6,
+       "character": 9
+      }
+     ],
+     "target": 3
+    }
+   ],
+   "groups": [
+    {
+     "title": "References",
+     "children": [
+      29,
+      30
+     ]
+    }
+   ],
+   "sources": [
+    {
+     "fileName": "src/components/index.ts",
+     "line": 1,
+     "character": 0
+    }
+   ]
+  },
+  {
+   "id": 7,
+   "name": "src/hooks/useCounter",
+   "variant": "declaration",
+   "kind": 2,
+   "flags": {},
+   "children": [
+    {
+     "id": 13,
+     "name": "Counter",
+     "variant": "declaration",
+     "kind": 256,
+     "flags": {},
+     "comment": {
+      "summary": [
+       {
+        "kind": "text",
+        "text": "What "
+       },
+       {
+        "kind": "code",
+        "text": "`useCounter`"
+       },
+       {
+        "kind": "text",
+        "text": " gives back."
+       }
+      ]
+     },
+     "children": [
+      {
+       "id": 15,
+       "name": "value",
+       "variant": "declaration",
+       "kind": 1024,
+       "flags": {},
+       "sources": [
+        {
+         "fileName": "src/hooks/useCounter.ts",
+         "line": 3,
+         "character": 2
+        }
+       ],
+       "type": {
+        "type": "intrinsic",
+        "name": "number"
+       }
+      },
+      {
+       "id": 16,
+       "name": "last",
+       "variant": "declaration",
+       "kind": 1024,
+       "flags": {},
+       "sources": [
+        {
+         "fileName": "src/hooks/useCounter.ts",
+         "line": 4,
+         "character": 2
+        }
+       ],
+       "type": {
+        "type": "union",
+        "types": [
+         {
+          "type": "reference",
+          "target": 14,
+          "name": "T",
+          "qualifiedName": "Counter.T",
+          "refersToTypeParameter": true
+         },
+         {
+          "type": "literal",
+          "value": null
+         }
+        ]
+       }
+      },
+      {
+       "id": 17,
+       "name": "bump",
+       "variant": "declaration",
+       "kind": 1024,
+       "flags": {},
+       "sources": [
+        {
+         "fileName": "src/hooks/useCounter.ts",
+         "line": 5,
+         "character": 2
+        }
+       ],
+       "type": {
+        "type": "reflection",
+        "declaration": {
+         "id": 18,
+         "name": "__type",
+         "variant": "declaration",
+         "kind": 65536,
+         "flags": {},
+         "signatures": [
+          {
+           "id": 19,
+           "name": "__type",
+           "variant": "signature",
+           "kind": 4096,
+           "flags": {},
+           "parameters": [
+            {
+             "id": 20,
+             "name": "by",
+             "variant": "param",
+             "kind": 32768,
+             "flags": {
+              "isOptional": true
+             },
+             "type": {
+              "type": "intrinsic",
+              "name": "number"
+             }
+            }
+           ],
+           "type": {
+            "type": "intrinsic",
+            "name": "void"
+           }
+          }
+         ]
+        }
+       }
+      }
+     ],
+     "groups": [
+      {
+       "title": "Properties",
+       "children": [
+        15,
+        16,
+        17
+       ]
+      }
+     ],
+     "sources": [
+      {
+       "fileName": "src/hooks/useCounter.ts",
+       "line": 2,
+       "character": 17
+      }
+     ],
+     "typeParameters": [
+      {
+       "id": 14,
+       "name": "T",
+       "variant": "typeParam",
+       "kind": 131072,
+       "flags": {}
+      }
+     ]
+    },
+    {
+     "id": 8,
+     "name": "useCounter",
+     "variant": "declaration",
+     "kind": 64,
+     "flags": {},
+     "sources": [
+      {
+       "fileName": "src/hooks/useCounter.ts",
+       "line": 9,
+       "character": 16
+      }
+     ],
+     "signatures": [
+      {
+       "id": 9,
+       "name": "useCounter",
+       "variant": "signature",
+       "kind": 4096,
+       "flags": {},
+       "comment": {
+        "summary": [
+         {
+          "kind": "text",
+          "text": "Count things as they come."
+         }
+        ]
+       },
+       "sources": [
+        {
+         "fileName": "src/hooks/useCounter.ts",
+         "line": 9,
+         "character": 16
+        }
+       ],
+       "typeParameters": [
+        {
+         "id": 10,
+         "name": "T",
+         "variant": "typeParam",
+         "kind": 131072,
+         "flags": {}
+        }
+       ],
+       "parameters": [
+        {
+         "id": 11,
+         "name": "start",
+         "variant": "param",
+         "kind": 32768,
+         "flags": {},
+         "type": {
+          "type": "intrinsic",
+          "name": "number"
+         },
+         "defaultValue": "0"
+        },
+        {
+         "id": 12,
+         "name": "step",
+         "variant": "param",
+         "kind": 32768,
+         "flags": {},
+         "type": {
+          "type": "intrinsic",
+          "name": "number"
+         },
+         "defaultValue": "1"
+        }
+       ],
+       "type": {
+        "type": "reference",
+        "target": 13,
+        "typeArguments": [
+         {
+          "type": "reference",
+          "target": 10,
+          "name": "T",
+          "refersToTypeParameter": true
+         }
+        ],
+        "name": "Counter"
+       }
+      }
+     ]
+    }
+   ],
+   "groups": [
+    {
+     "title": "Interfaces",
+     "children": [
+      13
+     ]
+    },
+    {
+     "title": "Functions",
+     "children": [
+      8
+     ]
+    }
+   ],
+   "sources": [
+    {
+     "fileName": "src/hooks/useCounter.ts",
+     "line": 1,
+     "character": 0
+    }
+   ]
+  },
+  {
+   "id": 21,
+   "name": "src/utils/format",
+   "variant": "declaration",
+   "kind": 2,
+   "flags": {},
+   "children": [
+    {
+     "id": 22,
+     "name": "shout",
+     "variant": "declaration",
+     "kind": 64,
+     "flags": {},
+     "sources": [
+      {
+       "fileName": "src/utils/format.ts",
+       "line": 2,
+       "character": 16
+      }
+     ],
+     "signatures": [
+      {
+       "id": 23,
+       "name": "shout",
+       "variant": "signature",
+       "kind": 4096,
+       "flags": {},
+       "comment": {
+        "summary": [
+         {
+          "kind": "text",
+          "text": "Make text loud."
+         }
+        ]
+       },
+       "sources": [
+        {
+         "fileName": "src/utils/format.ts",
+         "line": 2,
+         "character": 16
+        }
+       ],
+       "parameters": [
+        {
+         "id": 24,
+         "name": "text",
+         "variant": "param",
+         "kind": 32768,
+         "flags": {},
+         "type": {
+          "type": "intrinsic",
+          "name": "string"
+         }
+        }
+       ],
+       "type": {
+        "type": "intrinsic",
+        "name": "string"
+       }
+      }
+     ]
+    },
+    {
+     "id": 25,
+     "name": "MAX_ITEMS",
+     "variant": "declaration",
+     "kind": 32,
+     "flags": {
+      "isConst": true
+     },
+     "comment": {
+      "summary": [
+       {
+        "kind": "text",
+        "text": "The most items a list shows."
+       }
+      ]
+     },
+     "sources": [
+      {
+       "fileName": "src/utils/format.ts",
+       "line": 8,
+       "character": 13
+      }
+     ],
+     "type": {
+      "type": "literal",
+      "value": 50
+     },
+     "defaultValue": "50"
+    }
+   ],
+   "groups": [
+    {
+     "title": "Variables",
+     "children": [
+      25
+     ]
+    },
+    {
+     "title": "Functions",
+     "children": [
+      22
+     ]
+    }
+   ],
+   "sources": [
+    {
+     "fileName": "src/utils/format.ts",
+     "line": 1,
+     "character": 0
+    }
+   ]
+  }
+ ],
+ "groups": [
+  {
+   "title": "Modules",
+   "children": [
+    1,
+    2,
+    6,
+    7,
+    21
+   ]
+  }
+ ],
+ "files": {
+  "entries": {
+   "1": "src/components/Badge.ts",
+   "2": "src/components/format.ts",
+   "3": "src/components/index.ts",
+   "4": "src/hooks/useCounter.ts",
+   "5": "src/utils/format.ts"
+  },
+  "reflections": {
+   "1": 1,
+   "2": 2,
+   "3": 6,
+   "4": 7,
+   "5": 21
+  }
+ }
+}

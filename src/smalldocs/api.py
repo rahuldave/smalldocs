@@ -637,6 +637,9 @@ class Settings:
     check: tuple[str, ...] = ()  # Globs, from the root, of more files that `check` holds to the convention; `**/` is any folders or none
     linkify: bool = True  # Whether a name in backticks links to its entry
     shown: bool = False  # Whether `check` holds the packages only to what their pages show, from `check-shown`
+    language: str = "python"  # The language of the code: `python`, `typescript` or `rust`
+    entry: tuple[str, ...] = ()  # TypeScript: the entry points, files or folders, from the site's folder
+    tsconfig: str = ""  # TypeScript: the tsconfig, from the site's folder; empty lets TypeDoc find it
 
     @classmethod
     def read(
@@ -645,9 +648,12 @@ class Settings:
         conf: dict,  # The `smalldocs.api` section
     ) -> "Settings":  # The settings, with defaults
         "Read the settings from the config."
+        language = str(conf.get("language", "python"))
+        if language not in ("python", "typescript", "rust"):
+            raise ValueError(f"api.language must be python, typescript or rust, not {language!r}")
         pkgs = conf.get("packages") or conf.get("package") or []
         pkgs = [pkgs] if isinstance(pkgs, str) else list(pkgs)
-        if not pkgs:
+        if not pkgs and language == "python":
             raise ValueError("the api settings need packages: the importable packages to document")
         at_root = (site / "pyproject.toml").exists() or (site / ".git").exists()
         root = (site / str(conf.get("root", "." if at_root else ".."))).resolve()
@@ -655,7 +661,11 @@ class Settings:
         shown = conf.get("check-shown", False)
         if not isinstance(shown, bool):
             raise ValueError(f"check-shown must be true or false, not {shown!r}")
-        return cls(site, pkgs, str(conf.get("out", "api")).strip("/"), root, str(conf.get("source", "")).rstrip("/"), tuple([chk] if isinstance(chk, str) else chk), conf.get("linkify", True) is not False, shown)
+        entry = conf.get("entry") or []
+        return cls(
+            site, pkgs, str(conf.get("out", "api")).strip("/"), root, str(conf.get("source", "")).rstrip("/"), tuple([chk] if isinstance(chk, str) else chk),
+            conf.get("linkify", True) is not False, shown, language, tuple([entry] if isinstance(entry, str) else entry), str(conf.get("tsconfig", "")),
+        )  # fmt: skip
 
     def importable(self) -> None:
         "Let the packages import from the repository: its root and its `src` folder go on `sys.path`."
@@ -737,6 +747,8 @@ def build(
     s: Settings,  # The settings
 ) -> list[Path]:  # The pages written
     "Write one reference page per module, and `_symbols.json`, the index of names that links use."
+    if s.language != "python":
+        return importlib.import_module(f"smalldocs.api_{ {'typescript': 'ts', 'rust': 'rust'}[s.language] }").build(s)
     s.importable()
     out_dir = (s.site / s.out).resolve()
     site = s.site.resolve()
@@ -825,12 +837,18 @@ def run(
     name: str | None,  # The module, for `module`
 ) -> int:  # The exit code
     "Run one `smalldocs api` command with its settings read."
-    s.importable()
+    if s.language != "python" and action in ("list", "module"):
+        print(f"smalldocs api {action}: for Python only; use build or check for {s.language}", file=sys.stderr)
+        return 2
+    if s.language == "python":
+        s.importable()
     if action == "build":
         pages = build(s)
         print(f"wrote {len(pages)} page(s) to {s.site / s.out}")
         return 0
     if action == "check":
+        if s.language != "python":
+            return importlib.import_module(f"smalldocs.api_{ {'typescript': 'ts', 'rust': 'rust'}[s.language] }").check(s, s.shown)
         return check(s.packages, s.check_files(), s.root, s.shown)
     if action == "list":
         found = inventory(s.packages)
