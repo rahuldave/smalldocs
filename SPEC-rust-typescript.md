@@ -11,9 +11,13 @@ parameter says what the parameter is.
 
 ```rust
 /// Add two numbers.
+///
+/// # Returns
+///
+/// The sum.
 pub fn add(a: i32,   // the first number
            b: i32,   // the second number
-) -> i32 {           // the sum
+) -> i32 {
 ```
 
 ```ts
@@ -132,13 +136,31 @@ smalldocs reads a parameter's comment by its line, as fastcore does for Python.
    line with the `{` that opens the body.
 2. A `//` comment on the same line as a parameter documents that parameter. Rust finds a parameter
    as `name:`, `mut name:` or `r#name:`. TypeScript finds one as `name`, `name?` or `name =`.
-3. A `//` comment on the line of the return type, or of the `{`, documents the return value.
+3. A `//` comment on the line of the `)`, or on the line of the `{` that opens the body, documents
+   the return value. A return type can span lines, such as `): (v: string) => void {` after a
+   parameter list. The comments on the lines between belong to the parts of that type.
 4. A comment on a line with two parameters documents neither, because it cannot say which.
 5. A signature on one line keeps one rule. A comment on a line with the return type documents the
    return value, even when a parameter is on that line too. In Rust, a line with one parameter and no
    `->` gives its comment to the parameter.
 6. Without that comment, smalldocs uses the doc comment's `@param` and `@returns` in TypeScript. In
    Rust it uses a `# Arguments` list in the doc comment, with lines such as ``* `a` - the first number``.
+7. **In Rust, a `# Returns` section documents the return value.** A `# Returns` section is the Rust
+   convention, as `# Arguments` is. rustfmt moves a comment after the `{` into the body, so a comment
+   there does not last. A comment on the line of `->` still counts when rustfmt leaves it there.
+   Rahul decided this on 2026-11-12.
+   - A section of one paragraph of prose moves into the table, out of the doc comment. The targets of
+     its links, such as `[x]: https://x`, stay in the doc comment.
+   - A longer section stays in the doc comment, such as one with a list or an example. The table then
+     holds its first paragraph, or "See Returns, below." when that paragraph is no prose.
+   - A section runs to the next heading of its level or above. A `#` line inside a code block is no
+     heading. The same holds for `# Arguments`.
+   - A function that returns `()` keeps its `# Returns` section in the doc comment, as it has no row.
+8. **A destructured parameter takes JSDoc's `@param` tags,** both `@param a` and `@param props.a`.
+   TypeDoc drops a `@param props.a` when no `@param props` comes with it. It also names the parameter
+   after the first `@param`, such as `a`. So smalldocs reads these tags from the source, and keeps
+   the name `props`. It reads the doc comment past blank lines and comments that are no doc comments, as TypeDoc does. A
+   function that is no component keeps TypeDoc's reading.
 
 ## The pages
 
@@ -169,6 +191,20 @@ module in one folder. These pages are in folders.
 - **The index of `out` itself, `api/index.qmd`, is titled "Reference".** For Rust, its description is
   the crate's summary. A sidebar `auto: api/**` leaves it out (see [The sidebar](#the-sidebar)).
 
+### The comment of a module
+
+A TypeScript file's description is its module comment. smalldocs follows TypeDoc's rule:
+
+- **A comment with `@module` or `@packageDocumentation`** is the module's. TypeDoc reads it.
+- **A declaration takes the comment right before it.** When a file opens with a `/** */` comment and
+  a declaration follows it at once, the comment is the declaration's, as in TypeDoc.
+- **Otherwise the opening comment is the module's.** This holds when an import, a re-export,
+  a directive such as `"use client"`, another `/** */` comment or the end of the file follows it.
+  TypeDoc drops such a comment, so smalldocs reads it from the file. A file with no imports keeps its
+  comment this way, when the first declaration has its own comment.
+- **Other comments do not count.** A licence in `/* */` or `//` comments, a `#!` line or a byte-order
+  mark may come before the opening comment, and `//` or `/* */` comments may come after it.
+
 ### What each page holds
 
 - **Each item:** a heading with its id, a source link, the signature in a `rust` or `ts` code block,
@@ -180,6 +216,13 @@ module in one folder. These pages are in folders.
   maths. A title is escaped in the same way. The id of a heading is the name, unescaped.
 - **Types in tables are plain text,** as on the Python pages, with the signs of Markdown, maths and
   HTML escaped.
+- **A Rust path shows as the source writes it,** such as `io::Error` or `std::result::Result`. So
+  `pub type Result<T> = std::result::Result<T, E>` does not read as a type of itself. rustdoc's JSON
+  gives `std::path::Path` for a `Path` that a `use` brings in. So smalldocs shows the longest end of
+  the path that the entry's source writes. That source is a function's signature, or the whole of
+  any other item. A path with no source, such as a trait in "Implements", shows by its last name.
+- **A Rust constant shows its value.** rustdoc's JSON gives `_` for a value that is not a literal,
+  such as an array. smalldocs then shows the value as the source writes it, without its comments.
 - **A stray `<` in a comment is escaped,** so that `Vec<u8>` shows as text. Code spans, code blocks and
   real HTML tags stay as they are.
 - **Rust has no defaults,** so its tables have no Default column.
@@ -187,9 +230,18 @@ module in one folder. These pages are in folders.
 - **Enums:** a table of the variants.
 - **Traits and interfaces:** their methods. The fields of an interface or a type, as a table, with
   the comment after each field.
-- **React components:** a component is a function with a capital name that takes one props object.
-  Its entry shows the fields of the props type as the table of parameters, with the comment after each
-  field and the default from the destructured props.
+- **React components:** a component is a function with a capital name that returns JSX and takes
+  no parameter or one props object. JSX here is `JSX.Element`, `ReactElement`, `ReactNode` or
+  `ReactPortal`, with or without `React.`, alone or with `null`, `undefined` or `false`. A props object
+  is any parameter that is not a string, a number, a boolean, a bigint, a symbol, a literal, or a
+  union of them. A function that takes one of those is no component. Its entry
+  shows the fields of the props type as the table of parameters, with the comment after each field
+  and the default from the destructured props. Props written `Props & { more?: string }` are the
+  fields of each part. When smalldocs cannot read a part, such as a type from `node_modules`, the
+  entry shows the one `props` parameter. The function is still a component.
+- **A comment on a line with several fields belongs to none of them,** as for parameters. In
+  `{ width: number; height: number }  // the size`, neither field has a comment. The same holds for a
+  comment after a field and the `}` that closes its type. Give each field its own line, or a JSDoc.
 - **Rust `impl` blocks:** the methods of an inherent `impl` are entries under the type. A trait impl
   is listed by the trait's name only, such as "Implements `Display`". The auto traits, such as `Send`,
   and the blanket impls, such as `From`, are left out.
@@ -217,6 +269,12 @@ A build must never lose a person's work, and must never leave its own old pages 
 
 ## Links
 
+- **Source links need `root`.** A source link is the item's path from `root`, added to `source`.
+  Without `root`, it is the git repository that holds the crate's manifest, or the manifest's folder.
+  For TypeScript it is the git repository of the first entry, or else the default of the Python pages.
+  So a site outside the repository still gets source links. When `source` is set but an item's file is
+  outside `root`, the build warns once, and names the files. A file outside the project, such as one
+  of another crate in cargo's cache or one in `node_modules`, can have no link, so it gets no warning.
 - smalldocs writes `_symbols.json` as it does for Python. A name in backticks in any page then links
   to its entry.
 - **On a Rust or TypeScript site, a name links when it is in `_symbols.json`.** On a Python site a name
@@ -235,9 +293,13 @@ A build must never lose a person's work, and must never leave its own old pages 
 
 - Every public item needs a doc comment.
 - Every parameter needs a comment, or a `@param` or `# Arguments` line.
-- The return needs a comment unless it is `()` or `void`.
+- The return needs a comment unless it is `()` or `void`. In Rust, a `# Returns` section is the way
+  to document it, and `check` says so.
 - A React component needs no comment on its return, because it returns what it draws. Its page still
   shows the return type.
+- **A field is reported once.** When a component's props type has an entry of its own, `check`
+  reports a field with no comment at that entry, such as `Box.width`, and not at each component.
+- **A field whose line has other fields** is reported with the reason, and with what to do.
 - `--shown` and `check-shown` work the same. TypeDoc gives only what a package exports, so a
   TypeScript check always holds only what the pages show.
 
@@ -301,5 +363,7 @@ Rahul approved these on 2026-11-12.
 - **A React component needs no comment on its return.**
 - **Names link exactly** on Rust and TypeScript sites.
 - **The rule for a signature on one line stays** as it is.
+- **A Rust return is documented in a `# Returns` section,** because rustfmt moves a comment after the
+  `{` into the body. A comment on the line of `->` still counts.
 - **The default toolchain is `nightly`,** with a message to pin a dated nightly.
 - **The sidebar change stays,** though it changes existing output.

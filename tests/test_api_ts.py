@@ -165,7 +165,7 @@ def test_one_page_per_file_when_entry_is_a_folder(app: dict[str, str]) -> None:
 def test_each_folder_has_an_index_that_lists_its_pages(app: dict[str, str]) -> None:
     "A folder with no module of its own gets an `index.qmd`, titled by the folder, with a table of its pages; a module that is a folder's index has the table too."
     assert app["hooks/index.qmd"] == TOP + 'title: "hooks"\n---\n\n| Name | Summary |\n| --- | --- |\n| [`useCounter`](/api/hooks/useCounter.qmd) |  |\n'
-    rows = "| [`Badge`](/api/components/Badge.qmd) | Badge: a small label with a tone. |\n| [`Chip`](/api/components/Chip.qmd) |  |\n"
+    rows = "| [`Badge`](/api/components/Badge.qmd) | Badge: a small label with a tone. |\n| [`Chip`](/api/components/Chip.qmd) | Chips: small labels in a row. |\n"
     assert "\n\n| Name | Summary |\n| --- | --- |\n" + rows + "| [`format`](/api/components/format.qmd) |  |\n\nIt exports again" in app["components/index.qmd"]
 
 
@@ -223,7 +223,7 @@ def test_class_constructor_fields_and_methods(lib: str) -> None:
 def test_react_component_shows_its_props(lib: str) -> None:
     "A function with a capital name that takes one props object shows the props' fields as its parameters, with their defaults."
     e = entry_of(lib, "Button")
-    assert "function Button(props: ButtonProps): string" in e
+    assert "function Button(props: ButtonProps): JSX.Element" in e
     assert "| `label` | string | required | the text on it |" in e
     assert "| `disabled` | boolean | `false` | whether it is grey |" in e
     assert "| `onClick` | () =&gt; void | optional | what a click does |" in e
@@ -236,7 +236,7 @@ def test_component_props_that_are_not_exported_come_from_the_source(app: dict[st
     assert '| `tone` | \\"info\\" \\| \\"warn\\" | `"info"` | How it looks. |' in e
     assert "| `loud` | boolean | `false` |  |" in e
     assert "| `onPick` | (text: string, at: number) =&gt; void | optional |  |" in e  # the comment is on its last line, not its first
-    assert "| returns | string |  | the HTML of the badge |" in e
+    assert "| returns | JSX.Element |  | the HTML of the badge |" in e
 
 
 def test_default_export_takes_its_name_from_the_source(app: dict[str, str]) -> None:
@@ -564,7 +564,7 @@ def test_project_folder_is_the_nearest_with_a_tsconfig(tmp_path: Path) -> None:
 
 
 @pytest.mark.skipif(shutil.which("npx") is None, reason="needs Node and npx")
-@pytest.mark.parametrize(("name", "entry"), [("lib", "src/index.ts"), ("app", "src")])
+@pytest.mark.parametrize(("name", "entry"), [("lib", "src/index.ts"), ("app", "src"), ("react", "src")])
 def test_real_typedoc_makes_the_same_pages(tmp_path: Path, monkeypatch: pytest.MonkeyPatch, name: str, entry: str) -> None:
     "Real TypeDoc, run on the fixtures' sources, gives the pages that the stored JSON gives."
     stored = tmp_path / "stored"
@@ -604,7 +604,7 @@ def test_regular_expression_with_a_quote_hides_no_comment() -> None:
 def test_comment_belongs_to_the_last_item_on_its_line_alone() -> None:
     "A comment after two fields on one line, or after the `}` that ends them, is no field's."
     lines = split_comments("interface P { x: number; y: number }  // a point\ninterface Q {\n  z: string;  // the z\n}\n")
-    assert api_ts.declared_fields(lines, "P") == [api_ts.Field("x", "number", False, ""), api_ts.Field("y", "number", False, "")]
+    assert api_ts.declared_fields(lines, "P") == [api_ts.Field("x", "number", False, "", shared=True), api_ts.Field("y", "number", False, "", shared=True)]
     assert api_ts.declared_fields(lines, "Q") == [api_ts.Field("z", "string", False, "the z")]
 
 
@@ -644,14 +644,14 @@ def test_static_method_has_its_own_id(tmp_path: Path, monkeypatch: pytest.Monkey
 
 
 def test_component_needs_no_return_comment(tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture) -> None:
-    "A React component needs no comment on its return; a function with no props, or a small name, still does."
+    "A React component needs no comment on its return; a function that returns no JSX, or has a small name, still does."
     site(tmp_path, "app", monkeypatch)
     assert main(["api", "check", "--dir", str(tmp_path)]) == 1
     out = capsys.readouterr().out
     assert "components/Chip:Chip" not in out
     assert "components/Chip:Divider: no return comment" in out and "components/Chip:chips: no return comment" in out
     assert main(["api", "build", "--dir", str(tmp_path)]) == 0
-    assert "| returns | string |  |  |" in entry_of(pages(tmp_path)["components/Chip.qmd"], "Chip")  # the page still shows the return
+    assert "| returns | JSX.Element |  |  |" in entry_of(pages(tmp_path)["components/Chip.qmd"], "Chip")  # the page still shows the return
 
 
 def test_typescript_links_any_name_in_the_index(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
@@ -891,3 +891,181 @@ def test_link_path_keeps_what_quarto_reads() -> None:
     "`+page`, `@scope` and `$lib` stay as they are, because Quarto does not decode them; `&` is encoded, so `a&amp;b` is no entity."
     assert api.link_path("/api/@s/+page/$lib.qmd") == "/api/@s/+page/$lib.qmd"
     assert api.link_path("/api/a&amp;b #?%.qmd") == "/api/a%26amp;b%20%23%3F%25.qmd"
+
+
+# ---------------------------------------------------------------- what cricsdb showed
+
+
+@pytest.fixture
+def react(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> dict[str, str]:  # The pages of the React fixture
+    "Build the React fixture, whose entry is a folder, and give its pages."
+    site(tmp_path, "react", monkeypatch)
+    assert main(["api", "build", "--dir", str(tmp_path)]) == 0
+    return pages(tmp_path)
+
+
+def react_check(
+    tmp: Path,  # A folder for the site
+    monkeypatch: pytest.MonkeyPatch,  # To give the fixture's JSON
+    capsys: pytest.CaptureFixture,  # To read what `check` prints
+) -> str:  # What `api check` prints for the React fixture
+    "Run `api check` on the React fixture."
+    site(tmp, "react", monkeypatch)
+    assert main(["api", "check", "--dir", str(tmp)]) == 1
+    return capsys.readouterr().out
+
+
+def test_opening_comment_is_the_module_s_when_no_declaration_takes_it(react: dict[str, str]) -> None:
+    "A file's opening comment is the module's when another doc comment follows it, even with no import; one right before a declaration is that declaration's, as in TypeDoc."
+    assert 'description: "Panels: boxes that hold other parts. No import follows this comment."' in react["Panel.qmd"]
+    assert 'description: ""' in react["hooks.qmd"] and "Keep a value, and give a setter." in entry_of(react["hooks.qmd"], "useValue")
+    assert api_ts.header_comment("/** The file. */\n\n// a note\n/** The first. */\nexport const a = 1;\n").strip() == "The file."
+    assert api_ts.header_comment("/** The first. */\nexport const a = 1;\n") == ""
+
+
+def test_component_with_no_props_needs_no_return_comment(tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture) -> None:
+    "A capital-named function that returns JSX and takes no parameter is a component, so it needs no return comment; one that takes a string is no component."
+    out = react_check(tmp_path, monkeypatch, capsys)
+    assert "Panel:Frame" not in out
+    assert "Panel:Title: no return comment" in out
+
+
+def test_is_jsx_knows_what_react_draws() -> None:
+    "`JSX.Element`, `React.ReactNode`, `ReactElement` and the like are JSX, alone or with `null`, `undefined` or `false`; a string is not."
+    ref = lambda q: {"type": "reference", "name": q.rpartition(".")[2], "qualifiedName": q}  # noqa: E731
+    assert api_ts.is_jsx(ref("JSX.Element")) and api_ts.is_jsx(ref("React.JSX.Element")) and api_ts.is_jsx(ref("React.ReactNode"))
+    assert api_ts.is_jsx({"type": "union", "types": [ref("ReactElement"), {"type": "literal", "value": None}, {"type": "intrinsic", "name": "undefined"}]})
+    assert not api_ts.is_jsx({"type": "intrinsic", "name": "string"}) and not api_ts.is_jsx(ref("Element"))
+    assert not api_ts.is_jsx({"type": "union", "types": [{"type": "literal", "value": None}]})
+    assert not api_ts.is_jsx({"type": "union", "types": [ref("JSX.Element"), {"type": "intrinsic", "name": "string"}]})
+
+
+def test_return_comment_after_a_return_type_on_several_lines(react: dict[str, str]) -> None:
+    "The comment on the `{` after a return type on several lines documents the return; a comment inside the type does not."
+    p = react["hooks.qmd"]
+    assert "| returns | (v: string) =&gt; void |  | the setter |" in entry_of(p, "useValue")
+    assert "| returns | { x: number } |  | the point |" in entry_of(p, "point")
+    assert "| returns | \\[number, number\\] |  | the pair |" in entry_of(p, "pair")
+    src = "function f(a: string, // the a\n): (\n  v: string, // the v\n) => void { // the setter\n}\n"
+    assert read_signature(split_comments(src), 1, 9).returns == "the setter"
+    src = "function f(a: string, // the a\n): { x: number } | null\n{ // the box\n}\n"
+    assert read_signature(split_comments(src), 1, 9).returns == "the box"
+
+
+def test_intersection_props_are_a_component_s_props(react: dict[str, str]) -> None:
+    "Props written `PanelProps & { footer?: string }` are the fields of each part, with their comments and defaults."
+    e = entry_of(react["Panel.qmd"], "FooterPanel")
+    assert "| `title` | string | required | the words at the top |" in e
+    assert "| `wide` | boolean | `false` | whether it fills the row |" in e
+    assert "| `footer` | string | optional | the words at the bottom |" in e
+
+
+def test_param_tags_document_inline_props(react: dict[str, str]) -> None:
+    "Props on one line take their words from JSDoc's `@param text` or `@param props.color`; the parameter stays `props`, though TypeDoc names it after the first `@param`."
+    e = entry_of(react["Panel.qmd"], "Tag")
+    assert "function Tag(props: { text: string; color: string }): JSX.Element" in e
+    assert "| `text` | string | required | the words on the tag |" in e and "| `color` | string | required | its colour |" in e
+    lines = split_comments("/**\n * Do it.\n * @param {string} a - the a,\n *   on two lines\n * @param [p.b=1] the b\n * @returns x\n */\nexport function f() {}\n")
+    assert api_ts.param_tags(lines, 8) == {"a": "the a, on two lines", "p.b": "the b", ".b": "the b"}
+    assert api_ts.param_tags(lines, 1) == {}
+
+
+def test_comment_shared_by_several_fields_is_reported_clearly(tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture) -> None:
+    "A comment after two fields on one line is neither's, and `check` says why, and what to do."
+    out = react_check(tmp_path, monkeypatch, capsys)
+    said = "no comment: the comment on its line follows more than this field, so it is no field's; put each field on its own line, or give each a JSDoc"
+    assert f"Panel:Box.width: {said}" in out and f"Panel:Box.height: {said}" in out
+
+
+def test_undocumented_props_field_is_reported_once(tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture) -> None:
+    "A field of an exported props type is reported at the type's entry, `Box.width`, and not again at each component, `BoxView(width)`."
+    out = react_check(tmp_path, monkeypatch, capsys)
+    assert "Panel:Box.width" in out and "BoxView" not in out
+
+
+# ---------------------------------------------------------------- findings of the adversarial review of these fixes
+
+
+def test_opening_comment_never_takes_code() -> None:
+    "The module comment ends at its own `*/`; a later doc comment never pulls code into it."
+    assert api_ts.header_comment('/** f doc */\nexport function f() {}\n/** g doc */\n/** h doc */\nexport function h() {}\n') == ""
+    assert api_ts.header_comment("/** f doc */\nexport function f() {}\n/** trailing */\n") == ""
+    assert api_ts.header_comment('/** Mod doc. */\n/* eslint-disable */\nimport x from "y";\n').strip() == "Mod doc."
+
+
+def test_opening_comment_past_directives_licences_and_marks() -> None:
+    "A licence, a `#!` line or a byte-order mark before the comment, and a directive or a type re-export after it, leave it the module's."
+    for text in [
+        '/** Mod doc. */\n"use client";\nimport x from "y";\n',
+        '/* MIT license */\n/** Mod doc. */\nimport x from "y";\n',
+        '// Copyright\n/** Mod doc. */\nimport x from "y";\n',
+        '/** Mod doc. */\nexport type { A } from "./a";\n',
+        '﻿/** Mod doc. */\nimport x from "y";\n',
+        '#!/usr/bin/env node\n/** Mod doc. */\nimport x from "y";\n',
+    ]:
+        assert api_ts.header_comment(text).strip() == "Mod doc.", text
+
+
+def test_param_tags_past_blank_and_comment_lines_and_odd_names() -> None:
+    "TypeDoc reads a doc comment past a blank line or a `//` line, so the `@param` tags are read there too; a default with a space and a type with braces are read."
+    src = "/**\n * A card.\n * @param props.title the title\n * @param {string} [props.g=\"x y\"] - the g\n * @param {{x: number}} f the f\n */\n\n// eslint-disable-next-line\nexport function Card() {}\n"
+    tags = api_ts.param_tags(split_comments(src), 9)
+    assert tags[".title"] == "the title" and tags["props.g"] == "the g" and tags["f"] == "the f"
+
+
+def test_destructured_parameter_of_a_plain_function_keeps_its_param_text(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    "A function that is no component keeps TypeDoc's reading of its destructured parameter, with the text of its `@param`."
+    data, root = fixture("react")
+    tag = next(c for m in data["children"] for c in m.get("children", []) if c["name"] == "Tag")
+    sig = tag["signatures"][0]
+    plain = sig | {"name": "tag", "type": {"type": "intrinsic", "name": "string"}}
+    mod = api_ts.Module("Panel", {}, {}, api_ts.Sources(root))
+    rows, gaps = mod.param_rows("tag", plain)
+    assert rows[0][0] == "`text`" and rows[0][3] == "the words on the tag" and gaps == [": no return comment"]
+
+
+def test_component_props_that_smalldocs_cannot_read_need_no_return_comment() -> None:
+    "A capital-named function that returns JSX and takes one object it cannot read, such as a node_modules type, is still a component; one that takes a string is not."
+    jsx = {"type": "reference", "name": "Element", "qualifiedName": "JSX.Element"}
+    other = {"parameters": [{"name": "p", "type": {"type": "reference", "name": "HTMLAttributes", "target": {"packagePath": "node_modules/x.d.ts"}}}], "type": jsx}
+    assert api_ts.component("Ext", other)
+    assert not api_ts.component("Title", {"parameters": [{"name": "t", "type": {"type": "intrinsic", "name": "string"}}], "type": jsx})
+    assert not api_ts.component("ext", other) and api_ts.component("Frame", {"type": jsx})
+    assert not api_ts.is_jsx({"type": "union", "types": [jsx, {"type": "literal", "value": 0}]})  # `0` is drawn, so it is no `null`
+
+
+def test_comment_after_the_closing_brace_says_so() -> None:
+    "A comment after one field and the `}` that closes it is no field's, and the reason does not speak of other fields."
+    lines = split_comments("interface One { a: string }  // the a\n")
+    (f,) = api_ts.declared_fields(lines, "One")
+    assert f.shared and api_ts.gap(f).startswith("no comment: the comment on its line follows more than this field")
+
+
+def test_opening_comment_reads_banners_of_slashes_at_once() -> None:
+    "A banner of slashes, or lines of `// a // b`, before a declaration takes no time; the pattern never backtracks."
+    import time
+
+    start = time.monotonic()
+    assert api_ts.header_comment("/" * 60 + "\nexport const x = 1;\n") == ""
+    assert api_ts.header_comment("// a // b // c\n" * 2000 + "export const x=1;\n") == ""
+    assert api_ts.header_comment("// " * 18 + "\nexport const x=1;\n") == ""
+    assert time.monotonic() - start < 2
+
+
+def test_empty_block_comment_is_no_doc_comment() -> None:
+    "`/**/` is an empty comment, so the doc comment after it is the module's."
+    assert api_ts.header_comment('/**/\n/** Mod */\nimport x from "y";\n').strip() == "Mod"
+
+
+def test_param_tags_past_a_plain_block_comment() -> None:
+    "A `/* */` comment between the doc comment and the declaration is skipped, as TypeDoc skips it."
+    src = "/**\n * Doc.\n * @param a the a\n */\n/* not doc */\nexport function F({ a }: P) {}\n"
+    assert api_ts.param_tags(split_comments(src), 6) == {"a": "the a"}
+    assert api_ts.param_tags(split_comments("/* plain */\nexport function F() {}\n"), 2) == {}
+
+
+def test_a_union_of_primitives_is_no_props_object() -> None:
+    "`text: string | number` is no props object, so the function is no component."
+    jsx = {"type": "reference", "name": "Element", "qualifiedName": "JSX.Element"}
+    union = {"type": "union", "types": [{"type": "intrinsic", "name": "string"}, {"type": "intrinsic", "name": "number"}]}
+    assert not api_ts.component("Label", {"parameters": [{"name": "text", "type": union}], "type": jsx})

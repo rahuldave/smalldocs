@@ -170,7 +170,7 @@ def test_reexports_have_one_entry(site: Path) -> None:
     assert "Re-exports [`Circle`](/api/shapes.qmd#Circle), [`Map`](https://doc.rust-lang.org/nightly/std/collections/hash/map/struct.HashMap.html)." in root
     assert "## struct Token {#Token}" in root and "pub struct Token(pub String);" in root, "from a private module"
     assert "## fn count {#count}" in root, "from a glob re-export of a private module"
-    assert set(p) == {"index.qmd", "tinycrate.qmd", "shapes.qmd", "deep.qmd", "geo/index.qmd", "geo/plane.qmd"}, "a private module has no page; a public module inside it has one"
+    assert set(p) == {"index.qmd", "tinycrate.qmd", "shapes.qmd", "deep.qmd", "geo/index.qmd", "geo/plane.qmd", "written.qmd"}, "a private module has no page; a public module inside it has one"
 
 
 def test_intra_doc_links(site: Path) -> None:
@@ -233,7 +233,7 @@ def test_build_deletes_only_its_own_pages(site: Path) -> None:
     (site / "api/.smalldocs-api").write_text("gone.qmd\nedited.qmd")
     pages(site)
     assert (site / "api/index.qmd").exists() and not (site / "api/gone.qmd").exists() and (site / "api/edited.qmd").exists()
-    assert (site / "api/.smalldocs-api").read_text() == "deep.qmd\ngeo/index.qmd\ngeo/plane.qmd\nshapes.qmd\ntinycrate.qmd"
+    assert (site / "api/.smalldocs-api").read_text() == "deep.qmd\ngeo/index.qmd\ngeo/plane.qmd\nshapes.qmd\ntinycrate.qmd\nwritten.qmd"
 
 
 @pytest.mark.parametrize("out", [".", "..", "../x"])
@@ -270,7 +270,7 @@ def test_check_lists_gaps(site: Path, capsys: pytest.CaptureFixture) -> None:
         "tinycrate::inner::helpers: no module doc comment",
     ]:
         assert gap in out
-    assert "tinycrate:add:" not in out and "tinycrate:add(" not in out and "of 38 items are documented" in out
+    assert "tinycrate:add:" not in out and "tinycrate:add(" not in out and "of 43 items are documented" in out
     assert main(["api", "check", "--shown", "--dir", str(site)]) == 1
     shown = capsys.readouterr().out
     assert "secret" not in shown and "hidden" not in shown and "tinycrate:undocumented(x): no docment" in shown
@@ -675,3 +675,162 @@ def test_source_link_to_a_file_with_a_hash(site: Path, monkeypatch: pytest.Monke
     add["span"]["filename"] = "src/a#b.rs"
     monkeypatch.setattr(api_rust, "rustdoc", lambda s, private=False: (data, CRATE))
     assert f"[source](https://example.com/tiny/blob/main/src/a%23b.rs#L{add['span']['begin'][0]}){{.source-link}}" in entry(pages(site)["tinycrate.qmd"], "add")
+
+
+# ---------------------------------------------------------------- what jagt showed
+
+
+def test_paths_show_as_the_source_writes_them(site: Path) -> None:
+    "A path shows as the entry's source writes it: an alias of `std::result::Result` does not read as itself, `io::Error` keeps `io::`, and `Path` stays short though rustdoc gives `std::path::Path`."
+    p = pages(site)["written.qmd"]
+    assert "pub type Result<T> = std::result::Result<T, Error>;" in p
+    assert "| `Io(io::Error)` | A file failed. |" in p
+    assert "pub fn read(path: &Path) -> Result<String>" in p and "| `path` | &amp;Path | the file |" in p
+    assert api_rust.written_path("std::path::Path", "fn f(p: &Path)") == "Path"
+    assert api_rust.written_path("std::path::Path", "fn f(p: &path::Path)") == "path::Path"
+    assert api_rust.written_path("std::path::Path", "fn f(p: &mypath::Path)") == "Path"  # a longer word that ends the same is not the path
+    assert api_rust.written_path("std::path::Path", "") == "Path"  # with no source, the last name, as rustdoc's pages show it
+
+
+def test_constant_that_rustdoc_gives_as_underscore_shows_its_source(site: Path) -> None:
+    "rustdoc gives `_` for the value of an array constant; the page shows the value as the source writes it, without its comments."
+    p = pages(site)
+    assert '```rust\npub const NAMES: [&str; 2] = [\n    "a",\n    "b",\n];\n```' in entry(p["written.qmd"], "NAMES")
+    assert "pub const MAX: i32 = 100;" in p["tinycrate.qmd"]  # a value that rustdoc gives stays as it is
+    assert api_rust.written_value(["pub const X: u8 = 1"], {"name": "X", "span": {"begin": [1, 1], "end": [1, 20]}}) == ""  # no `;`, no value
+
+
+def test_returns_section_documents_the_return(site: Path, capsys: pytest.CaptureFixture) -> None:
+    "A `# Returns` section, the Rust convention, documents the return: its text goes in the table, out of the doc comment, and `check` accepts it."
+    read = entry(pages(site)["written.qmd"], "read")
+    assert "| returns | Result&lt;String&gt; | The text of the file. |" in read and "Returns" not in read
+    assert main(["api", "check", "--dir", str(site)]) == 1
+    out = capsys.readouterr().out
+    assert "written:read:" not in out
+    assert "tinycrate::written:read_quietly: no return docment; write a `# Returns` section in its doc comment" in out
+    assert api_rust.returns_section("Add.\n\n# Returns\n\nThe sum,\nof both.\n\n# Panics\n\nNever.") == ("The sum, of both.", "Add.\n\n# Panics\n\nNever.")
+    assert api_rust.returns_section("Add.\n\n# Returns\n") == ("", "Add.\n\n# Returns\n")  # an empty section says nothing
+
+
+def test_trailing_return_comment_still_counts(site: Path) -> None:
+    "A `//` comment on the line of `->` still documents the return, when rustfmt leaves it there."
+    assert "| returns | i32 | the sum |" in entry(pages(site)["tinycrate.qmd"], "add")
+
+
+def test_root_defaults_to_the_repository_of_the_code(tmp_path: Path) -> None:
+    "Without `root`, it is the git repository that holds the crate's manifest, or the manifest's folder; for TypeScript, the repository of the first entry. A `root` that is set stays."
+    repo = tmp_path / "repo"
+    (repo / ".git").mkdir(parents=True)
+    (repo / "crates/a").mkdir(parents=True)
+    (repo / "web/src").mkdir(parents=True)
+    site = tmp_path / "elsewhere/site"
+    site.mkdir(parents=True)
+    assert Settings.read(site, {"language": "rust", "manifest": str(repo / "crates/a/Cargo.toml")}).root == repo.resolve()
+    assert Settings.read(site, {"language": "typescript", "entry": str(repo / "web/src")}).root == repo.resolve()
+    assert Settings.read(site, {"language": "rust", "manifest": str(tmp_path / "loose/Cargo.toml")}).root == (tmp_path / "loose").resolve()
+    assert Settings.read(site, {"language": "rust", "manifest": str(repo / "crates/a/Cargo.toml"), "root": ".."}).root == site.parent.resolve()
+    assert Settings.read(site, {"language": "rust"}).root == site.parent.resolve()  # no manifest: as before
+
+
+def test_warns_when_source_is_set_but_no_link_can_be_made(site: Path, capsys: pytest.CaptureFixture) -> None:
+    "When `source` is set but the files are outside `root`, the build says so, once, on standard error; the pages have no source links."
+    conf = site / "_smalldocs.yml"
+    conf.write_text(conf.read_text().replace(f"root: {CRATE}", f"root: {site}"))
+    p = pages(site)
+    err = capsys.readouterr().err
+    assert "source-link" not in p["tinycrate.qmd"]
+    assert err.count("smalldocs api: warning: source is set, but") == 1 and "src/lib.rs" in err and "Set root to the repository's folder" in err
+    conf.write_text(conf.read_text().replace(f"root: {site}", f"root: {CRATE}"))
+    pages(site)
+    assert "warning" not in capsys.readouterr().err
+
+
+# ---------------------------------------------------------------- findings of the adversarial review of these fixes
+
+
+def test_sections_ignore_code_blocks() -> None:
+    "A `# Returns` with a doctest stays whole in the doc comment, as a `# ` line in a fence is no heading; a `# Returns` inside a fence is no section."
+    doc = "Do it.\n\n# Returns\n\nThe value, as in:\n\n```\n# let x = 1;\nassert_eq!(x, 1);\n```\n\n# Panics\n\nNever."
+    assert api_rust.returns_section(doc) == ("The value, as in:", doc)
+    assert api_rust.returns_section("Do it.\n\n```\n# Returns\nfoo\n```\n") == ("", "Do it.\n\n```\n# Returns\nfoo\n```\n")
+    assert api_rust.arguments_section("Do.\n\n# Arguments\n\n* `a` - the a\n\n```\n# hidden\n```\n") == ({"a": "the a"}, "Do.")
+
+
+def test_returns_section_keeps_lists_links_and_sub_headings() -> None:
+    "A list stays in the doc comment, a link's target stays for the links outside, and a sub-heading belongs to its section."
+    listed = "Do.\n\n# Returns\n\n* `Ok` - fine\n* `Err` - bad"
+    assert api_rust.returns_section(listed) == ("See Returns, below.", listed)
+    assert api_rust.returns_section("See [x].\n\n# Returns\n\nThe [x].\n\n[x]: https://x") == ("The [x].", "See [x].\n\n[x]: https://x")
+    nested = "Do.\n\n## Returns\n\nThe sum.\n\n### Detail\n\nMore.\n\n## Panics\n\nNever."
+    assert api_rust.returns_section(nested) == ("The sum.", nested)
+
+
+def test_returns_section_of_a_function_with_no_return_stays(site: Path) -> None:
+    "A `# Returns` section on a function that returns `()` has no row to go to, so it stays in the doc comment."
+    crate = api_rust.Crate(fixture(), CRATE)
+    item = next(v for v in crate.index.values() if v["name"] == "in_a")
+    item = item | {"docs": "In a.\n\n# Returns\n\nNothing."}
+    crate.index[str(item["id"])] = item
+    e = next(e for pg in crate.pages for e in pg.entries if e.id == str(item["id"]))
+    assert "Nothing." in api_rust.entry_markdown(Settings.read(site, {"language": "rust"}), crate, e)
+
+
+def test_written_value_skips_attributes_and_type_bindings() -> None:
+    "The value starts after the `=` that follows the type, not one in an attribute on the same line or in a binding such as `Bar<A = B>`."
+    item = {"name": "ATTR", "span": {"begin": [1, 1], "end": [1, 63]}}
+    assert api_rust.written_value(['#[cfg(not(feature = "x"))] pub const ATTR: [u8; 2] = [1, 2];'], item) == "[1, 2]"
+    item = {"name": "M", "span": {"begin": [1, 1], "end": [1, 40]}}
+    assert api_rust.written_value(["pub const M: Bar<A = B> = make();"], item) == "make()"
+    assert api_rust.written_value(["pub static M: fn() -> u8 = f;"], item | {"name": "M"}) == "f"
+
+
+def test_written_path_ignores_strings(site: Path) -> None:
+    "A path inside a string, such as `#[serde(rename = \"a::Thing\")]`, is not how the code writes it."
+    crate = api_rust.Crate(fixture(), CRATE)
+    crate.files["src/x.rs"] = ['#[serde(rename = "a::Thing")]', "pub struct S(Thing);"]
+    item = {"id": "x", "span": {"filename": "src/x.rs", "begin": [1, 1], "end": [2, 20]}}
+    crate.index["x"] = item | {"inner": {"struct": {}}}
+    assert api_rust.written_path("mycrate::a::Thing", api_rust.item_source(crate, crate.index["x"])) == "Thing"
+
+
+def test_no_warning_for_files_of_other_crates(site: Path, capsys: pytest.CaptureFixture) -> None:
+    "An item from another crate, whose file is in cargo's cache, can have no source link, so the build does not warn of it."
+    crate = api_rust.Crate(fixture(), CRATE)
+    s = Settings.read(site, {"language": "rust", "manifest": str(CRATE / "Cargo.toml"), "root": str(CRATE), "source": "https://x"})
+    assert api_rust.source_link(s, crate, {"span": {"filename": "/home/u/.cargo/registry/dep/src/lib.rs", "begin": [1, 1]}}) == ""
+    assert crate.unlinked == set()
+
+
+def test_returns_section_that_starts_with_a_heading_or_a_quote_stays() -> None:
+    "A section that starts with a sub-heading or a quote is no paragraph of prose, so it stays in the doc comment."
+    for doc in ["Do it.\n\n# Returns\n\n## Ok\n\nfine\n\n## Err\n\nbad", "Do it.\n\n# Returns\n\n> The sum."]:
+        assert api_rust.returns_section(doc) == ("See Returns, below.", doc)
+
+
+def test_written_value_past_comparisons_and_shifts_in_the_type() -> None:
+    "In an array's length or a const expression, `<`, `>`, `>=`, `<<` and `>>` compare or shift; they are no brackets."
+    for line, value in [
+        ("pub const F: [u8; { 1 >= 0 } as usize] = [0];", "[0]"),
+        ("pub const F: [u8; 1 << 2] = [0; 4];", "[0; 4]"),
+        ("pub const F: [u8; 8 >> 1] = [0; 4];", "[0; 4]"),
+        ("pub const F: Foo<{ N < 2 }> = Foo;", "Foo"),
+        ("pub const F: Vec<Vec<u8>> = Vec::new();", "Vec::new()"),
+    ]:
+        assert api_rust.written_value([line], {"name": "F", "span": {"begin": [1, 1], "end": [1, len(line) + 1]}}) == value, line
+
+
+def test_returns_cell_resolves_intra_doc_links(site: Path) -> None:
+    "An intra-doc link in a `# Returns` paragraph links in the table, as it does in the doc comment."
+    crate = api_rust.Crate(fixture(), CRATE)
+    item = next(v for v in crate.index.values() if v["name"] == "read")
+    point = next(k for k, v in crate.index.items() if v["name"] == "Point")
+    crate.index[str(item["id"])] = item | {"docs": "Read.\n\n# Returns\n\nA [`Point`].", "links": {"`Point`": int(point)}}
+    e = next(e for pg in crate.pages for e in pg.entries if e.id == str(item["id"]))
+    text = api_rust.entry_markdown(Settings.read(site, {"language": "rust"}), crate, e)
+    assert "| A [`Point`](/api/tinycrate.qmd#Point). |" in text
+
+
+def test_written_value_ends_at_its_span() -> None:
+    "A constant that shares its line with another ends where its span ends."
+    line = "pub const I: X = Y; pub const J: [u8; 1] = [2];"
+    assert api_rust.written_value([line], {"name": "I", "span": {"begin": [1, 1], "end": [1, 20]}}) == "Y"

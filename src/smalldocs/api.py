@@ -693,6 +693,9 @@ class Settings:
             raise ValueError(f"tsconfig must be a path, not {tsconfig!r}")
         out = str(conf.get("out", "api")).strip("/")
         source = str(conf.get("source", "")).rstrip("/")
+        if "root" not in conf and (manifest if language == "rust" else entry):  # the repository of the code, wherever the site is
+            code = manifest.parent if language == "rust" else (site / entry[0]).resolve()
+            root = next((d for d in [code, *code.parents] if (d / ".git").exists()), code if language == "rust" else root)
         toolchain = conf.get("toolchain", "nightly")
         if not isinstance(toolchain, str):
             raise ValueError(f"toolchain must be text, such as nightly or \"nightly-2026-11-11\", not {toolchain!r}; put a number in quotes")
@@ -904,6 +907,16 @@ def link_path(
 ) -> str:  # The path with each character that a link would misread percent-encoded: `#` as `%23`, `?` as `%3F`, `%` as `%25`, a space as `%20`, `&` as `%26`
     "Write a page's path as a link, so that a `#` or a `?` in a file's name starts no fragment or query; `+`, `@` and `$` stay as they are, as Quarto reads them."
     return quote(path, safe="/:@!$,;~+=")
+
+
+def warn_unlinked(
+    s: Settings,  # The settings
+    files: set[str],  # The source files outside the root, whose items got no source link
+) -> None:
+    "Warn that `source` is set, but some items have no source link, because their files are not inside the root."
+    if files:
+        some = ", ".join(sorted(files)[:3]) + (", ..." if len(files) > 3 else "")
+        print(f"smalldocs api: warning: source is set, but {len(files)} file(s) are outside root ({s.root}), so their items have no source link: {some}. Set root to the repository's folder", file=sys.stderr)
 
 
 def front_matter(

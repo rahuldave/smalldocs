@@ -12,6 +12,7 @@ rustdoc writes what it knows of the crate as JSON. It does not keep the comment 
 that comment is read from the source, by the lines that the JSON gives. Only the standard library is used.
 """
 
+import contextvars
 import hashlib
 import json
 import os
@@ -36,6 +37,7 @@ from .api import (
     page_key,
     table,
     type_cell,
+    warn_unlinked,
     write_reference,
 )
 
@@ -71,6 +73,7 @@ KEYWORDS = set(  # A name that is one of these is written `r#name` in the source
 LIST_ITEM = re.compile(r"^(?:[*+-]|\d{1,9}[.)])(?:\s|$)")  # A line that starts a list item, at the left edge
 DISAMBIGUATOR =re.compile(r"^(`?)(?:struct|enum|trait|union|mod|module|const|constant|fn|function|method|derive|type|value|macro|prim|primitive|static|field|variant|tymethod|attr)@")
 REF_DEF = re.compile(r"^( {0,3}\[[^\]]+\]:\s*)(\S+)(.*)$")
+WRITTEN: contextvars.ContextVar[str] = contextvars.ContextVar("written", default="")  # The source of the entry being written, whose paths show as it writes them
 ARG_LINE = re.compile(r"^\s*[*-]\s+`?([A-Za-z_][A-Za-z0-9_]*)`?\s*(?:-|:|–|—)\s*(.*)$")
 
 
@@ -172,9 +175,22 @@ def rustdoc(
 
 def path_text(
     p: dict,  # A path of rustdoc's JSON: `path`, `id` and `args`
-) -> str:  # Its last name with its generic arguments, as rustdoc's pages show it
-    "Write a path as its last name and its arguments, such as `Option<T>`."
-    return p["path"].rpartition("::")[2] + args_text(p.get("args"))
+) -> str:  # The path as the source writes it, with its generic arguments, such as `io::Error` or `Option<T>`
+    "Write a path as the source writes it, so that `type Result<T> = std::result::Result<T, E>` does not read as itself."
+    return written_path(p["path"], WRITTEN.get()) + args_text(p.get("args"))
+
+
+def written_path(
+    path: str,  # A path as rustdoc gives it, which may be longer than the source's, such as `std::path::Path` for `Path`
+    source: str,  # The source of the entry that shows it; empty when there is none
+) -> str:  # The longest end of the path that the source writes, such as `io::Error`; the last name when the source writes none
+    "Find how the source writes a path: rustdoc gives `std::path::Path` for a `Path` that a `use` brings in, and `io::Error` as it is."
+    names = path.split("::")
+    for k in range(len(names) - 1):
+        end = "::".join(names[k:])
+        if source and re.search(rf"(?<![\w:]){re.escape(end)}(?!\w)", source):
+            return end
+    return names[-1]
 
 
 def args_text(
@@ -231,7 +247,7 @@ def bounds_text(
 
 def type_text(
     t: dict | None,  # A type of rustdoc's JSON
-) -> str:  # The type as Rust writes it, each path by its last name
+) -> str:  # The type as Rust writes it, each path as the entry's source writes it, or by its last name
     "Write a type as Rust does: `&mut [u8]`, `Option<T>`, `impl Fn(u8) -> bool`."
     if t is None:
         return "()"
@@ -491,17 +507,62 @@ def line_comment(
     return ""
 
 
+def section(
+    text: str,  # A doc comment
+    name: str,  # A heading's text, such as `Returns`
+) -> tuple[list[str], str] | None:  # The section's lines, and the doc comment without it; `None` when it has no such section
+    "Find a section of a doc comment by its heading, outside code blocks; it runs to the next heading of its level or above."
+    lines, fence, start, level, stop = text.split("\n"), "", None, 0, None
+    for i, line in enumerate(lines):
+        stripped = line.lstrip()
+        if fence:
+            fence = "" if closes(stripped, fence) else fence
+            continue
+        if fence_run(stripped):
+            fence = fence_run(stripped)
+            continue
+        m = re.match(r"(#{1,6})\s+(.*?)\s*#*\s*$", line)
+        if not m:
+            continue
+        if start is None and m.group(2) == name:
+            start, level = i, len(m.group(1))
+        elif start is not None and len(m.group(1)) <= level:
+            stop = i
+            break
+    if start is None:
+        return None
+    stop = len(lines) if stop is None else stop
+    rest = "\n".join(lines[:start] + lines[stop:]).strip()
+    return lines[start + 1 : stop], re.sub(r"\n{3,}", "\n\n", rest)
+
+
+def returns_section(
+    text: str,  # A doc comment
+) -> tuple[str, str]:  # What its `# Returns` section says, on one line for the table, and the doc comment, without the section when the table holds all of it
+    "Read a `# Returns` section, the Rust convention for what a function gives back; one paragraph of prose moves into the table, and a longer section stays."
+    found = section(text, "Returns")
+    if found is None:
+        return "", text
+    body, rest = found
+    refs = [line for line in body if REF_DEF.match(line)]  # the targets of links stay in the doc comment, for the links outside the section
+    paras = [x.strip() for x in "\n".join(line for line in body if line not in refs).split("\n\n") if x.strip()]
+    if not paras:
+        return "", text
+    prose = not paras[0].startswith(("```", "~~~", "|", "    ", "\t", "<", "#", ">")) and not LIST_ITEM.match(paras[0])
+    if len(paras) == 1 and prose:
+        return " ".join(paras[0].split()), "\n\n".join(x for x in [rest, "\n".join(refs)] if x)
+    return " ".join(paras[0].split()) if prose else "See Returns, below.", text
+
+
 def arguments_section(
     text: str,  # A doc comment
 ) -> tuple[dict[str, str], str]:  # The description of each parameter in its `# Arguments` list, and the doc comment without that section
     "Read a `# Arguments` list, with lines such as ``* `a` - the first number``, and take it out of the doc comment."
-    lines = text.split("\n")
-    start = next((i for i, line in enumerate(lines) if re.fullmatch(r"#+\s*Arguments\s*", line.strip())), None)
-    if start is None:
+    found = section(text, "Arguments")
+    if found is None:
         return {}, text
-    stop = next((i for i in range(start + 1, len(lines)) if re.match(r"#+\s", lines[i])), len(lines))
     said, last = {}, None
-    for line in lines[start + 1 : stop]:
+    for line in found[0]:
         m = ARG_LINE.match(line)
         if m:
             last = m.group(1)
@@ -510,8 +571,7 @@ def arguments_section(
             said[last] += " " + line.strip()
     if not said:
         return {}, text
-    rest = "\n".join(lines[:start] + lines[stop:]).strip()
-    return said, re.sub(r"\n{3,}", "\n\n", rest)
+    return said, found[1]
 
 
 # ---------------------------------------------------------------- the crate
@@ -584,6 +644,7 @@ class Crate:
         self.index: dict[str, dict] = data["index"]
         self.paths: dict[str, dict] = data["paths"]
         self.files: dict[str, list[str]] = {}
+        self.unlinked: set[str] = set()  # The files outside the root, whose items get no source link
         self.pages: list[Page] = []
         self.where: dict[str, tuple[Page, str]] = {}  # The page and the anchor of each item that has an entry
         self.home: dict[str, Page] = {}
@@ -1004,6 +1065,8 @@ def source_link(
     try:
         file = path.relative_to(s.root) if s.root else path
     except ValueError:
+        if path.is_relative_to(crate.root.resolve()):
+            crate.unlinked.add(span["filename"])  # the crate's own file; one of another crate, in cargo's cache, can have no link
         return ""
     return f"[source]({s.source}/{link_path(file.as_posix())}#L{span['begin'][0]}){{.source-link}}"
 
@@ -1019,13 +1082,14 @@ def fn_table(
     crate: Crate,  # The crate
     item: dict,  # A function or method
     args: dict[str, str],  # The descriptions of its `# Arguments` list
+    gives: str = "",  # The text of its `# Returns` section
 ) -> str:  # A Markdown table of its parameters and its return: type, description
     "Describe a function by its parameters and its return: the type and the comment of each."
     said, returns = param_comments(crate.source(item), item, item["name"])  # the name in the source, not one that a `pub use ... as` gives
     sig = item["inner"]["function"]["sig"]
     rows = [[f"`{n}`", type_cell(type_text(t)), said.get(n) or args.get(n, "")] for n, t in sig["inputs"] if n != "self"]
     if sig.get("output"):
-        rows.append(["returns", type_cell(type_text(sig["output"])), returns])
+        rows.append(["returns", type_cell(type_text(sig["output"])), returns or escape_angles(link_docs(gives, item.get("links") or {}, crate))])
     return table(rows, ["Parameter", "Type", "Description"])
 
 
@@ -1099,9 +1163,11 @@ def item_signature(
         return f"{vis}type {name}{params}{where} = {type_text(v['type'])};"
     if kind == "constant":
         expr = v["const"].get("expr")
+        expr = expr if expr != "_" else written_value(crate.source(item), item)
         return f"{vis}const {name}: {type_text(v['type'])}" + (f" = {expr};" if expr and expr != "_" else ";")
     if kind == "static":
         expr = v.get("expr")
+        expr = expr if expr != "_" else written_value(crate.source(item), item)
         return f"{vis}static {'mut ' if v.get('is_mutable') else ''}{name}: {type_text(v['type'])}" + (f" = {expr};" if expr and expr != "_" else ";")
     if kind == "macro":
         return v
@@ -1113,6 +1179,38 @@ def item_signature(
     if kind == "assoc_const":
         return f"const {name}: {type_text(v['type'])}" + (f" = {v['value']}" if v.get("value") else "") + ";"
     return f"{vis}{kind} {name}"
+
+
+def written_value(
+    lines: list[str],  # The lines of the source file
+    item: dict,  # A constant or a static, with its span
+) -> str:  # Its value as the source writes it, without comments; empty when it cannot be read
+    "Read the value of a constant or a static from its source, when rustdoc gives `_`, as it does for an array such as `[\"a\", \"b\"]`."
+    span = item.get("span")
+    if not span or not 0 < span["begin"][0] <= span["end"][0] <= len(lines):
+        return ""
+    taken = lines[span["begin"][0] - 1 : span["end"][0]]
+    taken[-1] = taken[-1][: span["end"][1] - 1] if span["end"][1] > 1 else taken[-1]  # the item ends at its span, before any item after it on the line
+    code = [split_comment(line)[0].rstrip() for line in taken]
+    text = "\n".join(code)
+    head = re.search(rf"\b(?:const|static)\s+(?:mut\s+)?(?:r#)?{re.escape(item['name'])}\s*:", text)  # past attributes, such as `#[cfg(feature = "x")]`
+    if not head or not text.rstrip().endswith(";"):
+        return ""
+    held, k = [], head.end()  # the open brackets of the type
+    while k < len(text):  # the `=` outside the brackets of the type, such as `Bar<A = B>`
+        two, c = text[k : k + 2], text[k]
+        generic = not held or held[-1] in "<("  # in `[u8; N]` or `{ N < 2 }`, a `<` compares
+        if two in ("->", "=>", "==", "!=") or (two in ("<=", ">=", "<<", ">>") and not generic):
+            k += 2  # an operator, not a bracket and not the `=`; in a type, `>>` closes two generics
+            continue
+        if c in "([{" or (c == "<" and generic):
+            held.append(c)
+        elif c in ")]}" or (c == ">" and generic and held):
+            held = held[:-1]
+        elif c == "=" and not held:
+            return text[k + 1 : text.rstrip().rfind(";")].strip()
+        k += 1
+    return ""
 
 
 def impl_line(
@@ -1145,7 +1243,35 @@ def implementors_line(
     return f"Implemented for {', '.join(dict.fromkeys(names))}." if names else ""
 
 
+def item_source(
+    crate: Crate,  # The crate
+    item: dict,  # An item with a span
+) -> str:  # Its source without comments: a function's signature, or the whole of any other item; empty when it cannot be read
+    "Read the code of an item, to show its paths as it writes them; a function's body is left out, as its paths are not its signature's."
+    lines = crate.source(item)
+    if crate.kind(item["id"]) == "function":
+        return re.sub(r'"(?:\\.|[^"\\])*"', '""', "\n".join(code for code, *_ in signature_lines(lines, item, item["name"])))
+    span = item.get("span")
+    if not span:
+        return ""
+    code = "\n".join(split_comment(line)[0] for line in lines[span["begin"][0] - 1 : span["end"][0]])
+    return re.sub(r'"(?:\\.|[^"\\])*"', '""', code)  # a path in a string, such as `#[serde(rename = "io::Error")]`, is not how the code writes it
+
+
 def entry_markdown(
+    s: Settings,  # The settings
+    crate: Crate,  # The crate
+    e: Entry,  # One entry
+) -> str:  # Its Markdown: heading, source link, signature, doc comment and tables
+    "Write one entry, with each path in it as the entry's source writes it."
+    token = WRITTEN.set(item_source(crate, crate.item(e.id)))
+    try:
+        return entry_parts(s, crate, e)
+    finally:
+        WRITTEN.reset(token)
+
+
+def entry_parts(
     s: Settings,  # The settings
     crate: Crate,  # The crate
     e: Entry,  # One entry
@@ -1157,15 +1283,18 @@ def entry_markdown(
     parts = [f"{'#' * e.level} {heading_text(label + e.name)} {{#{e.anchor}}}", source_link(s, crate, item)]
     docs = item.get("docs") or ""
     args: dict[str, str] = {}
+    gives = ""
     name, here = crate.name_of.get(e.id, item["name"]), crate.home[e.id].id
     if kind == "function":
         args, docs = arguments_section(docs)
+        if item["inner"]["function"]["sig"].get("output"):
+            gives, docs = returns_section(docs)  # a function that returns `()` keeps the section as it is
         parts.append(code(fn_signature(item, name, here, here == str(crate.data["root"])) + (";" if e.level == 3 and not item["inner"]["function"]["has_body"] else "")))
     else:
         parts.append(code(item_signature(crate, item, name, here)))
     parts.append(tidy_docs(link_docs(docs.strip(), item.get("links") or {}, crate), e.level + 1))
     if kind == "function":
-        parts.append(fn_table(crate, item, args))
+        parts.append(fn_table(crate, item, args, gives))
     elif kind in ("struct", "union"):
         fs = fields_of(crate, item)
         rows = [[f"`{n}`", type_cell(type_text(f["inner"]["struct_field"])), describe(crate, f)] for n, f in fs]
@@ -1245,6 +1374,7 @@ def build(
     pages = {p.file: page_markdown(s, crate, p) for p in crate.pages}
     summaries = {p.file: summary(crate.item(p.id).get("docs") or "") for p in crate.pages}
     pages |= folder_indexes(crate.out, summaries, taken, summaries[crate.pages[0].file])
+    warn_unlinked(s, crate.unlinked)
     return write_reference(s, pages, symbols(crate), taken)
 
 
@@ -1263,11 +1393,12 @@ def entry_gaps(
     out = [] if docs.strip() else [f"{name}: no doc comment"]
     if kind == "function":
         args, _ = arguments_section(docs)
+        gives, _ = returns_section(docs)
         said, returns = param_comments(crate.source(item), item, item["name"])
         sig = item["inner"]["function"]["sig"]
         out += [f"{name}({n}): no docment" for n, _ in sig["inputs"] if n != "self" and not (said.get(n) or args.get(n))]
-        if sig.get("output") and not returns:
-            out.append(f"{name}: no return docment")
+        if sig.get("output") and not (returns or gives):
+            out.append(f"{name}: no return docment; write a `# Returns` section in its doc comment")
     elif kind in ("struct", "union") and "plain" in (item["inner"][kind].get("kind") or {"plain": 1}):
         out += [f"{name}.{n}: no docment" for n, f in fields_of(crate, item) if not describe(crate, f)]
     elif kind == "enum":

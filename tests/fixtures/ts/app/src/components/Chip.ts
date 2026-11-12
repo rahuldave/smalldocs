@@ -6,11 +6,11 @@ export interface ChipProps {
 }
 
 /** Draw a chip; a component needs no comment on what it returns. */
-export function Chip({ label }: ChipProps): string {
-  return `<span>${label}</span>`;
+export function Chip({ label }: ChipProps): JSX.Element {
+  return { html: `<span>${label}</span>` };
 }
 
-/** Draw a line; it takes no props, so it is no component, and its return needs a comment. */
+/** Draw a line; it returns a string, not JSX, so it is no component, and its return needs a comment. */
 export function Divider(): string {
   return "<hr>";
 }
