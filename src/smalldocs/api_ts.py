@@ -788,7 +788,7 @@ class Module:
         if not constructor and not is_void(sig.get("type")):
             text = said.returns or returns_doc(sig)
             rows.append(["returns", inline_code(type_text(sig.get("type"))), "", one_line(text)])
-            gaps += [] if text else [": no return comment"]
+            gaps += [] if text or props is not None else [": no return comment"]  # a component returns what it draws
         return rows, gaps
 
     def entry(

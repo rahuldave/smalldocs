@@ -14,7 +14,7 @@
    "flags": {},
    "children": [
     {
-     "id": 26,
+     "id": 38,
      "name": "default",
      "variant": "declaration",
      "kind": 64,
@@ -28,7 +28,7 @@
      ],
      "signatures": [
       {
-       "id": 27,
+       "id": 39,
        "name": "default",
        "variant": "signature",
        "kind": 4096,
@@ -50,7 +50,7 @@
        ],
        "parameters": [
         {
-         "id": 28,
+         "id": 40,
          "name": "__namedParameters",
          "variant": "param",
          "kind": 32768,
@@ -78,7 +78,7 @@
     {
      "title": "Functions",
      "children": [
-      26
+      38
      ]
     }
    ],
@@ -92,13 +92,259 @@
   },
   {
    "id": 2,
+   "name": "src/components/Chip",
+   "variant": "declaration",
+   "kind": 2,
+   "flags": {},
+   "children": [
+    {
+     "id": 12,
+     "name": "ChipProps",
+     "variant": "declaration",
+     "kind": 256,
+     "flags": {},
+     "comment": {
+      "summary": [
+       {
+        "kind": "text",
+        "text": "What a chip takes."
+       }
+      ]
+     },
+     "children": [
+      {
+       "id": 13,
+       "name": "label",
+       "variant": "declaration",
+       "kind": 1024,
+       "flags": {},
+       "sources": [
+        {
+         "fileName": "src/components/Chip.ts",
+         "line": 5,
+         "character": 2
+        }
+       ],
+       "type": {
+        "type": "intrinsic",
+        "name": "string"
+       }
+      }
+     ],
+     "groups": [
+      {
+       "title": "Properties",
+       "children": [
+        13
+       ]
+      }
+     ],
+     "sources": [
+      {
+       "fileName": "src/components/Chip.ts",
+       "line": 4,
+       "character": 17
+      }
+     ]
+    },
+    {
+     "id": 3,
+     "name": "Chip",
+     "variant": "declaration",
+     "kind": 64,
+     "flags": {},
+     "sources": [
+      {
+       "fileName": "src/components/Chip.ts",
+       "line": 9,
+       "character": 16
+      }
+     ],
+     "signatures": [
+      {
+       "id": 4,
+       "name": "Chip",
+       "variant": "signature",
+       "kind": 4096,
+       "flags": {},
+       "comment": {
+        "summary": [
+         {
+          "kind": "text",
+          "text": "Draw a chip; a component needs no comment on what it returns."
+         }
+        ]
+       },
+       "sources": [
+        {
+         "fileName": "src/components/Chip.ts",
+         "line": 9,
+         "character": 16
+        }
+       ],
+       "parameters": [
+        {
+         "id": 5,
+         "name": "__namedParameters",
+         "variant": "param",
+         "kind": 32768,
+         "flags": {},
+         "type": {
+          "type": "reference",
+          "target": 12,
+          "name": "ChipProps"
+         }
+        }
+       ],
+       "type": {
+        "type": "intrinsic",
+        "name": "string"
+       }
+      }
+     ]
+    },
+    {
+     "id": 6,
+     "name": "Divider",
+     "variant": "declaration",
+     "kind": 64,
+     "flags": {},
+     "sources": [
+      {
+       "fileName": "src/components/Chip.ts",
+       "line": 14,
+       "character": 16
+      }
+     ],
+     "signatures": [
+      {
+       "id": 7,
+       "name": "Divider",
+       "variant": "signature",
+       "kind": 4096,
+       "flags": {},
+       "comment": {
+        "summary": [
+         {
+          "kind": "text",
+          "text": "Draw a line; it takes no props, so it is no component, and its return needs a comment."
+         }
+        ]
+       },
+       "sources": [
+        {
+         "fileName": "src/components/Chip.ts",
+         "line": 14,
+         "character": 16
+        }
+       ],
+       "type": {
+        "type": "intrinsic",
+        "name": "string"
+       }
+      }
+     ]
+    },
+    {
+     "id": 8,
+     "name": "chips",
+     "variant": "declaration",
+     "kind": 64,
+     "flags": {},
+     "sources": [
+      {
+       "fileName": "src/components/Chip.ts",
+       "line": 19,
+       "character": 16
+      }
+     ],
+     "signatures": [
+      {
+       "id": 9,
+       "name": "chips",
+       "variant": "signature",
+       "kind": 4096,
+       "flags": {},
+       "comment": {
+        "summary": [
+         {
+          "kind": "text",
+          "text": "Draw two chips; a function with a small name is no component."
+         }
+        ]
+       },
+       "sources": [
+        {
+         "fileName": "src/components/Chip.ts",
+         "line": 19,
+         "character": 16
+        }
+       ],
+       "parameters": [
+        {
+         "id": 10,
+         "name": "a",
+         "variant": "param",
+         "kind": 32768,
+         "flags": {},
+         "type": {
+          "type": "intrinsic",
+          "name": "string"
+         }
+        },
+        {
+         "id": 11,
+         "name": "b",
+         "variant": "param",
+         "kind": 32768,
+         "flags": {},
+         "type": {
+          "type": "intrinsic",
+          "name": "string"
+         }
+        }
+       ],
+       "type": {
+        "type": "intrinsic",
+        "name": "string"
+       }
+      }
+     ]
+    }
+   ],
+   "groups": [
+    {
+     "title": "Interfaces",
+     "children": [
+      12
+     ]
+    },
+    {
+     "title": "Functions",
+     "children": [
+      3,
+      6,
+      8
+     ]
+    }
+   ],
+   "sources": [
+    {
+     "fileName": "src/components/Chip.ts",
+     "line": 1,
+     "character": 0
+    }
+   ]
+  },
+  {
+   "id": 14,
    "name": "src/components/format",
    "variant": "declaration",
    "kind": 2,
    "flags": {},
    "children": [
     {
-     "id": 3,
+     "id": 15,
      "name": "badgeText",
      "variant": "declaration",
      "kind": 64,
@@ -112,7 +358,7 @@
      ],
      "signatures": [
       {
-       "id": 4,
+       "id": 16,
        "name": "badgeText",
        "variant": "signature",
        "kind": 4096,
@@ -134,7 +380,7 @@
        ],
        "parameters": [
         {
-         "id": 5,
+         "id": 17,
          "name": "n",
          "variant": "param",
          "kind": 32768,
@@ -157,7 +403,7 @@
     {
      "title": "Functions",
      "children": [
-      3
+      15
      ]
     }
    ],
@@ -170,7 +416,7 @@
    ]
   },
   {
-   "id": 6,
+   "id": 18,
    "name": "src/components",
    "variant": "declaration",
    "kind": 2,
@@ -185,7 +431,7 @@
    },
    "children": [
     {
-     "id": 29,
+     "id": 41,
      "name": "Badge",
      "variant": "reference",
      "kind": 4194304,
@@ -197,10 +443,10 @@
        "character": 20
       }
      ],
-     "target": 26
+     "target": 38
     },
     {
-     "id": 30,
+     "id": 42,
      "name": "badgeText",
      "variant": "reference",
      "kind": 4194304,
@@ -212,15 +458,15 @@
        "character": 9
       }
      ],
-     "target": 3
+     "target": 15
     }
    ],
    "groups": [
     {
      "title": "References",
      "children": [
-      29,
-      30
+      41,
+      42
      ]
     }
    ],
@@ -233,14 +479,14 @@
    ]
   },
   {
-   "id": 7,
+   "id": 19,
    "name": "src/hooks/useCounter",
    "variant": "declaration",
    "kind": 2,
    "flags": {},
    "children": [
     {
-     "id": 13,
+     "id": 25,
      "name": "Counter",
      "variant": "declaration",
      "kind": 256,
@@ -263,7 +509,7 @@
      },
      "children": [
       {
-       "id": 15,
+       "id": 27,
        "name": "value",
        "variant": "declaration",
        "kind": 1024,
@@ -281,7 +527,7 @@
        }
       },
       {
-       "id": 16,
+       "id": 28,
        "name": "last",
        "variant": "declaration",
        "kind": 1024,
@@ -298,7 +544,7 @@
         "types": [
          {
           "type": "reference",
-          "target": 14,
+          "target": 26,
           "name": "T",
           "qualifiedName": "Counter.T",
           "refersToTypeParameter": true
@@ -311,7 +557,7 @@
        }
       },
       {
-       "id": 17,
+       "id": 29,
        "name": "bump",
        "variant": "declaration",
        "kind": 1024,
@@ -326,21 +572,21 @@
        "type": {
         "type": "reflection",
         "declaration": {
-         "id": 18,
+         "id": 30,
          "name": "__type",
          "variant": "declaration",
          "kind": 65536,
          "flags": {},
          "signatures": [
           {
-           "id": 19,
+           "id": 31,
            "name": "__type",
            "variant": "signature",
            "kind": 4096,
            "flags": {},
            "parameters": [
             {
-             "id": 20,
+             "id": 32,
              "name": "by",
              "variant": "param",
              "kind": 32768,
@@ -367,9 +613,9 @@
       {
        "title": "Properties",
        "children": [
-        15,
-        16,
-        17
+        27,
+        28,
+        29
        ]
       }
      ],
@@ -382,7 +628,7 @@
      ],
      "typeParameters": [
       {
-       "id": 14,
+       "id": 26,
        "name": "T",
        "variant": "typeParam",
        "kind": 131072,
@@ -391,7 +637,7 @@
      ]
     },
     {
-     "id": 8,
+     "id": 20,
      "name": "useCounter",
      "variant": "declaration",
      "kind": 64,
@@ -405,7 +651,7 @@
      ],
      "signatures": [
       {
-       "id": 9,
+       "id": 21,
        "name": "useCounter",
        "variant": "signature",
        "kind": 4096,
@@ -427,7 +673,7 @@
        ],
        "typeParameters": [
         {
-         "id": 10,
+         "id": 22,
          "name": "T",
          "variant": "typeParam",
          "kind": 131072,
@@ -436,7 +682,7 @@
        ],
        "parameters": [
         {
-         "id": 11,
+         "id": 23,
          "name": "start",
          "variant": "param",
          "kind": 32768,
@@ -448,7 +694,7 @@
          "defaultValue": "0"
         },
         {
-         "id": 12,
+         "id": 24,
          "name": "step",
          "variant": "param",
          "kind": 32768,
@@ -462,11 +708,11 @@
        ],
        "type": {
         "type": "reference",
-        "target": 13,
+        "target": 25,
         "typeArguments": [
          {
           "type": "reference",
-          "target": 10,
+          "target": 22,
           "name": "T",
           "refersToTypeParameter": true
          }
@@ -481,13 +727,13 @@
     {
      "title": "Interfaces",
      "children": [
-      13
+      25
      ]
     },
     {
      "title": "Functions",
      "children": [
-      8
+      20
      ]
     }
    ],
@@ -500,14 +746,14 @@
    ]
   },
   {
-   "id": 21,
+   "id": 33,
    "name": "src/utils/format",
    "variant": "declaration",
    "kind": 2,
    "flags": {},
    "children": [
     {
-     "id": 22,
+     "id": 34,
      "name": "shout",
      "variant": "declaration",
      "kind": 64,
@@ -521,7 +767,7 @@
      ],
      "signatures": [
       {
-       "id": 23,
+       "id": 35,
        "name": "shout",
        "variant": "signature",
        "kind": 4096,
@@ -543,7 +789,7 @@
        ],
        "parameters": [
         {
-         "id": 24,
+         "id": 36,
          "name": "text",
          "variant": "param",
          "kind": 32768,
@@ -562,7 +808,7 @@
      ]
     },
     {
-     "id": 25,
+     "id": 37,
      "name": "MAX_ITEMS",
      "variant": "declaration",
      "kind": 32,
@@ -595,13 +841,13 @@
     {
      "title": "Variables",
      "children": [
-      25
+      37
      ]
     },
     {
      "title": "Functions",
      "children": [
-      22
+      34
      ]
     }
    ],
@@ -620,26 +866,29 @@
    "children": [
     1,
     2,
-    6,
-    7,
-    21
+    14,
+    18,
+    19,
+    33
    ]
   }
  ],
  "files": {
   "entries": {
    "1": "src/components/Badge.ts",
-   "2": "src/components/format.ts",
-   "3": "src/components/index.ts",
-   "4": "src/hooks/useCounter.ts",
-   "5": "src/utils/format.ts"
+   "2": "src/components/Chip.ts",
+   "3": "src/components/format.ts",
+   "4": "src/components/index.ts",
+   "5": "src/hooks/useCounter.ts",
+   "6": "src/utils/format.ts"
   },
   "reflections": {
    "1": 1,
    "2": 2,
-   "3": 6,
-   "4": 7,
-   "5": 21
+   "3": 14,
+   "4": 18,
+   "5": 19,
+   "6": 33
   }
  }
 }

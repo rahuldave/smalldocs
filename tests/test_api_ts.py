@@ -152,7 +152,7 @@ def test_one_page_per_entry_point_holds_what_it_exports_again(lib: str, tmp_path
 
 def test_one_page_per_file_when_entry_is_a_folder(app: dict[str, str]) -> None:
     "A folder as entry makes a page per file, named from the folder they share; two files of one name keep their paths."
-    assert set(app) == {"Badge.qmd", "components-format.qmd", "components.qmd", "useCounter.qmd", "utils-format.qmd"}
+    assert set(app) == {"Badge.qmd", "Chip.qmd", "components-format.qmd", "components.qmd", "useCounter.qmd", "utils-format.qmd"}
     assert app["Badge.qmd"].startswith('---\ntitle: "components/Badge"\n')
     assert app["utils-format.qmd"].startswith('---\ntitle: "utils/format"\n')
 
@@ -322,7 +322,7 @@ def test_check_lists_every_gap(tmp_path: Path, monkeypatch: pytest.MonkeyPatch, 
     ]:
         assert gap in out
     assert "components/format:badgeText" not in out and "utils/format:shout" not in out
-    assert "4 of 6 functions, classes, interfaces, types and constants are documented" in out
+    assert "6 of 10 functions, classes, interfaces, types and constants are documented" in out
 
 
 def test_check_void_needs_no_return_comment(tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture) -> None:
@@ -522,3 +522,45 @@ def test_static_method_has_its_own_id(tmp_path: Path, monkeypatch: pytest.Monkey
     text = pages(tmp_path)["lib.qmd"]
     assert "### Rect.area {#Rect.area}" in text and "### static Rect.area {#Rect.area-2}" in text
     assert json.loads((tmp_path / "_symbols.json").read_text())["Rect.area-2"] == "/api/lib.qmd#Rect.area-2"
+
+
+# ---------------------------------------------------------------- Rahul's decisions on the open points
+
+
+def test_component_needs_no_return_comment(tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture) -> None:
+    "A React component needs no comment on its return; a function with no props, or a small name, still does."
+    site(tmp_path, "app", monkeypatch)
+    assert main(["api", "check", "--dir", str(tmp_path)]) == 1
+    out = capsys.readouterr().out
+    assert "components/Chip:Chip" not in out
+    assert "components/Chip:Divider: no return comment" in out and "components/Chip:chips: no return comment" in out
+    assert main(["api", "build", "--dir", str(tmp_path)]) == 0
+    assert "| returns | `string` |  |  |" in entry_of(pages(tmp_path)["Chip.qmd"], "Chip")  # the page still shows the return
+
+
+def test_typescript_links_any_name_in_the_index(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    "On a TypeScript site, a name in backticks that is a key of `_symbols.json` links, though it looks like no code, as `useCounter`."
+    site(tmp_path, "app", monkeypatch)
+    (tmp_path / "index.qmd").write_text("# Home\n\nSee `useCounter`, `shout` and `nothing`.\n")
+    assert main(["render", str(tmp_path), "-q"]) == 0
+    html = (tmp_path / "_site/index.html").read_text()
+    assert '<a href="api/useCounter.html#useCounter"><code>useCounter</code></a>' in html
+    assert '<a href="api/utils-format.html#shout"><code>shout</code></a>' in html and "<code>nothing</code>" in html
+
+
+def test_python_sites_link_names_as_before(tmp_path: Path) -> None:
+    "On a Python site, a plain word such as `f` still does not link, and `language: python` changes no byte of the page."
+    pkg = tmp_path / "src/lnkpkg"
+    pkg.mkdir(parents=True)
+    (pkg / "__init__.py").write_text('"A package."\n\n\ndef f(\n    a: int,  # the a\n) -> int:  # the b\n    "Do f."\n    return a\n')
+    html = []
+    for extra in ["", "  language: python\n"]:
+        d = tmp_path / f"docs{len(html)}"
+        d.mkdir()
+        (d / "_smalldocs.yml").write_text(f"project:\n  type: website\napi:\n  packages: [lnkpkg]\n  root: ..\n{extra}")
+        (d / "index.qmd").write_text("# Home\n\nSee `f` and `f()`.\n")
+        assert main(["render", str(d), "-q"]) == 0
+        html.append((d / "_site/index.html").read_text())
+        sys.modules.pop("lnkpkg", None)
+    assert html[0] == html[1]
+    assert '<code>f</code> and <a href="api/lnkpkg.html#f"><code>f()</code></a>' in html[0]
