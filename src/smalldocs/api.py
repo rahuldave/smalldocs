@@ -35,6 +35,7 @@ from dataclasses import dataclass, is_dataclass
 from pathlib import Path
 from pkgutil import walk_packages
 from types import FunctionType, ModuleType
+from urllib.parse import quote
 
 from fastcore.docments import docments
 
@@ -637,6 +638,12 @@ class Settings:
     check: tuple[str, ...] = ()  # Globs, from the root, of more files that `check` holds to the convention; `**/` is any folders or none
     linkify: bool = True  # Whether a name in backticks links to its entry
     shown: bool = False  # Whether `check` holds the packages only to what their pages show, from `check-shown`
+    language: str = "python"  # The language of the code: `python`, `rust` or `typescript`
+    entry: tuple[str, ...] = ()  # TypeScript: the entry points, files or folders, from the site's folder
+    tsconfig: str = ""  # TypeScript: the tsconfig, from the site's folder; empty lets TypeDoc find it
+    manifest: Path | None = None  # Rust: the crate's Cargo.toml; `None` is the one at the root
+    toolchain: str = "nightly"  # Rust: the toolchain that runs rustdoc
+    private: bool = False  # Rust: document private items too
 
     @classmethod
     def read(
@@ -645,6 +652,11 @@ class Settings:
         conf: dict,  # The `smalldocs.api` section
     ) -> "Settings":  # The settings, with defaults
         "Read the settings from the config."
+        language = str(conf.get("language", "python"))
+        if language not in ("python", "rust", "typescript"):
+            raise ValueError(f"the api settings: language must be python, rust or typescript, not {language!r}")
+        if language != "python":
+            return cls.read_other(site, conf, language)
         pkgs = conf.get("packages") or conf.get("package") or []
         pkgs = [pkgs] if isinstance(pkgs, str) else list(pkgs)
         if not pkgs:
@@ -657,8 +669,41 @@ class Settings:
             raise ValueError(f"check-shown must be true or false, not {shown!r}")
         return cls(site, pkgs, str(conf.get("out", "api")).strip("/"), root, str(conf.get("source", "")).rstrip("/"), tuple([chk] if isinstance(chk, str) else chk), conf.get("linkify", True) is not False, shown)
 
+    @classmethod
+    def read_other(
+        cls,
+        site: Path,  # The site's folder
+        conf: dict,  # The `api` section
+        language: str,  # `rust` or `typescript`
+    ) -> "Settings":  # The settings, with defaults
+        "Read the settings of a crate or a TypeScript package, which has no packages to import."
+        marks = ("Cargo.toml", "package.json", ".git")
+        root = (site / str(conf.get("root", "." if any((site / m).exists() for m in marks) else ".."))).resolve()
+        flags = {k: conf.get(k, False) for k in ("check-shown", "private")}
+        for k, v in flags.items():
+            if not isinstance(v, bool):
+                raise ValueError(f"{k} must be true or false, not {v!r}")
+        manifest = (site / str(conf["manifest"])).resolve() if conf.get("manifest") else None
+        entry = conf.get("entry") or []
+        entry = [entry] if isinstance(entry, str) else entry
+        if not isinstance(entry, list) or not all(isinstance(e, str) for e in entry):
+            raise ValueError(f"entry must be a path or a list of paths, not {entry!r}")
+        tsconfig = conf.get("tsconfig", "")
+        if not isinstance(tsconfig, str):
+            raise ValueError(f"tsconfig must be a path, not {tsconfig!r}")
+        out = str(conf.get("out", "api")).strip("/")
+        source = str(conf.get("source", "")).rstrip("/")
+        toolchain = conf.get("toolchain", "nightly")
+        if not isinstance(toolchain, str):
+            raise ValueError(f"toolchain must be text, such as nightly or \"nightly-2026-11-11\", not {toolchain!r}; put a number in quotes")
+        return cls(
+            site, [], out, root, source, (), conf.get("linkify", True) is not False, flags["check-shown"], language, tuple(entry), tsconfig, manifest, toolchain, flags["private"]
+        )  # fmt: skip
+
     def importable(self) -> None:
         "Let the packages import from the repository: its root and its `src` folder go on `sys.path`."
+        if self.language != "python":
+            return  # a crate or a TypeScript package is read by its own tool, not imported
         for p in (self.root, self.root / "src") if self.root else ():
             if p.is_dir() and str(p) not in sys.path:
                 sys.path.insert(0, str(p))
@@ -737,6 +782,8 @@ def build(
     s: Settings,  # The settings
 ) -> list[Path]:  # The pages written
     "Write one reference page per module, and `_symbols.json`, the index of names that links use."
+    if s.language != "python":
+        return language_module(s).build(s)
     s.importable()
     out_dir = (s.site / s.out).resolve()
     site = s.site.resolve()
@@ -770,6 +817,251 @@ def build(
         if stale.endswith(".qmd") and "/" not in stale and f.is_file():
             f.unlink()  # only a page that an earlier build wrote, and this one did not
     manifest.write_text("\n".join(sorted(names)), encoding="utf-8")
+    sym = s.site / "_symbols.json"
+    text = json.dumps(index, indent=1)
+    if not sym.exists() or sym.read_text(encoding="utf-8") != text:
+        sym.write_text(text, encoding="utf-8")
+    return written
+
+
+# ---------------------------------------------------------------- the pages of Rust and TypeScript, which `api_rust` and `api_ts` write
+
+
+MARK = "# written by smalldocs api build; a build writes over it"  # The first line of the front matter of each Rust or TypeScript page
+FENCE = re.compile(r"^ {0,3}(`{3,}|~{3,})")  # A line that opens or closes a fenced code block
+HTML_START = re.compile(  # what may follow a `<` that starts HTML on purpose: a common tag in lower case, an autolink or a comment
+    r"(?:/?(?:b|i|p|s|u|br|hr|h[1-6]|em|strong|del|ins|abbr|code|pre|kbd|sub|sup|span|div|img|details|summary|table|thead|tbody|tr|td|th|ul|ol|li|dl|dt|dd"
+    r"|blockquote)(?=[\s>/])|a\s|/a>|https?://|mailto:|[^\s<>@`]+@[^\s<>@`]+>|!--)"
+)  # in lower case only, so that a generic such as `Wrapper<B>` is text; `<a>` alone, as in "the <a> element", is text too
+
+
+def language_module(
+    s: Settings,  # The settings of a Rust or TypeScript project
+) -> ModuleType:  # `smalldocs.api_rust` or `smalldocs.api_ts`
+    "Load the module that reads the language, only when it is needed."
+    return importlib.import_module({"typescript": "smalldocs.api_ts", "rust": "smalldocs.api_rust"}[s.language])
+
+
+def escape_angles(
+    text: str,  # Markdown, of one line or more
+) -> str:  # The same text with each `<` that starts no HTML tag, autolink or comment written `&lt;`; code spans and fenced code blocks stay as they are
+    "Escape a stray `<`, such as in `Vec<u8>` or `vs <Opp>` written outside backticks, so that it shows as text and starts no HTML."
+    out: list[str] = []
+    prose: list[str] = []
+    fence = ""
+    for line in text.split("\n"):
+        m = FENCE.match(line)
+        if fence:
+            out.append(line)
+            if m and m.group(1)[0] == fence[0] and len(m.group(1)) >= len(fence) and not line.strip()[len(m.group(1)) :].strip():
+                fence = ""
+            continue
+        if m:
+            out.extend(escape_prose("\n".join(prose)).split("\n") if prose else [])
+            prose.clear()
+            fence = m.group(1)
+            out.append(line)
+            continue
+        prose.append(line)
+    if prose:
+        out.extend(escape_prose("\n".join(prose)).split("\n"))
+    return "\n".join(out)
+
+
+def escape_prose(
+    text: str,  # Markdown prose, outside a code block
+) -> str:  # The same text with each stray `<` written `&lt;`; code spans stay as they are
+    "Escape the stray `<` of prose that holds no code block."
+
+    def one(
+        m: re.Match,  # A code span, or a `<`
+    ) -> str:  # The code span as it is, or the `<`, escaped unless it starts a tag
+        "Escape one `<`."
+        if m.group(1):
+            return m.group(1)
+        return "<" if HTML_START.match(text, m.end()) else "&lt;"
+
+    return re.sub(r"((`+)(?:(?!\n[ \t]*\n)[\s\S])*?(?<!`)\2(?!`))|<", one, text)
+
+
+def type_cell(
+    text: str,  # A type, as Rust or TypeScript writes it
+) -> str:  # It as plain text, as the Python pages write types, with Markdown's, maths' and HTML's signs escaped; `table` escapes `|`
+    "Write a type in a table cell as plain text, so that `&`, `<`, `>`, `*`, `_`, `$`, `~`, `^`, quotes, a backtick, `[` and `]` show as they are."
+    text = re.sub(r"([\\`*_$~^'\"\[\]])", r"\\\1", text)
+    return text.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+
+
+def heading_text(
+    text: str,  # The text of a heading, such as `fn __x__` or `$a.$b`
+) -> str:  # The same text with each sign of Markdown, maths and HTML escaped by a backslash; a `_` between two letters or digits, as in `in_a`, stays as it is, and so does a lone `-` or `.`
+    "Escape a heading's text, so that `__x__` is no bold, `$a.$b` no maths, `Wrapper<B>` no tag and `a--b` no dash; the heading's id is written apart."
+    return re.sub(r"([\\`*$~^\[\]<>&{}#|'\"@!=]|(?<![^\W_])_|_(?![^\W_])|-(?=-)|(?<=-)-|\.(?=\.)|(?<=\.)\.)", r"\\\1", text)
+
+
+def link_path(
+    path: str,  # A path in the site, such as `/api/a#b.qmd`
+) -> str:  # The path with each character that a link would misread percent-encoded: `#` as `%23`, `?` as `%3F`, `%` as `%25`, a space as `%20`, `&` as `%26`
+    "Write a page's path as a link, so that a `#` or a `?` in a file's name starts no fragment or query; `+`, `@` and `$` stay as they are, as Quarto reads them."
+    return quote(path, safe="/:@!$,;~+=")
+
+
+def front_matter(
+    title: str,  # The page's title, as plain text; it is escaped, because a title is Markdown
+    description: str | None = None,  # Its description; `None` writes none
+) -> str:  # The front matter, with the mark of a build first, and the blank line after it
+    "Begin a Rust or TypeScript page, marked as written by a build, so that a lost manifest leaves no page frozen."
+    said = f"description: {yaml_text(description.replace('&lt;', '<'))}\n" if description is not None else ""  # a description is plain text, not Markdown
+    return f"---\n{MARK}\ntitle: {yaml_text(heading_text(title))}\n{said}---\n\n"
+
+
+def yaml_text(
+    text: str,  # Any text
+) -> str:  # It as a YAML string in double quotes, with every character that is not ASCII as it is, as YAML reads an emoji
+    "Quote text for front matter; JSON's `\\ud83e\\udd80` for an emoji is two broken characters to PyYAML."
+    out = json.dumps(text, ensure_ascii=False)
+    return out.replace("\u2028", "\\u2028").replace("\u2029", "\\u2029").replace("\u0085", "\\u0085").replace("\ufeff", "\\ufeff")
+
+
+def out_folder(
+    s: Settings,  # The settings
+) -> Path:  # The folder of pages, resolved
+    "Find the folder of pages, and refuse one that is the site or outside it, before any tool runs."
+    out_dir = (s.site / s.out).resolve()
+    if s.site.resolve() not in out_dir.parents:
+        raise ValueError(f"api.out {s.out!r} must be a folder inside the site, such as api")
+    return out_dir
+
+
+def inside(
+    out_dir: Path,  # The folder of pages
+    rel: str,  # A path in it, from the manifest or from a page's place
+) -> Path | None:  # The file, when the path is a `.qmd` that stays inside the folder; `None` otherwise
+    "Check that a page's path stays inside `out`: relative, no `..`, no empty part, no backslash, a `.qmd`."
+    parts = rel.split("/")
+    if not rel.endswith(".qmd") or rel.startswith("/") or "\\" in rel or any(x in ("", ".", "..") for x in parts):
+        return None
+    f = out_dir / rel
+    return f if out_dir in f.resolve().parents else None
+
+
+def built_before(
+    out_dir: Path,  # The folder of pages
+) -> set[str]:  # The pages that the last build wrote, from its manifest, as paths from the folder
+    "Read the manifest of the last build."
+    manifest = out_dir / ".smalldocs-api"
+    return set(manifest.read_text(encoding="utf-8").split("\n")) - {""} if manifest.exists() else set()
+
+
+def page_key(
+    rel: str,  # A page's path in the folder of pages, such as `components/Badge.qmd` or `utils/format.ipynb`
+) -> str:  # The page it makes on the site, without its suffix, in lower case: `.md`, `.qmd` and `.ipynb` of one name are one page, as on macOS
+    "Name the page that a source makes, so that two sources of one page are found."
+    stem, dot, suffix = rel.rpartition(".")
+    return (stem if dot and suffix in ("qmd", "md", "ipynb") else rel).casefold()
+
+
+def marked(
+    f: Path,  # A page
+) -> bool:  # Whether a build wrote it, by the mark at its start
+    "Read a page's mark."
+    with f.open(encoding="utf-8", errors="replace") as h:
+        return h.read(len(MARK) + 5) == f"---\n{MARK}\n"
+
+
+def hand_written(
+    out_dir: Path,  # The folder of pages
+) -> set[str]:  # The pages in it that no build wrote, as paths from the folder
+    "Find the pages that someone wrote in the folder of pages, which a build never writes over: a `.md`, an `.ipynb`, or a `.qmd` without the mark."
+    if not out_dir.is_dir():
+        return set()
+    found = (f for f in out_dir.rglob("*") if f.suffix in (".qmd", ".md", ".ipynb") and f.is_file())
+    return {f.relative_to(out_dir).as_posix() for f in found if f.suffix != ".qmd" or not marked(f)}
+
+
+def listing(
+    rows: list[tuple[str, str, str]],  # Each page: its name, its link and its summary
+) -> str:  # A Markdown table with a link to each page by its name, and its summary; empty when there are none
+    "List some pages of the reference, in a table."
+    return table([[f"[`{name}`]({href})", summary] for name, href, summary in rows], ["Name", "Summary"])
+
+
+def folder_listing(
+    out: str,  # The folder of pages in the site, such as `api`
+    folder: str,  # A folder of pages in it, such as `components`; empty for `out` itself
+    summaries: dict[str, str],  # The summary of each page, by its path in `out`, such as `components/Badge.qmd`
+) -> str:  # The table of the folder's pages and subfolders, each a link, in name order; a subfolder links to its `index.qmd`
+    "List what one folder of the reference holds, for its `index.qmd`."
+    prefix, rows = f"{folder}/" if folder else "", {}
+    for rel in summaries:
+        if not rel.startswith(prefix):
+            continue
+        head, sep, _ = rel[len(prefix) :].partition("/")
+        if sep:
+            rows.setdefault(head, (head, link_path(f"/{out}/{prefix}{head}/index.qmd"), summaries.get(f"{prefix}{head}/index.qmd", "")))
+        elif head != "index.qmd":
+            rows[head] = (head.removesuffix(".qmd"), link_path(f"/{out}/{prefix}{head}"), summaries[rel])
+    return listing(sorted(rows.values(), key=lambda r: r[0].casefold()))
+
+
+def folder_indexes(
+    out: str,  # The folder of pages in the site, such as `api`
+    summaries: dict[str, str],  # The summary of each page that the build writes, by its path in `out`
+    taken: set[str],  # The pages that someone wrote, which a build never writes over
+    description: str = "",  # The description of the index of `out` itself, such as the crate's summary
+) -> dict[str, str]:  # The text of each folder's `index.qmd` that no page of the build, and no one, has written
+    "Write an `index.qmd` for each folder of pages that has none: titled by its folder, with a table of its pages and subfolders."
+    folders = {""} | {rel.rsplit("/", 1)[0] for rel in summaries if "/" in rel}
+    folders |= {"/".join(f.split("/")[:k]) for f in list(folders) for k in range(1, f.count("/") + 1)}
+    gone = {page_key(t) for t in taken} | {page_key(r) for r in summaries}
+    out_pages = {}
+    for folder in sorted(folders):
+        key = f"{folder}/index.qmd" if folder else "index.qmd"
+        if page_key(key) not in gone:
+            title = folder.rpartition("/")[2] or "Reference"  # the sidebar shows no section for `out` itself, as Quarto does
+            out_pages[key] = front_matter(title, description or None if not folder else None) + folder_listing(out, folder, summaries) + "\n"
+    return out_pages
+
+
+def write_reference(
+    s: Settings,  # The settings
+    pages: dict[str, str],  # The text of each page, by its path in the folder of pages
+    index: dict[str, str],  # The index of names for links, for `_symbols.json`
+    taken: set[str],  # The pages that someone wrote, from `hand_written`
+) -> list[Path]:  # The pages written
+    "Write the pages, the manifest and `_symbols.json`; delete only the marked pages that an earlier build listed and this one does not write in that spelling."
+    out_dir = out_folder(s)
+    held = {page_key(t): t for t in taken}
+    for rel in pages:
+        if inside(out_dir, rel) is None:
+            raise ValueError(f"a page would leave api.out: {rel!r}")
+        if page_key(rel) in held:
+            raise ValueError(f"{out_dir / held[page_key(rel)]} exists and no earlier API build wrote it (it has no mark); move it, or remove it, and build again")
+    out_dir.mkdir(parents=True, exist_ok=True)
+    manifest = out_dir / ".smalldocs-api"
+    before = built_before(out_dir)
+    for stale in sorted(before - set(pages)):  # first, so that a page renamed only in case, `Chip` to `chip`, takes its new spelling on macOS
+        f = inside(out_dir, stale)
+        if f is not None and f.is_file() and marked(f):
+            f.unlink()  # only a page that an earlier build wrote and listed, and this one does not write as it is spelt
+            for d in f.parents:
+                if d == out_dir or any(d.iterdir()):
+                    break
+                d.rmdir()  # a folder the pages left empty
+    written: list[Path] = []
+    mine: set[str] = set()
+    done = False
+    try:
+        for rel, text in pages.items():
+            f = out_dir / rel
+            f.parent.mkdir(parents=True, exist_ok=True)
+            if not f.exists() or f.read_text(encoding="utf-8") != text:
+                f.write_text(text, encoding="utf-8")
+            written.append(f)
+            mine.add(rel)
+        done = True
+    finally:
+        manifest.write_text("\n".join(sorted(mine if done else before | mine)), encoding="utf-8")  # a stopped build keeps what it wrote
     sym = s.site / "_symbols.json"
     text = json.dumps(index, indent=1)
     if not sym.exists() or sym.read_text(encoding="utf-8") != text:
@@ -830,6 +1122,11 @@ def run(
         pages = build(s)
         print(f"wrote {len(pages)} page(s) to {s.site / s.out}")
         return 0
+    if s.language != "python":
+        if action == "check":
+            return language_module(s).check(s, s.shown)
+        print(f"smalldocs api {action}: for Python only; {s.language} has build and check", file=sys.stderr)
+        return 2
     if action == "check":
         return check(s.packages, s.check_files(), s.root, s.shown)
     if action == "list":

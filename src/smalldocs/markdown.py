@@ -1249,7 +1249,7 @@ def code_inline(
     symbols = env.get("symbols") or {}
     key = re.sub(r"\(\)$", "", t.content)
     nolink = "nolink" in str(t.attrs.get("class", "")).split()
-    if key in symbols and not env.get("_in_link") and not nolink and looks_like_code(t.content):
+    if key in symbols and not env.get("_in_link") and not nolink and (looks_like_code(t.content) or env.get("symbols_exact")):
         target = env["link"](symbols[key], "href") if env.get("link") else symbols[key]
         return f'<a href="{html.escape(target)}">{code}</a>'
     return code
@@ -1564,7 +1564,7 @@ def make_parser(
     md.core.ruler.push("escaped_spaces", rules.escaped_spaces)
     md.core.ruler.push("video_sources", rules.video_sources)
     if smart:
-        md.core.ruler.push("typography", rules.typography)  # before ids: Pandoc makes ids from the smart text
+        md.core.ruler.before("text_join", "typography", rules.typography)  # before ids, as Pandoc makes ids from the smart text; before escapes join the text, so `\-\-` stays `--`
     md.core.ruler.push("ids", rules.ids)
     md.core.ruler.push("title", rules.title)
     md.core.ruler.push("layouts", rules.layouts)  # while the blocks are still divs and paragraphs
@@ -1633,7 +1633,7 @@ def page_options(
 
 def render(
     text: str,  # Markdown, without its front matter
-    env: dict,  # In: `title`, `link`, `symbols`, `code_copy`, `number_sections`, and `page_options`. Out: `headings`, `search`, `math`, ...
+    env: dict,  # In: `title`, `link`, `symbols`, `symbols_exact`, `code_copy`, `number_sections`, and `page_options`. Out: `headings`, `search`, `math`, ...
     extensions: str = "",  # Pandoc's reader with extensions, from `from:` in the config
 ) -> str:  # The HTML of the body
     "Render a page's Markdown to HTML, filling `env` with what the layout needs."

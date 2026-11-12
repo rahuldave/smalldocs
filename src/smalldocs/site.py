@@ -124,6 +124,7 @@ class Site:
         self.resources: set[PurePosixPath] = set()
         self.broken: list[tuple[str, str]] = []
         self.symbols: dict[str, str] = {}
+        self.exact_symbols = False  # whether a name in backticks links when it is a key of the index, though it looks like no code
         self._themes: list[ThemeFile] | None = None
         self._metadata_checked: set[PurePosixPath] = set()  # the folders whose _metadata.yml has been checked
 
@@ -324,6 +325,7 @@ class Site:
             except ValueError as e:
                 raise BuildError(f"{index}: {e}") from e
             self.symbols = {str(k): str(v) for k, v in symbols.items()} if isinstance(symbols, dict) else {}
+            self.exact_symbols = isinstance(api, dict) and api.get("language") in ("rust", "typescript")  # `useFetch` is code there
 
     def llms_on(self) -> bool:  # Whether `website.llms-txt` is on
         "Say whether the site writes a Markdown copy of each page and `llms.txt`."
@@ -339,6 +341,7 @@ class Site:
             "title": page.front.get("title"),
             "link": lambda href, kind, page=page: self.resolve(href, page),
             "symbols": self.symbols,
+            "symbols_exact": self.exact_symbols,
             "code_copy": m.get("code-copy", True) is not False,
             "number_sections": bool(m.get("number-sections")),
             "external_new_window": bool(m.get("link-external-newwindow")),
