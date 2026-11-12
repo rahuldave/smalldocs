@@ -642,7 +642,7 @@ def test_real_program_on_the_tiny_app(tmp_path: Path, fastapi_runner: list[str])
     "The program gives the document of `tiny.json`, with the file and line of each route."
     folder = shutil.copytree(FIX, tmp_path / "proj", ignore=shutil.ignore_patterns("__pycache__"))
     s = api.Settings.read(tmp_path, {"language": "openapi", "fastapi": "tiny_app:app", "python": fastapi_runner, "root": "proj"})
-    text, _ = api_openapi.document_text(s)
+    text, *_ = api_openapi.document_text(s)
     got = json.loads(text)
     for item in got["paths"].values():
         for o in item.values():
@@ -964,3 +964,203 @@ def test_line_breaks_in_tags_operation_ids_and_schema_names(tmp_path: Path) -> N
     out = built(tmp_path, ops({"/a": {"get": op(tags=["Tag\nTwo"], operationId="op\nid")}}, components={"schemas": {"S\nT": {"type": "object"}}}))
     assert 'title: "Tag Two"' in out["tag-two.qmd"]
     assert {"op id", "S T", "http.S T"} <= set(json.loads((tmp_path / "_symbols.json").read_text()))
+
+
+# ---------------------------------------------------------------- what the third review found
+
+
+def alive(
+    pid: int,  # A process id
+) -> bool:  # Whether the process still runs
+    "Tell whether a process runs."
+    try:
+        os.kill(pid, 0)
+    except ProcessLookupError:
+        return False
+    return True
+
+
+def test_a_worker_left_by_a_good_build_is_killed(tmp_path: Path) -> None:
+    "A process that the app starts does not outlive a build that succeeds."
+    import time
+
+    pid = tmp_path / "pid"
+    head = f"import subprocess\nopen({str(pid)!r}, 'w').write(str(subprocess.Popen(['sleep', '301']).pid))\n"
+    program_site(tmp_path, head + APP.format(doc=json.dumps(ops({"/a": {"get": op()}}))), "  timeout: 20\n")
+    api.build_sections(tmp_path, load(tmp_path).smalldocs["api"])
+    time.sleep(0.5)
+    assert not alive(int(pid.read_text()))
+
+
+def test_a_command_that_leaves_a_child_gives_its_document_at_once(tmp_path: Path) -> None:
+    "A command that ends, and leaves a child that holds its output, gives its document without waiting for the timeout."
+    import time
+
+    doc = json.dumps(ops({"/a": {"get": op()}}))
+    write(tmp_path, {"print.sh": f"sleep 300 &\necho '{doc}'\n"})
+    site(tmp_path, "api:\n  language: openapi\n  command: [sh, print.sh]\n  root: .\n  out: http\n  timeout: 20\n")
+    t = time.perf_counter()
+    api.build_sections(tmp_path, load(tmp_path).smalldocs["api"])
+    assert time.perf_counter() - t < 10
+    assert "GET /a" in (tmp_path / "http/default.qmd").read_text()
+
+
+@pytest.mark.parametrize("sig", ["SIGTERM", "SIGHUP"])
+def test_sigterm_and_sighup_stop_the_program_too(tmp_path: Path, sig: str) -> None:
+    "SIGTERM or SIGHUP to the build kills the program, and the build stops as the signal asks."
+    import signal
+    import time
+
+    marker = tmp_path / "alive"
+    write(tmp_path, {"app.py": f"import time\ntime.sleep(6)\nopen({str(marker)!r}, 'w').write('x')\n"})
+    site(tmp_path, f"api:\n  language: openapi\n  fastapi: app:app\n  python: {sys.executable}\n  root: .\n  out: http\n")
+    proc = subprocess.Popen([sys.executable, "-m", "smalldocs.cli", "api", "build", "--dir", str(tmp_path)], stderr=subprocess.DEVNULL)
+    time.sleep(2)
+    proc.send_signal(getattr(signal, sig))
+    assert proc.wait(timeout=20) == -getattr(signal, sig)
+    time.sleep(6)
+    assert not marker.exists()
+
+
+def test_the_marker_after_a_progress_bar_and_the_app_output_before_the_traceback(tmp_path: Path) -> None:
+    "The marker is found after output with no line break, and the message ends with the traceback, after the app's own output."
+    program_site(tmp_path, "import sys\nsys.stderr.write('loading models...')\nsys.stderr.flush()\nraise RuntimeError('the real cause')\n")
+    with pytest.raises(ValueError, match="fastapi app:app: app-import: RuntimeError: the real cause"):
+        api.build_sections(tmp_path, load(tmp_path).smalldocs["api"])
+    noise = "import sys\nfor i in range(30):\n    print('noise', i, file=sys.__stdout__)\nraise RuntimeError('the real cause')\n"
+    program_site(tmp_path, noise)
+    with pytest.raises(ValueError) as e:
+        api.build_sections(tmp_path, load(tmp_path).smalldocs["api"])
+    assert "noise 29" in str(e.value) and str(e.value).endswith("RuntimeError: the real cause")
+
+
+def test_a_long_line_of_stderr_is_cut(tmp_path: Path) -> None:
+    "One long line of standard error is cut to 500 characters in the message."
+    program_site(tmp_path, "import os\nos.write(2, b'x' * 100000)\nos._exit(4)\n")
+    with pytest.raises(ValueError) as e:
+        api.build_sections(tmp_path, load(tmp_path).smalldocs["api"])
+    assert len(str(e.value)) < 1000 and "failed with code 4" in str(e.value)
+
+
+def test_no_document_shows_the_end_of_stderr(tmp_path: Path) -> None:
+    "A command that ends well and prints no document shows the end of its standard error, which may say why."
+    write(tmp_path, {"say.sh": "echo 'the real reason: DATABASE_URL is not set' >&2\n"})
+    site(tmp_path, "api:\n  language: openapi\n  command: [sh, say.sh]\n  root: .\n  out: http\n")
+    with pytest.raises(ValueError, match=r"(?s)gave no OpenAPI document.*DATABASE_URL is not set"):
+        api.build_sections(tmp_path, load(tmp_path).smalldocs["api"])
+
+
+def test_output_that_is_not_utf_8_stops_the_build(tmp_path: Path) -> None:
+    "A command that prints a byte that is not UTF-8 stops the build, as a file does."
+    write(tmp_path, {"latin.py": "import sys\nsys.stdout.buffer.write(b'{\"openapi\": \"3.1.0\", \"info\": {\"title\": \"caf\\xe9\"}, \"paths\": {}}')\n"})
+    site(tmp_path, f"api:\n  language: openapi\n  command: [{sys.executable}, latin.py]\n  root: .\n  out: http\n")
+    with pytest.raises(ValueError, match="printed text that is not UTF-8"):
+        api.build_sections(tmp_path, load(tmp_path).smalldocs["api"])
+
+
+def test_a_closed_fd_2_still_gives_the_marker(tmp_path: Path) -> None:
+    "An app that closes file descriptor 2 still names the step that failed."
+    program_site(tmp_path, "import os\nos.close(2)\nraise RuntimeError('no stderr')\n")
+    with pytest.raises(ValueError, match="app-import: RuntimeError: no stderr"):
+        api.build_sections(tmp_path, load(tmp_path).smalldocs["api"])
+
+
+def test_many_refs_resolve_in_linear_time(tmp_path: Path) -> None:
+    "Eight thousand operations, each with a `$ref` to a parameter of its own, build quickly."
+    import time
+
+    n = 8000
+    params = {f"p{i}": {"name": f"p{i}", "in": "query", "schema": {"type": "string"}} for i in range(n)}
+    paths = {f"/p{i}": {"get": {"parameters": [{"$ref": f"#/components/parameters/p{i}"}], "responses": {}}} for i in range(n)}
+    t = time.perf_counter()
+    built(tmp_path, ops(paths, components={"parameters": params}))
+    assert time.perf_counter() - t < 3
+
+
+def test_two_schemas_on_one_line_stop_the_build(tmp_path: Path) -> None:
+    "Two schemas whose names are the same once a line break is a space stop the build, and neither is lost."
+    with pytest.raises(ValueError, match="two schemas have the name 'A B' on one line"):
+        built(tmp_path, ops({"/a": {"get": op()}}, components={"schemas": {"A\nB": {"type": "string"}, "A B": {"type": "integer"}}}))
+
+
+def test_a_key_of_another_language_is_not_checked(tmp_path: Path) -> None:
+    "A key of another language warns, and its value does not stop the build."
+    assert section_warnings(tmp_path, {"language": "typescript", "toolchain": 1}) == ["the api section with out 'api': toolchain is not read for typescript; it is for rust"]
+    assert section_warnings(tmp_path, {"language": "openapi", "file": "a.json", "entry": 5}) == ["the api section with out 'api': entry is not read for openapi; it is for typescript"]
+
+
+def test_package_with_packages_warns(tmp_path: Path) -> None:
+    "`package` beside `packages` is not read, and warns."
+    assert section_warnings(tmp_path, {"packages": ["x"], "package": "y"}) == ["the api section with out 'api': package is not read, because packages is given; give one of them"]
+
+
+def test_python_and_timeout_warn_where_they_are_not_read(tmp_path: Path) -> None:
+    "`python` is read only with `fastapi`, and `timeout` only with `command` or `fastapi`."
+    got = section_warnings(tmp_path, {"language": "openapi", "file": "a.json", "python": "py", "timeout": 5})
+    assert got == ["the api section with out 'api': python is not read without fastapi", "the api section with out 'api': timeout is not read without command or fastapi"]
+    assert section_warnings(tmp_path, {"language": "openapi", "command": "x", "timeout": 5}) == []
+
+
+def test_an_ignored_sighup_leaves_the_command_running(tmp_path: Path) -> None:
+    "A build that ignores SIGHUP, as under `nohup`, keeps its command when SIGHUP comes, and builds."
+    import time
+
+    head = "import time\ntime.sleep(4)\n"
+    program_site(tmp_path, head + APP.format(doc=json.dumps(ops({"/a": {"get": op()}}))), "  timeout: 30\n")
+    code = f"import signal, sys; signal.signal(signal.SIGHUP, signal.SIG_IGN); from smalldocs.cli import main; sys.exit(main(['api', 'build', '--dir', {str(tmp_path)!r}]))"
+    proc = subprocess.Popen([sys.executable, "-c", code], stderr=subprocess.DEVNULL, stdout=subprocess.DEVNULL)
+    time.sleep(2)
+    proc.send_signal(subprocess.signal.SIGHUP)
+    assert proc.wait(timeout=30) == 0
+    assert "GET /a" in (tmp_path / "http/default.qmd").read_text()
+
+
+def section_warnings(
+    site: Path,  # The site's folder
+    conf: dict,  # An api section
+) -> list[str]:  # Its warnings
+    "Read one api section, and give its warnings."
+    return api.Settings.read(site, conf).warnings
+
+
+@pytest.mark.parametrize(
+    "conf,warning",
+    [
+        ({"packages": ["x"], "linkfy": False}, "the api section with out 'api': linkfy is not read for python; smalldocs does not know it"),
+        ({"packages": ["x"], "toolchain": "nightly"}, "the api section with out 'api': toolchain is not read for python; it is for rust"),
+        ({"language": "rust", "entry": "src"}, "the api section with out 'api': entry is not read for rust; it is for typescript"),
+        ({"language": "typescript", "private": True}, "the api section with out 'api': private is not read for typescript; it is for rust"),
+        ({"language": "openapi", "file": "a.json", "out": "http", "packages": ["x"]}, "the api section with out 'http': packages is not read for openapi; it is for python"),
+        ({"language": "openapi", "file": "a.json", "check-response": True}, "the api section with out 'api': check-response is not read for openapi; smalldocs does not know it"),
+    ],
+)
+def test_a_key_that_the_section_does_not_read_warns(tmp_path: Path, conf: dict, warning: str) -> None:
+    "Each key of an api section that its language does not read is a warning, for every language."
+    assert section_warnings(tmp_path, conf) == [warning]
+
+
+@pytest.mark.parametrize(
+    "conf",
+    [
+        {"packages": ["x"], "root": ".", "out": "api", "source": "https://x", "linkify": False, "check": "*.py", "check-shown": True, "language": "python"},
+        {"language": "rust", "manifest": "Cargo.toml", "toolchain": "nightly", "private": True, "root": ".", "out": "api", "source": "s", "linkify": True, "check-shown": True},
+        {"language": "typescript", "entry": "src", "tsconfig": "tsconfig.json", "root": ".", "out": "api", "source": "s", "linkify": True, "check-shown": True},
+        {"language": "openapi", "fastapi": "a:app", "setup": "a:f", "python": "python", "timeout": 5, "check-responses": True, "root": ".", "out": "api", "check-shown": True},
+    ],
+)
+def test_the_keys_that_a_section_reads_do_not_warn(tmp_path: Path, conf: dict) -> None:
+    "A section with only the keys of its language has no warning."
+    assert section_warnings(tmp_path, conf) == []
+
+
+def test_an_unread_key_warns_in_the_build_and_with_api_check(tmp_path: Path, capsys: pytest.CaptureFixture) -> None:
+    "The warning of an unread key reaches the site's warnings, so `--strict` fails, and `smalldocs api check` prints it."
+    f = doc_file(tmp_path, ops({"/a": {"get": op()}}))
+    site(tmp_path, f"api:\n  - language: openapi\n    file: {f}\n    out: http\n    tags: [a]\n")
+    s = Site(load(tmp_path), quiet=True)
+    s.build()
+    assert "the api section with out 'http': tags is not read for openapi; smalldocs does not know it" in s.warnings
+    assert main(["render", str(tmp_path), "--strict"]) == 1
+    capsys.readouterr()
+    main(["api", "check", "--dir", str(tmp_path)])
+    assert "warning: the api section with out 'http': tags is not read for openapi" in capsys.readouterr().err

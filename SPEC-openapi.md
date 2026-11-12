@@ -912,6 +912,10 @@ why. Each one has a test in `tests/test_api_openapi.py`.
 - **`Settings`** gains `check_responses`, `listed` and `warnings`, beside the six fields of the draft.
   `warnings` carries the warning of OpenAPI 3.2 to the loop.
 - **`build_from_config`** returns the pages and the warnings, and `Site.build` keeps each warning.
+- **A key that a section does not read is a warning,** for every language, as CLAUDE.md asks of every
+  key. `COMMON_KEYS` holds the keys of every section, and `SECTION_KEYS` those of each language. The
+  warning names the section and the key, and the language that reads it, if any. It goes with the other
+  warnings of the section, so `--strict` fails, and `smalldocs api check` prints it.
 - **`smalldocs api check` with a list** prints `api section OUT (LANGUAGE)` before each section, and
   returns 1 when any section has a gap.
 - **The marks of a project.** With `language: openapi`, a site folder with a `pyproject.toml` is its own
@@ -952,13 +956,45 @@ why. Each one has a test in `tests/test_api_openapi.py`.
   - **A `$ref` that is no JSON pointer,** such as `#foo`, points at nothing, and stops the build.
   - **A schema whose YAML name is a number,** such as `1:`, is read as the name `1`.
   - **`--out ./api` and `--out api/`** name the section with out `api`.
+- **What the third review changed.** A third adversarial review tried the fixes of the second. Each change
+  has a test.
+  - **Nothing that the command starts outlives it.** Standard output goes to a temporary file too, and
+    smalldocs waits for the command to end, not for its output to close. Then it kills the command's
+    process group, after a good build as after a failed one. So a worker that the app starts, or a
+    child that a `command:` leaves in the background, neither holds the build nor stays running.
+  - **SIGTERM and SIGHUP kill the program too.** While the command runs, a handler for each kills its
+    process group, and then ends the build with the signal. It takes only a signal that would end the
+    build anyway. A signal that is ignored, as under `nohup`, or that has a handler of its own, leaves the
+    command running. Only the main thread can set a handler; a build in another thread keeps the old
+    behaviour.
+  - **The marker is on a line of its own.** The program writes a line break before it, so output with
+    no line break, such as a progress bar, does not hide it. The program flushes the app's output
+    before it writes the marker. The message gives the step, the last 6 lines that the app printed,
+    and the end of the traceback. When the app closed descriptor 2, the marker goes to standard output.
+  - **Each line of standard error in a message is cut to 500 characters.**
+  - **A command that ends well and prints no document** shows the end of its standard error, which
+    may say why.
+  - **Output that is not UTF-8 stops the build,** as a file that is not UTF-8 does.
+  - **A `$ref` is found in constant time** when the key is text, so 8,000 `$ref`s take half a second,
+    not 7.
+  - **Two schemas whose names are the same on one line stop the build.** Before, one of them was lost.
+  - **The value of another language's key is not checked.** It gives the warning of an unread key only.
+  - **`package` beside `packages` warns,** because `packages` is the one read. So do `python` without
+    `fastapi`, and `timeout` with `file`.
 - **Open points from the review.** These stay open, and the report of step 1 lists them.
+  - Two tags, or two `operationId`s, whose names are the same on one line share one group or one name
+    in `_symbols.json`, with no warning.
+  - A daemon that the app starts in a session of its own is out of reach of the kill, and stays.
+  - With `--out`, only the chosen section's warnings are printed; the others come out when they are built.
+  - Windows has no `os.killpg` nor `signal.SIGKILL`; the runner is not tried there.
+  - The kill after a good run comes after the command is reaped. If its whole group has ended and its id
+    has gone to a new group in that moment, the kill reaches that group.
+  - A SIGTERM just before the handler is set, or just after it is taken off, leaves the command running.
   - A description with an unclosed code fence swallows the entries after it, as a Python docstring does.
   - A heading inside a description may take the id of an entry.
   - `escape_angles` lets raw HTML from a description through, as it does for the other languages.
   - The walk for folders of removed sections reads the whole site folder, `node_modules` too.
   - `check` skips `HTTPValidationError` and `ValidationError` for every input, as this spec says.
-  - A key of a section that smalldocs does not read is silent, as for the other languages.
   - An inline request body with an `allOf` of a named schema does not say "It has the fields of".
 
 ## What cricsdb showed

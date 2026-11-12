@@ -26,7 +26,9 @@ import shlex
 import signal
 import subprocess
 import tempfile
+import threading
 from collections import Counter
+from collections.abc import Iterator
 from dataclasses import dataclass
 from pathlib import Path
 from urllib.parse import unquote
@@ -72,18 +74,27 @@ os.dup2(2, 1)  # anything else the app writes, even to file descriptor 1, goes t
 sys.stdout = sys.stderr
 
 
-def end(code):
+def flush():
     for f in (sys.__stdout__, sys.__stderr__, sys.stdout, sys.stderr):
         try:
             f.flush()  # what the app printed and did not flush
         except Exception:
             pass
+
+
+def end(code):
+    flush()
     os._exit(code)  # a thread or a worker that the app started must not hold the build
 
 
 def fail(step, e):
-    said = f"smalldocs-openapi-error: {step}: {type(e).__name__}: {' '.join(str(e).split())}\n"
-    os.write(2, (said + "".join(traceback.format_exception(type(e), e, e.__traceback__))).encode("utf-8", "replace"))  # to fd 2, though the app replaced sys.stderr
+    flush()  # the app's own output comes before the marker and the traceback, so the end of standard error shows them
+    said = f"\nsmalldocs-openapi-error: {step}: {type(e).__name__}: {' '.join(str(e).split())}\n"  # on a line of its own, after a progress bar
+    text = (said + "".join(traceback.format_exception(type(e), e, e.__traceback__))).encode("utf-8", "replace")
+    try:
+        os.write(2, text)  # to fd 2, though the app replaced sys.stderr
+    except OSError:
+        os.write(out.fileno(), text)  # the app closed fd 2
     end(1)
 
 
@@ -148,68 +159,115 @@ def section_name(
     return f"the api section with out {s.out!r}"
 
 
+def kill_group(
+    proc: subprocess.Popen,  # A process that leads its own session
+) -> None:
+    "Kill the process and every process it started in its session, such as the Python under `uv run` and the app's workers."
+    try:
+        os.killpg(proc.pid, signal.SIGKILL)
+    except OSError:  # the group has ended
+        with contextlib.suppress(OSError):
+            proc.kill()
+
+
+@contextlib.contextmanager
+def killed_on_stop(
+    proc: subprocess.Popen,  # A process that leads its own session, which a signal to the build does not reach
+) -> Iterator[None]:  # The block in which a stop kills the process first
+    "Kill the process's session when SIGTERM or SIGHUP would end the build, then end it as the signal asks."
+    if threading.current_thread() is not threading.main_thread():  # only the main thread may set a handler
+        yield
+        return
+    names = [getattr(signal, n) for n in ("SIGTERM", "SIGHUP") if hasattr(signal, n)]
+    stops = [sig for sig in names if signal.getsignal(sig) == signal.SIG_DFL]  # an ignored or handled signal does not end the build, so it leaves the command
+
+    def stop(sig: int, frame: object) -> None:
+        "Kill the session, and end the build with the signal."
+        kill_group(proc)
+        signal.signal(sig, signal.SIG_DFL)
+        signal.raise_signal(sig)
+
+    for sig in stops:
+        signal.signal(sig, stop)
+    try:
+        yield
+    finally:
+        for sig in stops:
+            signal.signal(sig, signal.SIG_DFL)
+
+
+def stderr_tail(
+    text: str,  # What a command printed on its standard error
+) -> str:  # Its last 12 lines, each cut to 500 characters
+    "Give the end of standard error for a message, short enough to read."
+    return "\n".join(ln if len(ln) <= 500 else ln[:500] + " ..." for ln in text.strip().splitlines()[-12:])
+
+
 def run_tool(
     s: Settings,  # The settings
     words: list[str],  # The command and its arguments
     env: dict[str, str],  # More environment variables
     what: str,  # How the message names the command
-) -> str:  # What it printed on its standard output
+) -> tuple[str, str]:  # What it printed on its standard output, and the end of its standard error
     "Run a command in the root, with no shell, and stop the build when it fails, with the end of its standard error."
-    with tempfile.TemporaryFile() as errors:  # a file, not a pipe: a worker that the app started may keep it open
+    with tempfile.TemporaryFile() as output, tempfile.TemporaryFile() as errors:  # files, not pipes: a worker that the command leaves may keep them open
         try:
             proc = subprocess.Popen(
-                words, cwd=s.root, env={**os.environ, "PYTHONDONTWRITEBYTECODE": "1", **env}, stdout=subprocess.PIPE, stderr=errors,
-                text=True, encoding="utf-8", errors="replace", start_new_session=True,
+                words, cwd=s.root, env={**os.environ, "PYTHONDONTWRITEBYTECODE": "1", **env}, stdout=output, stderr=errors, start_new_session=True
             )  # fmt: skip
         except OSError as e:
             raise ValueError(f"{section_name(s)}: {what} could not start: {e}") from e
         try:
-            stdout, _ = proc.communicate(timeout=s.timeout)
-        except BaseException as e:  # a timeout, or Ctrl-C, which no longer reaches the program in its own session
-            try:
-                os.killpg(proc.pid, signal.SIGKILL)  # the runner and what it started, such as the Python under `uv run`
-            except OSError:
-                proc.kill()
-            with contextlib.suppress(subprocess.TimeoutExpired):  # a worker in a session of its own may still hold the output; leave it
-                proc.communicate(timeout=5)
-            if isinstance(e, subprocess.TimeoutExpired):
-                raise ValueError(f"{section_name(s)}: {what} did not finish in {s.timeout:g} seconds; set timeout to wait longer") from e
-            raise
+            with killed_on_stop(proc):
+                proc.wait(timeout=s.timeout)
+        except subprocess.TimeoutExpired as e:
+            raise ValueError(f"{section_name(s)}: {what} did not finish in {s.timeout:g} seconds; set timeout to wait longer") from e
+        finally:  # a timeout, Ctrl-C, or the end: nothing that the command started outlives it
+            kill_group(proc)
+            with contextlib.suppress(subprocess.TimeoutExpired):
+                proc.wait(timeout=5)
+        output.seek(0)
         errors.seek(0)
-        stderr = errors.read().decode("utf-8", "replace")
+        raw, stderr = output.read(), errors.read().decode("utf-8", "replace")
     if proc.returncode:
-        lines = stderr.strip().splitlines()
-        mark = next((ln for ln in lines if ln.startswith(MARKER)), None)
-        tail = "\n".join(lines[-12:])
-        if mark is not None and s.fastapi:
-            step = mark[len(MARKER) :]
+        lines = stderr.splitlines() + raw.decode("utf-8", "replace").splitlines()  # the marker is on standard output when the app closed fd 2
+        at = next((i for i, ln in enumerate(lines) if MARKER in ln), None)
+        if at is not None and s.fastapi:
+            step = lines[at].split(MARKER, 1)[1]
             who = f"setup {s.setup}" if step.startswith("setup-") else f"fastapi {s.fastapi}"
-            raise ValueError(f"{section_name(s)}: {who}: {step}\n{tail}")
-        raise ValueError(f"{section_name(s)}: {what} failed with code {proc.returncode}:\n{tail}")
-    return stdout
+            parts = [f"{section_name(s)}: {who}: {step}", stderr_tail("\n".join(lines[max(0, at - 6) : at])), stderr_tail("\n".join(lines[at + 1 :]))]
+            raise ValueError("\n".join(p for p in parts if p))  # the step, what the app printed last, and the end of the traceback
+        raise ValueError(f"{section_name(s)}: {what} failed with code {proc.returncode}:\n{stderr_tail(stderr)}")
+    try:
+        return raw.decode("utf-8"), stderr_tail(stderr)
+    except UnicodeDecodeError as e:
+        raise ValueError(f"{section_name(s)}: {what} printed text that is not UTF-8 ({e}); print the document in UTF-8") from e
 
 
 def document_text(
     s: Settings,  # The settings
-) -> tuple[str, str]:  # The document's text, and how messages name where it came from
+) -> tuple[str, str, str]:  # The document's text, how messages name where it came from, and the end of the command's standard error
     "Read the document from its input: the file, the output of the command, or the output of the FastAPI program."
     if s.file:
         f = s.site / s.file
         if not f.is_file():
             raise ValueError(f"{section_name(s)}: the file {s.file} is not found, from {s.site}")
-        return f.read_text(encoding="utf-8"), f"the file {s.file}"
+        return f.read_text(encoding="utf-8"), f"the file {s.file}", ""
     if s.command:
         what = f"the command {shlex.join(s.command)}"
-        return run_tool(s, list(s.command), {}, what), what
+        text, said = run_tool(s, list(s.command), {}, what)
+        return text, what, said
     runner = list(s.python) or ["uv", "run", "--frozen", "python"]
     what = f"the program for fastapi {s.fastapi}"
-    return run_tool(s, [*runner, "-c", PROGRAM], {"SMALLDOCS_FASTAPI_APP": s.fastapi, "SMALLDOCS_FASTAPI_SETUP": s.setup}, what), what
+    text, said = run_tool(s, [*runner, "-c", PROGRAM], {"SMALLDOCS_FASTAPI_APP": s.fastapi, "SMALLDOCS_FASTAPI_SETUP": s.setup}, what)
+    return text, what, said
 
 
 def parse(
     s: Settings,  # The settings
     text: str,  # The document's text
     what: str,  # Where it came from, for messages
+    said: str = "",  # The end of the command's standard error, which may say why it gave no document
 ) -> dict:  # The document
     "Parse the document as JSON, or else as YAML, and refuse what is not OpenAPI 3.0 or 3.1."
     try:
@@ -221,7 +279,8 @@ def parse(
             data = None
     if not isinstance(data, dict):
         start = text.strip()[:60]
-        raise ValueError(f"{section_name(s)}: {what} gave no OpenAPI document in JSON or YAML; it starts {start!r}. Its standard output must hold only the document")
+        why = f"\nIts standard error ends:\n{said}" if said else ""
+        raise ValueError(f"{section_name(s)}: {what} gave no OpenAPI document in JSON or YAML; it starts {start!r}. Its standard output must hold only the document{why}")
     if "swagger" in data:
         raise ValueError(f"{section_name(s)}: {what} is Swagger {data['swagger']}; smalldocs reads OpenAPI 3.0 and 3.1")
     size(s, data)
@@ -328,7 +387,11 @@ class Document:
         self.schemas = components.get("schemas") or {} if isinstance(components, dict) else None
         if not isinstance(self.schemas, dict):
             raise ValueError(f"{section_name(s)}: components and components.schemas must be mappings")
-        self.schemas = {one_line(str(k)): v for k, v in self.schemas.items()}  # a name such as `1:` in YAML is a number; a line break is a space
+        folded = {one_line(str(k)): v for k, v in self.schemas.items()}  # a name such as `1:` in YAML is a number; a line break is a space
+        if len(folded) < len(self.schemas):
+            same = Counter(one_line(str(k)) for k in self.schemas)
+            raise ValueError(f"{section_name(s)}: two schemas have the name {next(n for n, c in same.items() if c > 1)!r} on one line; give each a name of its own")
+        self.schemas = folded
         names = list(self.schemas)
         ids = [re.sub(r"[^A-Za-z0-9_.-]", "-", str(n)) or "schema" for n in names]
         self.schema_ids = dict(zip(names, entry_ids(ids), strict=True))
@@ -357,7 +420,7 @@ class Document:
         node: object = self.data
         for part in ref[1:].split("/")[1:]:
             key = unquote(part).replace("~1", "/").replace("~0", "~")
-            found = [k for k in node if str(k) == key] if isinstance(node, dict) else []  # YAML reads `200:` as a number
+            found = ([key] if key in node else [k for k in node if str(k) == key]) if isinstance(node, dict) else []  # YAML reads `200:` as a number
             if isinstance(node, list) and key.isascii() and key.isdigit() and int(key) < len(node):
                 node = node[int(key)]
             elif found:
@@ -709,8 +772,8 @@ def load(
 ) -> Document:  # The document, read
     "Read the document from its input, and refuse one with no operations."
     out_folder(s)  # before any tool runs, refuse an `out` that is the site or outside it
-    text, what = document_text(s)
-    doc = Document(s, parse(s, text, what))
+    text, what, said = document_text(s)
+    doc = Document(s, parse(s, text, what, said))
     if not doc.ops:
         why = f"; the setup {s.setup} ran, and added none" if s.setup else "; an app that adds its routers only at startup can name the function that adds them in setup" if s.fastapi else ""
         raise ValueError(f"{section_name(s)}: {what} gave a document with no operations{why}")

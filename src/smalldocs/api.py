@@ -628,6 +628,15 @@ def check(
 # ---------------------------------------------------------------- the site's pages
 
 
+COMMON_KEYS = ("language", "out", "root", "source", "linkify", "check-shown")  # The keys that an api section of any language reads
+SECTION_KEYS = {
+    "python": ("packages", "package", "check"),
+    "rust": ("manifest", "toolchain", "private"),
+    "typescript": ("entry", "tsconfig"),
+    "openapi": ("file", "command", "fastapi", "setup", "python", "timeout", "check-responses"),
+}  # The keys that an api section of each language reads, beside `COMMON_KEYS`
+
+
 @dataclass
 class Settings:
     "What the api settings say: `api` in `_smalldocs.yml`, or `smalldocs.api` in `_quarto.yml`."
@@ -662,12 +671,31 @@ class Settings:
         site: Path,  # The site's folder
         conf: dict,  # The `smalldocs.api` section
     ) -> "Settings":  # The settings, with defaults
-        "Read the settings from the config."
+        "Read the settings from the config, with a warning for each key that the section's language does not read."
         language = str(conf.get("language", "python"))
-        if language not in ("python", "rust", "typescript", "openapi"):
+        if language not in SECTION_KEYS:
             raise ValueError(f"the api settings: language must be python, rust, typescript or openapi, not {language!r}")
-        if language != "python":
-            return cls.read_other(site, conf, language)
+        own = {k: v for k, v in conf.items() if k in COMMON_KEYS + SECTION_KEYS[language]}  # a key of another language warns, and its value is not checked
+        s = cls.read_python(site, own) if language == "python" else cls.read_other(site, own, language)
+        if own.get("packages") and own.get("package"):
+            s.warnings.append(f"the api section with out {s.out!r}: package is not read, because packages is given; give one of them")
+        for k, needs in (("python", "fastapi"), ("timeout", "command or fastapi")):
+            if language == "openapi" and k in own and not any(own.get(n) for n in needs.split(" or ")):
+                s.warnings.append(f"the api section with out {s.out!r}: {k} is not read without {needs}")
+        for k in conf:
+            if k not in COMMON_KEYS + SECTION_KEYS[language]:
+                langs = [n for n, keys in SECTION_KEYS.items() if k in keys]
+                why = f"it is for {' and '.join(langs)}" if langs else "smalldocs does not know it"
+                s.warnings.append(f"the api section with out {s.out!r}: {k} is not read for {language}; {why}")
+        return s
+
+    @classmethod
+    def read_python(
+        cls,
+        site: Path,  # The site's folder
+        conf: dict,  # The `api` section
+    ) -> "Settings":  # The settings, with defaults
+        "Read the settings of Python packages."
         pkgs = conf.get("packages") or conf.get("package") or []
         pkgs = [pkgs] if isinstance(pkgs, str) else list(pkgs)
         if not pkgs:
@@ -1403,6 +1431,8 @@ def run(
                 print(f"warning: {w}", file=sys.stderr)
         print(f"wrote {len(pages)} page(s) to {s.site / s.out}")
         return 0
+    for w in s.warnings:  # the keys that the section does not read; a build finds its warnings as it goes, and prints them above
+        print(f"warning: {w}", file=sys.stderr)
     if s.language != "python":
         if action == "check":
             return language_module(s).check(s, s.shown)
