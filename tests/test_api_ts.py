@@ -463,10 +463,10 @@ def test_check_shown_is_the_same(tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 
 
 def test_unknown_language_is_an_error(tmp_path: Path, capsys: pytest.CaptureFixture) -> None:
-    "A language that is not python, typescript or rust stops with a message that names it."
+    "A language that is not python, typescript, rust or openapi stops with a message that names it."
     (tmp_path / "_smalldocs.yml").write_text("project:\n  type: website\napi:\n  language: go\n")
     assert main(["api", "build", "--dir", str(tmp_path)]) == 2
-    assert "language must be python, rust or typescript, not 'go'" in capsys.readouterr().err
+    assert "language must be python, rust, typescript or openapi, not 'go'" in capsys.readouterr().err
 
 
 def test_typescript_needs_entry_not_packages(tmp_path: Path, capsys: pytest.CaptureFixture) -> None:

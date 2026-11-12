@@ -83,8 +83,8 @@ def test_python_pages_unchanged_without_language(tmp_path: Path) -> None:
 
 
 def test_language_must_be_known_and_needs_no_packages(tmp_path: Path) -> None:
-    "`language` is python, rust or typescript; a crate needs no packages; `private` must be true or false."
-    with pytest.raises(ValueError, match="language must be python, rust or typescript"):
+    "`language` is python, rust, typescript or openapi; a crate needs no packages; `private` must be true or false."
+    with pytest.raises(ValueError, match="language must be python, rust, typescript or openapi"):
         Settings.read(tmp_path, {"language": "go"})
     s = Settings.read(tmp_path, {"language": "rust", "manifest": "../Cargo.toml", "toolchain": "nightly-2026-11-11", "private": True})
     assert s.packages == [] and s.manifest == (tmp_path.parent / "Cargo.toml").resolve() and s.toolchain == "nightly-2026-11-11" and s.private

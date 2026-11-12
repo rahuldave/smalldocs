@@ -1,0 +1,168 @@
+# A hand-made OpenAPI 3.0 document for the tests: nullable, an allOf of one type, parameters on a path,
+# a parameter by $ref, paths whose ids collide, an operation with two tags and one with none.
+openapi: 3.0.3
+info:
+  title: Handmade
+  version: "1.0"
+  description: |
+    The hand-made API.
+
+    It has a second paragraph.
+tags:
+  - name: Unused
+    description: A tag that no operation uses.
+  - name: Teams
+    description: |
+      The teams, and their players.
+
+      A second paragraph of the tag.
+paths:
+  /a/{b}:
+    parameters:
+      - name: b
+        in: path
+        required: true
+        description: The b of the path
+        schema:
+          type: string
+      - name: verbose
+        in: query
+        description: The path's own verbose
+        schema:
+          type: boolean
+    get:
+      tags: [Teams, Players]
+      summary: Get an a
+      description: Get an a by its b.
+      parameters:
+        - $ref: "#/components/parameters/Limit"
+        - name: verbose
+          in: query
+          description: The operation's verbose
+          schema:
+            type: boolean
+            default: false
+      responses:
+        "200":
+          description: The team
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Team"
+        default:
+          $ref: "#/components/responses/Problem"
+  /a/b:
+    get:
+      tags: [Players]
+      summary: Get the b of a
+      deprecated: true
+      responses:
+        "204":
+          description: Nothing
+  /a-b:
+    get:
+      summary: The a-b, which has no tag
+      parameters:
+        - name: who
+          in: cookie
+          schema:
+            type: string
+        - name: X-Key
+          in: header
+          required: true
+          deprecated: true
+          description: "The key | or none"
+          schema:
+            type: string
+      responses:
+        "200":
+          description: |
+            A line,
+            and another.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: string
+                  nullable: true
+  /a/b-2:
+    post:
+      tags: [Teams]
+      summary: Make a b-2
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name]
+              properties:
+                name:
+                  type: string
+                  description: The name
+                stats:
+                  type: object
+                  description: The stats
+                  properties:
+                    runs:
+                      type: integer
+                      description: The runs
+      responses:
+        "201":
+          description: Made
+components:
+  parameters:
+    Limit:
+      name: limit
+      in: query
+      description: At most this many
+      schema:
+        type: integer
+        default: 10
+  responses:
+    Problem:
+      description: A problem
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Problem"
+  schemas:
+    Team:
+      type: object
+      description: A team.
+      required: [id]
+      properties:
+        id:
+          type: string
+          description: The id
+        captain:
+          allOf:
+            - $ref: "#/components/schemas/Player"
+          nullable: true
+          description: The captain, if any
+        tags:
+          type: array
+          items:
+            type: string
+    Player:
+      type: object
+      description: A player.
+      properties:
+        name:
+          type: string
+        born:
+          type: string
+          format: date
+          nullable: true
+          description: The day of birth
+    Problem:
+      type: object
+      properties:
+        detail:
+          type: string
+          description: What went wrong
+    Gender:
+      type: string
+      enum: [male, female]
+      description: A gender.

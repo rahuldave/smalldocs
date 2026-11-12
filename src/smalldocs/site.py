@@ -316,8 +316,10 @@ class Site:
         "Read the name index that turns a name in backticks into a link: `_symbols.json`, when linkify is on."
         sd = self.project.smalldocs
         api = sd.get("api") or {}
+        items = api if isinstance(api, list) else [api]  # a list of sections keeps `linkify` at the top level
         filters = [] if self.project.native else filter_paths(self.project.config)
-        on = sd.get("linkify", api.get("linkify", bool(api) or any(Path(f).name == "linkify.lua" for f in filters)))
+        own = api.get("linkify", bool(api) or any(Path(f).name == "linkify.lua" for f in filters)) if isinstance(api, dict) else True
+        on = sd.get("linkify", own)
         index = self.root / str(sd.get("symbols") or "_symbols.json")
         if on and index.exists():
             try:
@@ -325,7 +327,8 @@ class Site:
             except ValueError as e:
                 raise BuildError(f"{index}: {e}") from e
             self.symbols = {str(k): str(v) for k, v in symbols.items()} if isinstance(symbols, dict) else {}
-            self.exact_symbols = isinstance(api, dict) and api.get("language") in ("rust", "typescript")  # `useFetch` is code there
+            exact = ("rust", "typescript", "openapi")  # `useFetch` is code there, and so is `GET /api/v1/teams`
+            self.exact_symbols = any(isinstance(a, dict) and a.get("language") in exact for a in items)
 
     def llms_on(self) -> bool:  # Whether `website.llms-txt` is on
         "Say whether the site writes a Markdown copy of each page and `llms.txt`."
@@ -412,7 +415,8 @@ class Site:
         if api:
             from .api import build_from_config
 
-            build_from_config(self.project)
+            for w in build_from_config(self.project)[1]:
+                self.warn(w)
         self.run_scripts("pre-render", sources)
         sources = self.discover()  # pre-render may write pages, as apidocs.py does
         mode = self.draft_mode()
