@@ -896,7 +896,7 @@ RESERVED_IDS = re.compile(  # The ids that a page's own markup writes, which no 
     r"(?i)TOC|TOC-body|toc-title|title-block-header|navbarCollapse|nav-menu-\d+|smalldocs-page-style|giscus-(?:base|alt)-theme"
     r"|quarto-(?:header|content|document-content|sidebar|sidebar-glass|sidebar-section-\d+|margin-sidebar|search|appendix|back-to-top|bootstrap-(?:light|dark))"
     r"|fn\d+|fnref\d+(?::\d+)?|cb\d+(?:-\d+)?|callout-\d+|tabset-\d+-\d+(?:-tab)?"
-)  # `fn1` and `fnref1` are footnotes, `cb1` and `cb1-1` a code block and its lines; `toc-` before a heading's id is in `page_ids`
+)  # `fn1` and `fnref1` are footnotes, `cb1` and `cb1-1` a code block and its lines; `toc-` before a heading's id is in `entry_ids`
 FENCE = re.compile(r"^ {0,3}(`{3,}|~{3,})")  # A line that opens or closes a fenced code block
 HTML_START = re.compile(  # what may follow a `<` that starts HTML on purpose: a common tag in lower case, an autolink or a comment
     r"(?:/?(?:b|i|p|s|u|br|hr|h[1-6]|em|strong|del|ins|abbr|code|pre|kbd|sub|sup|span|div|img|details|summary|table|thead|tbody|tr|td|th|ul|ol|li|dl|dt|dd"

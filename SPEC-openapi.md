@@ -907,7 +907,7 @@ why. Each one has a test in `tests/test_api_openapi.py`.
   in a set, so ten thousand ids take well under a second.
 - **`unique` ends.** When the pattern holds `name-2` too, as it holds `cb1-2` for `cb1`, the suffixes go
   on from `name-id`, so `cb1` becomes `cb1-id-2`.
-- **Shared code of the build.** `code_span`, `code_block`, `entry_ids` and `write_names` are new in
+- **Shared code of the build.** `code_span`, `code_block`, `entry_ids` with its class `PageIds`, and `write_names` are new in
   `api.py`, beside `one_line`, `unique` and `source_line`. Each is generic.
 - **`Settings`** gains `check_responses`, `listed` and `warnings`, beside the six fields of the draft.
   `warnings` carries the warning of OpenAPI 3.2 to the loop.
@@ -927,18 +927,26 @@ why. Each one has a test in `tests/test_api_openapi.py`.
   the TypeScript pages too. It is an open issue of `markdown.py`, outside this spec.
 - **What the review of step 1 changed.** An adversarial review found these, and each has a test.
   - **A value of the wrong kind,** such as a list for `responses` or a number for `parameters`, stops the
-    build with a message that names the section. It is no bare Python error.
+    build with a message that names the section. It is no bare Python error. So does a lone surrogate in
+    a text. The check wraps the whole build of the pages, so a bug of smalldocs there would get the same
+    message; the cause stays in the traceback.
+  - **A JSON pointer reaches a key that YAML reads as a number,** such as an unquoted `200:`. A digit
+    that is not ASCII, such as `²`, is no index of a list.
   - **The FastAPI program keeps file descriptor 1 for the document.** It copies descriptor 1, and points
     descriptor 1 at standard error. So `os.write(1, ...)` and `print(file=sys.__stdout__)` at import go
-    to standard error too. The program ends with `os._exit(0)` after the document, so a thread that the
-    app started does not hold the build.
-  - **A timeout kills the runner's whole process group.** The runner starts in a new session. So the
-    Python that `uv run` starts stops too, and `smalldocs serve` leaves no program running.
+    to standard error too. The program flushes both streams, and then ends with `os._exit`, so a thread
+    that the app started does not hold the build. It writes the marker line and the traceback to
+    descriptor 2, so an app that replaces `sys.stderr` does not hide them.
+  - **A timeout or Ctrl-C kills the runner's whole process group.** The runner starts in a new session.
+    So the Python that `uv run` starts stops too. A worker that the app starts in a session of its own is
+    out of reach, and smalldocs waits for it 5 seconds at most.
+  - **Standard error goes to a temporary file, not a pipe.** So a worker process that the app starts,
+    and that keeps standard error open, does not hold the build.
   - **A YAML document cannot repeat itself without end.** The parser counts each value, with an alias
     counted each time it is used. A document of more than 2,000,000 values stops the build, and so does
     one that holds itself. JSON nested too deep is no document.
-  - **A line break in a name is a space.** This holds for a path, a schema's name, a parameter's name and
-    place, a status, a media type and a format. So no heading, table row or code line is split.
+  - **A line break in a name is a space.** This holds for a path, a tag, an `operationId`, a schema's
+    name, a parameter's name and place, a status, a media type and a format. So no heading, table row or code line is split.
   - **`null` takes no format,** so `type: [string, "null"]` with `format: date-time` is
     `string (date-time) or null`.
   - **A `$ref` that is no JSON pointer,** such as `#foo`, points at nothing, and stops the build.
@@ -952,3 +960,25 @@ why. Each one has a test in `tests/test_api_openapi.py`.
   - `check` skips `HTTPValidationError` and `ValidationError` for every input, as this spec says.
   - A key of a section that smalldocs does not read is silent, as for the other languages.
   - An inline request body with an `allOf` of a named schema does not say "It has the fields of".
+
+## What cricsdb showed
+
+Steps 2 and 3 ran on 2026-11-12, on cricsdb at commit `d72a589`, in a copy of its site at
+`/private/tmp/claude-501/cricsdb-http-site`. The site has two sections in a list, TypeScript in `api` and
+OpenAPI in `reference`, with the navbar item "HTTP reference".
+
+- **The build.** It made 13 pages in `reference`. They are the 11 tags, the schemas and the index. They hold 127
+  operations and 2 schemas. The whole site built 194 pages in 38 seconds, with the TypeScript section.
+  `git status` in cricsdb was the same before and after.
+- **The source links.** All 127 operations have a link to their file and line.
+- **The narrative page.** In `docs/api.md`, which the copy holds as `guide/http-api.md`, 45 names of operations link to their entries, as the counts
+  in [Links between pages](#links-between-pages) said.
+- **`check`.** It reports 49 operations with no docstring and 1,164 parameters with no description,
+  under 32 names, as this spec said. With `check-responses: true`, it reports all 127 operations.
+- **The look.** A tag page and the page of schemas look like the Python page of `smalldocs.api`. Each has a
+  heading, a source link, a code block, the prose and the tables.
+- **Nothing in the code had to change.** Two points are for the project and for later.
+  - An operation with 16 query parameters has a request line that is wider than the page. The code
+    block scrolls, as a long Python signature does.
+  - The sidebar section "HTTP reference" comes after the long list of the TypeScript pages. The site's
+    `sidebar` sets that order.

@@ -18,12 +18,14 @@ smalldocs reads OpenAPI 3.0 and 3.1. It parses the document with Python's json, 
 imports FastAPI: a short program, `PROGRAM`, runs in the project's environment and prints the document.
 """
 
+import contextlib
 import json
 import os
 import re
 import shlex
 import signal
 import subprocess
+import tempfile
 from collections import Counter
 from dataclasses import dataclass
 from pathlib import Path
@@ -70,11 +72,19 @@ os.dup2(2, 1)  # anything else the app writes, even to file descriptor 1, goes t
 sys.stdout = sys.stderr
 
 
+def end(code):
+    for f in (sys.__stdout__, sys.__stderr__, sys.stdout, sys.stderr):
+        try:
+            f.flush()  # what the app printed and did not flush
+        except Exception:
+            pass
+    os._exit(code)  # a thread or a worker that the app started must not hold the build
+
+
 def fail(step, e):
-    print(f"smalldocs-openapi-error: {step}: {type(e).__name__}: {' '.join(str(e).split())}", file=sys.stderr)
-    traceback.print_exception(type(e), e, e.__traceback__, file=sys.stderr)
-    sys.stderr.flush()
-    os._exit(1)
+    said = f"smalldocs-openapi-error: {step}: {type(e).__name__}: {' '.join(str(e).split())}\n"
+    os.write(2, (said + "".join(traceback.format_exception(type(e), e, e.__traceback__))).encode("utf-8", "replace"))  # to fd 2, though the app replaced sys.stderr
+    end(1)
 
 
 def find(spec):
@@ -127,7 +137,7 @@ for route in getattr(app, "routes", []):
             op["x-smalldocs-source"] = where
 json.dump(doc, out)
 out.flush()
-os._exit(0)  # a thread that the app started must not hold the build
+end(0)
 '''  # The program that prints a FastAPI app's document, with the file and line of each route; it runs with `-c`, in the project's folder
 
 
@@ -145,22 +155,28 @@ def run_tool(
     what: str,  # How the message names the command
 ) -> str:  # What it printed on its standard output
     "Run a command in the root, with no shell, and stop the build when it fails, with the end of its standard error."
-    try:
-        proc = subprocess.Popen(
-            words, cwd=s.root, env={**os.environ, "PYTHONDONTWRITEBYTECODE": "1", **env}, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
-            text=True, encoding="utf-8", errors="replace", start_new_session=True,
-        )  # fmt: skip
-    except OSError as e:
-        raise ValueError(f"{section_name(s)}: {what} could not start: {e}") from e
-    try:
-        stdout, stderr = proc.communicate(timeout=s.timeout)
-    except subprocess.TimeoutExpired as e:
+    with tempfile.TemporaryFile() as errors:  # a file, not a pipe: a worker that the app started may keep it open
         try:
-            os.killpg(proc.pid, signal.SIGKILL)  # the runner and what it started, such as the Python under `uv run`
-        except OSError:
-            proc.kill()
-        proc.communicate()
-        raise ValueError(f"{section_name(s)}: {what} did not finish in {s.timeout:g} seconds; set timeout to wait longer") from e
+            proc = subprocess.Popen(
+                words, cwd=s.root, env={**os.environ, "PYTHONDONTWRITEBYTECODE": "1", **env}, stdout=subprocess.PIPE, stderr=errors,
+                text=True, encoding="utf-8", errors="replace", start_new_session=True,
+            )  # fmt: skip
+        except OSError as e:
+            raise ValueError(f"{section_name(s)}: {what} could not start: {e}") from e
+        try:
+            stdout, _ = proc.communicate(timeout=s.timeout)
+        except BaseException as e:  # a timeout, or Ctrl-C, which no longer reaches the program in its own session
+            try:
+                os.killpg(proc.pid, signal.SIGKILL)  # the runner and what it started, such as the Python under `uv run`
+            except OSError:
+                proc.kill()
+            with contextlib.suppress(subprocess.TimeoutExpired):  # a worker in a session of its own may still hold the output; leave it
+                proc.communicate(timeout=5)
+            if isinstance(e, subprocess.TimeoutExpired):
+                raise ValueError(f"{section_name(s)}: {what} did not finish in {s.timeout:g} seconds; set timeout to wait longer") from e
+            raise
+        errors.seek(0)
+        stderr = errors.read().decode("utf-8", "replace")
     if proc.returncode:
         lines = stderr.strip().splitlines()
         mark = next((ln for ln in lines if ln.startswith(MARKER)), None)
@@ -312,7 +328,7 @@ class Document:
         self.schemas = components.get("schemas") or {} if isinstance(components, dict) else None
         if not isinstance(self.schemas, dict):
             raise ValueError(f"{section_name(s)}: components and components.schemas must be mappings")
-        self.schemas = {str(k): v for k, v in self.schemas.items()}  # a name such as `1:` in YAML is a number
+        self.schemas = {one_line(str(k)): v for k, v in self.schemas.items()}  # a name such as `1:` in YAML is a number; a line break is a space
         names = list(self.schemas)
         ids = [re.sub(r"[^A-Za-z0-9_.-]", "-", str(n)) or "schema" for n in names]
         self.schema_ids = dict(zip(names, entry_ids(ids), strict=True))
@@ -341,10 +357,11 @@ class Document:
         node: object = self.data
         for part in ref[1:].split("/")[1:]:
             key = unquote(part).replace("~1", "/").replace("~0", "~")
-            if isinstance(node, list) and key.isdigit() and int(key) < len(node):
+            found = [k for k in node if str(k) == key] if isinstance(node, dict) else []  # YAML reads `200:` as a number
+            if isinstance(node, list) and key.isascii() and key.isdigit() and int(key) < len(node):
                 node = node[int(key)]
-            elif isinstance(node, dict) and key in node:
-                node = node[key]
+            elif found:
+                node = node[found[0]]
             else:
                 raise self.fail(f"the $ref {ref} points at nothing")
         return node
@@ -358,7 +375,7 @@ class Document:
         m = SCHEMA_REF.fullmatch(ref) if isinstance(ref, str) else None
         if m is None:
             return None
-        name = unquote(m.group(1)).replace("~1", "/").replace("~0", "~")
+        name = one_line(unquote(m.group(1)).replace("~1", "/").replace("~0", "~"))
         if name not in self.schemas:
             raise self.fail(f"the $ref {ref} points at nothing")
         return name
@@ -511,11 +528,11 @@ class Document:
 
     def grouped(self) -> list[Group]:  # One group for each tag that an operation has first, in the order of `tags`, then of first use
         "Put each operation in the group of its first tag, or in `default` when it has none, and name each group's page."
-        said = {str(t.get("name")): t for t in self.data.get("tags") or [] if isinstance(t, dict)}
+        said = {one_line(str(t.get("name"))): t for t in self.data.get("tags") or [] if isinstance(t, dict)}
         groups: dict[str, Group] = {}
         for op in self.ops:
             tags = op.node.get("tags") or []
-            tag = str(tags[0]) if isinstance(tags, list) and tags else "default"
+            tag = one_line(str(tags[0])) if isinstance(tags, list) and tags else "default"
             key = "default" if tag.casefold() == "default" else tag  # Swagger UI puts a tag `Default` with the operations that have none
             if key not in groups:
                 desc = (said.get(tag) or said.get(key) or {}).get("description")
@@ -715,7 +732,7 @@ def readable(
     "Run a step that reads the document, and turn a value of the wrong kind, such as a list where OpenAPI has a mapping, into an error that names the section."
     try:
         return work(s)
-    except (AttributeError, TypeError, KeyError, IndexError, RecursionError) as e:
+    except (AttributeError, TypeError, KeyError, IndexError, RecursionError, UnicodeError) as e:
         raise ValueError(f"{section_name(s)}: the document has a value of the wrong kind ({type(e).__name__}: {e}); check it with an OpenAPI validator") from e
 
 
@@ -751,7 +768,7 @@ def write_pages(
         target = f"{link_path(f'/{s.out}/{op.page}')}#{op.id}"
         index.setdefault(op.name, target)
         if isinstance(op.node.get("operationId"), str):
-            index.setdefault(op.node["operationId"], target)
+            index.setdefault(one_line(op.node["operationId"]), target)
     for name, id_ in doc.schema_ids.items():
         target = f"{link_path(f'/{s.out}/schemas.qmd')}#{id_}"
         index.setdefault(str(name), target)

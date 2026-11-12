@@ -1,6 +1,7 @@
 "The HTTP API reference from an OpenAPI document, and the list of api sections: one test per rule of SPEC-openapi.md."
 
 import json
+import os
 import re
 import shutil
 import subprocess
@@ -897,3 +898,69 @@ def test_out_name_is_a_path(tmp_path: Path) -> None:
     d = site(tmp_path / "docs", f"api:\n  - language: openapi\n    file: {f}\n    out: http\n")
     for out in ("./http", "http/", "HTTP"):
         assert main(["api", "build", "--dir", str(d), "--out", out]) == 0
+
+
+# ---------------------------------------------------------------- what the review of the fixes found
+
+
+def test_ctrl_c_stops_the_program_too(tmp_path: Path) -> None:
+    "Ctrl-C during a build kills the program, which runs in a session of its own."
+    import signal
+    import time
+
+    marker = tmp_path / "alive"
+    write(tmp_path, {"app.py": f"import time\ntime.sleep(6)\nopen({str(marker)!r}, 'w').write('x')\n"})
+    site(tmp_path, f"api:\n  language: openapi\n  fastapi: app:app\n  python: {sys.executable}\n  root: .\n  out: http\n")
+    proc = subprocess.Popen([sys.executable, "-m", "smalldocs.cli", "api", "build", "--dir", str(tmp_path)], start_new_session=True, stderr=subprocess.DEVNULL)
+    time.sleep(2)
+    os.killpg(proc.pid, signal.SIGINT)
+    proc.wait(timeout=20)
+    time.sleep(6)
+    assert not marker.exists()
+
+
+def test_a_worker_that_keeps_stderr_open_holds_nothing(tmp_path: Path) -> None:
+    "An app that starts a worker process at import gives its document at once; the worker keeps standard error open."
+    import time
+
+    head = "import subprocess, sys\nsubprocess.Popen([sys.executable, '-c', 'import time; time.sleep(30)'])\n"
+    program_site(tmp_path, head + APP.format(doc=json.dumps(ops({"/a": {"get": op()}}))), "  timeout: 15\n")
+    t = time.perf_counter()
+    api.build_sections(tmp_path, load(tmp_path).smalldocs["api"])
+    assert time.perf_counter() - t < 10
+
+
+def test_unflushed_output_and_a_replaced_stderr_reach_the_message(tmp_path: Path) -> None:
+    "What the app printed to `sys.__stdout__` before it failed is in the message, and so is the marker when it replaced `sys.stderr`."
+    program_site(tmp_path, "import sys\nprint('CAUSE here', file=sys.__stdout__)\nraise SystemExit(3)\n")
+    with pytest.raises(ValueError, match="CAUSE here"):
+        api.build_sections(tmp_path, load(tmp_path).smalldocs["api"])
+    program_site(tmp_path, "import io, sys\nsys.stderr = io.StringIO()\nraise RuntimeError('hidden')\n")
+    with pytest.raises(ValueError, match="app-import: RuntimeError: hidden"):
+        api.build_sections(tmp_path, load(tmp_path).smalldocs["api"])
+
+
+def test_a_lone_surrogate_and_a_unicode_digit_name_the_section(tmp_path: Path) -> None:
+    "A description with a lone surrogate, and a pointer with `²`, stop the build with the section's name."
+    (tmp_path / "a").mkdir()
+    with pytest.raises(ValueError, match="the api section with out 'http'"):
+        built(tmp_path / "a", ops({"/a": {"get": op(description="bad \ud800 char")}}))
+    (tmp_path / "b").mkdir()
+    with pytest.raises(ValueError, match=re.escape("the $ref #/tags/² points at nothing")):
+        built(tmp_path / "b", ops({"/a": {"get": {"parameters": [{"$ref": "#/tags/²"}], "responses": {}}}}, tags=[{"name": "x"}]))
+
+
+def test_a_pointer_reaches_a_key_that_yaml_reads_as_a_number(tmp_path: Path) -> None:
+    "`#/paths/~1a/get/responses/200` reaches an unquoted `200:` of YAML."
+    doc = "openapi: 3.1.0\npaths:\n  /a:\n    get:\n      responses:\n        200: {description: Fine}\n  /b:\n    get:\n      responses:\n        200: {$ref: '#/paths/~1a/get/responses/200'}\n"
+    write(tmp_path, {"d.yaml": doc})
+    site(tmp_path, "api:\n  language: openapi\n  file: d.yaml\n  out: http\n")
+    api.build_sections(tmp_path, load(tmp_path).smalldocs["api"])
+    assert (tmp_path / "http/default.qmd").read_text().count("| 200 |  |  | Fine |") == 2
+
+
+def test_line_breaks_in_tags_operation_ids_and_schema_names(tmp_path: Path) -> None:
+    "A line break in a tag, an operationId or a schema's name is a space in the title and in `_symbols.json`."
+    out = built(tmp_path, ops({"/a": {"get": op(tags=["Tag\nTwo"], operationId="op\nid")}}, components={"schemas": {"S\nT": {"type": "object"}}}))
+    assert 'title: "Tag Two"' in out["tag-two.qmd"]
+    assert {"op id", "S T", "http.S T"} <= set(json.loads((tmp_path / "_symbols.json").read_text()))
