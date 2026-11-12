@@ -637,6 +637,10 @@ class Settings:
     check: tuple[str, ...] = ()  # Globs, from the root, of more files that `check` holds to the convention; `**/` is any folders or none
     linkify: bool = True  # Whether a name in backticks links to its entry
     shown: bool = False  # Whether `check` holds the packages only to what their pages show, from `check-shown`
+    language: str = "python"  # The language of the code: `python`, `rust` or `typescript`
+    manifest: Path | None = None  # Rust: the crate's Cargo.toml; `None` is the one at the root
+    toolchain: str = "nightly"  # Rust: the toolchain that runs rustdoc
+    private: bool = False  # Rust: document private items too
 
     @classmethod
     def read(
@@ -645,6 +649,11 @@ class Settings:
         conf: dict,  # The `smalldocs.api` section
     ) -> "Settings":  # The settings, with defaults
         "Read the settings from the config."
+        language = str(conf.get("language", "python"))
+        if language not in ("python", "rust", "typescript"):
+            raise ValueError(f"the api settings: language must be python, rust or typescript, not {language!r}")
+        if language != "python":
+            return cls.read_other(site, conf, language)
         pkgs = conf.get("packages") or conf.get("package") or []
         pkgs = [pkgs] if isinstance(pkgs, str) else list(pkgs)
         if not pkgs:
@@ -657,8 +666,32 @@ class Settings:
             raise ValueError(f"check-shown must be true or false, not {shown!r}")
         return cls(site, pkgs, str(conf.get("out", "api")).strip("/"), root, str(conf.get("source", "")).rstrip("/"), tuple([chk] if isinstance(chk, str) else chk), conf.get("linkify", True) is not False, shown)
 
+    @classmethod
+    def read_other(
+        cls,
+        site: Path,  # The site's folder
+        conf: dict,  # The `api` section
+        language: str,  # `rust` or `typescript`
+    ) -> "Settings":  # The settings, with defaults
+        "Read the settings of a crate or a TypeScript package, which has no packages to import."
+        marks = ("Cargo.toml", "package.json", ".git")
+        root = (site / str(conf.get("root", "." if any((site / m).exists() for m in marks) else ".."))).resolve()
+        flags = {k: conf.get(k, False) for k in ("check-shown", "private")}
+        for k, v in flags.items():
+            if not isinstance(v, bool):
+                raise ValueError(f"{k} must be true or false, not {v!r}")
+        manifest = (site / str(conf["manifest"])).resolve() if conf.get("manifest") else None
+        out = str(conf.get("out", "api")).strip("/")
+        source = str(conf.get("source", "")).rstrip("/")
+        toolchain = conf.get("toolchain", "nightly")
+        if not isinstance(toolchain, str):
+            raise ValueError(f"toolchain must be text, such as nightly or \"nightly-2026-11-11\", not {toolchain!r}; put a number in quotes")
+        return cls(site, [], out, root, source, (), conf.get("linkify", True) is not False, flags["check-shown"], language, manifest, toolchain, flags["private"])
+
     def importable(self) -> None:
         "Let the packages import from the repository: its root and its `src` folder go on `sys.path`."
+        if self.language != "python":
+            return  # a crate or a TypeScript package is read by its own tool, not imported
         for p in (self.root, self.root / "src") if self.root else ():
             if p.is_dir() and str(p) not in sys.path:
                 sys.path.insert(0, str(p))
@@ -737,6 +770,8 @@ def build(
     s: Settings,  # The settings
 ) -> list[Path]:  # The pages written
     "Write one reference page per module, and `_symbols.json`, the index of names that links use."
+    if s.language != "python":
+        return importlib.import_module(f"smalldocs.api_{ {'typescript': 'ts', 'rust': 'rust'}[s.language] }").build(s)
     s.importable()
     out_dir = (s.site / s.out).resolve()
     site = s.site.resolve()
@@ -830,6 +865,11 @@ def run(
         pages = build(s)
         print(f"wrote {len(pages)} page(s) to {s.site / s.out}")
         return 0
+    if s.language != "python":
+        if action == "check":
+            return importlib.import_module(f"smalldocs.api_{ {'typescript': 'ts', 'rust': 'rust'}[s.language] }").check(s, s.shown)
+        print(f"smalldocs api {action}: for Python only; {s.language} has build and check", file=sys.stderr)
+        return 2
     if action == "check":
         return check(s.packages, s.check_files(), s.root, s.shown)
     if action == "list":

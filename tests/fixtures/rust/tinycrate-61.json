@@ -1,0 +1,5623 @@
+{
+ "crate_version": "0.1.0",
+ "external_crates": {
+  "1": {
+   "html_root_url": "https://doc.rust-lang.org/nightly/",
+   "name": "std"
+  },
+  "2": {
+   "html_root_url": "https://doc.rust-lang.org/nightly/",
+   "name": "core"
+  },
+  "3": {
+   "html_root_url": "https://doc.rust-lang.org/nightly/",
+   "name": "alloc"
+  }
+ },
+ "format_version": 61,
+ "includes_private": false,
+ "index": {
+  "0": {
+   "attrs": [],
+   "const_stability": null,
+   "crate_id": 0,
+   "deprecation": null,
+   "docs": "The radius.",
+   "id": 0,
+   "inner": {
+    "struct_field": {
+     "primitive": "f64"
+    }
+   },
+   "links": {},
+   "name": "r",
+   "span": {
+    "begin": [
+     8,
+     5
+    ],
+    "end": [
+     8,
+     15
+    ],
+    "filename": "src/shapes.rs"
+   },
+   "stability": null,
+   "visibility": "public"
+  },
+  "1": {
+   "attrs": [],
+   "const_stability": null,
+   "crate_id": 0,
+   "deprecation": null,
+   "docs": "A circle.",
+   "id": 1,
+   "inner": {
+    "struct": {
+     "generics": {
+      "params": [],
+      "where_predicates": []
+     },
+     "impls": [
+      2,
+      21,
+      47
+     ],
+     "kind": {
+      "plain": {
+       "fields": [
+        0
+       ],
+       "has_stripped_fields": false
+      }
+     }
+    }
+   },
+   "links": {},
+   "name": "Circle",
+   "span": {
+    "begin": [
+     6,
+     1
+    ],
+    "end": [
+     9,
+     2
+    ],
+    "filename": "src/shapes.rs"
+   },
+   "stability": null,
+   "visibility": "public"
+  },
+  "108": {
+   "attrs": [],
+   "const_stability": null,
+   "crate_id": 0,
+   "deprecation": null,
+   "docs": null,
+   "id": 108,
+   "inner": {
+    "impl": {
+     "blanket_impl": {
+      "generic": "T"
+     },
+     "for": {
+      "resolved_path": {
+       "args": null,
+       "id": 87,
+       "path": "Point"
+      }
+     },
+     "generics": {
+      "params": [
+       {
+        "kind": {
+         "type": {
+          "bounds": [],
+          "default": null,
+          "is_synthetic": false
+         }
+        },
+        "name": "T"
+       }
+      ],
+      "where_predicates": [
+       {
+        "bound_predicate": {
+         "bounds": [
+          {
+           "trait_bound": {
+            "generic_params": [],
+            "modifier": "maybe",
+            "trait": {
+             "args": null,
+             "id": 22,
+             "path": "Sized"
+            }
+           }
+          }
+         ],
+         "generic_params": [],
+         "type": {
+          "generic": "T"
+         }
+        }
+       }
+      ]
+     },
+     "is_negative": false,
+     "is_synthetic": false,
+     "is_unsafe": false,
+     "items": [
+      20
+     ],
+     "provided_trait_methods": [],
+     "trait": {
+      "args": {
+       "angle_bracketed": {
+        "args": [
+         {
+          "type": {
+           "generic": "T"
+          }
+         }
+        ],
+        "constraints": []
+       }
+      },
+      "id": 23,
+      "path": "Borrow"
+     }
+    }
+   },
+   "links": {},
+   "name": null,
+   "span": {
+    "begin": [
+     212,
+     1
+    ],
+    "end": [
+     212,
+     38
+    ],
+    "filename": "/rustc/3ef0c22cdb86ac42dc6b8f0f1ec36857daa6f2a1/library/core/src/borrow.rs"
+   },
+   "stability": null,
+   "visibility": "default"
+  },
+  "127": {
+   "attrs": [
+    {
+     "other": "#[attr = Inline(Hint)]"
+    },
+    {
+     "other": "#[attr = RustcTrivialFieldReads]"
+    }
+   ],
+   "const_stability": null,
+   "crate_id": 0,
+   "deprecation": null,
+   "docs": null,
+   "id": 127,
+   "inner": {
+    "function": {
+     "default_unstable": null,
+     "generics": {
+      "params": [],
+      "where_predicates": []
+     },
+     "has_body": true,
+     "header": {
+      "abi": "Rust",
+      "is_async": false,
+      "is_const": false,
+      "is_unsafe": false
+     },
+     "sig": {
+      "inputs": [
+       [
+        "self",
+        {
+         "borrowed_ref": {
+          "is_mutable": false,
+          "lifetime": null,
+          "type": {
+           "generic": "Self"
+          }
+         }
+        }
+       ],
+       [
+        "f",
+        {
+         "borrowed_ref": {
+          "is_mutable": true,
+          "lifetime": null,
+          "type": {
+           "resolved_path": {
+            "args": {
+             "angle_bracketed": {
+              "args": [
+               {
+                "lifetime": "'_"
+               }
+              ],
+              "constraints": []
+             }
+            },
+            "id": 128,
+            "path": "$crate::fmt::Formatter"
+           }
+          }
+         }
+        }
+       ]
+      ],
+      "is_c_variadic": false,
+      "output": {
+       "resolved_path": {
+        "args": null,
+        "id": 129,
+        "path": "$crate::fmt::Result"
+       }
+      }
+     }
+    }
+   },
+   "links": {},
+   "name": "fmt",
+   "span": {
+    "begin": [
+     43,
+     10
+    ],
+    "end": [
+     43,
+     15
+    ],
+    "filename": "src/lib.rs"
+   },
+   "stability": null,
+   "visibility": "default"
+  },
+  "130": {
+   "attrs": [
+    "automatically_derived"
+   ],
+   "const_stability": null,
+   "crate_id": 0,
+   "deprecation": null,
+   "docs": null,
+   "id": 130,
+   "inner": {
+    "impl": {
+     "blanket_impl": null,
+     "for": {
+      "resolved_path": {
+       "args": null,
+       "id": 87,
+       "path": "Point"
+      }
+     },
+     "generics": {
+      "params": [],
+      "where_predicates": []
+     },
+     "is_negative": false,
+     "is_synthetic": false,
+     "is_unsafe": false,
+     "items": [
+      127
+     ],
+     "provided_trait_methods": [],
+     "trait": {
+      "args": null,
+      "id": 131,
+      "path": "Debug"
+     }
+    }
+   },
+   "links": {},
+   "name": null,
+   "span": {
+    "begin": [
+     43,
+     10
+    ],
+    "end": [
+     43,
+     15
+    ],
+    "filename": "src/lib.rs"
+   },
+   "stability": null,
+   "visibility": "default"
+  },
+  "132": {
+   "attrs": [
+    {
+     "other": "#[attr = Inline(Hint)]"
+    },
+    {
+     "other": "#[attr = RustcTrivialFieldReads]"
+    }
+   ],
+   "const_stability": null,
+   "crate_id": 0,
+   "deprecation": null,
+   "docs": null,
+   "id": 132,
+   "inner": {
+    "function": {
+     "default_unstable": null,
+     "generics": {
+      "params": [],
+      "where_predicates": []
+     },
+     "has_body": true,
+     "header": {
+      "abi": "Rust",
+      "is_async": false,
+      "is_const": false,
+      "is_unsafe": false
+     },
+     "sig": {
+      "inputs": [
+       [
+        "self",
+        {
+         "borrowed_ref": {
+          "is_mutable": false,
+          "lifetime": null,
+          "type": {
+           "generic": "Self"
+          }
+         }
+        }
+       ]
+      ],
+      "is_c_variadic": false,
+      "output": {
+       "generic": "Self"
+      }
+     }
+    }
+   },
+   "links": {},
+   "name": "clone",
+   "span": {
+    "begin": [
+     43,
+     17
+    ],
+    "end": [
+     43,
+     22
+    ],
+    "filename": "src/lib.rs"
+   },
+   "stability": null,
+   "visibility": "default"
+  },
+  "133": {
+   "attrs": [
+    "automatically_derived"
+   ],
+   "const_stability": null,
+   "crate_id": 0,
+   "deprecation": null,
+   "docs": null,
+   "id": 133,
+   "inner": {
+    "impl": {
+     "blanket_impl": null,
+     "for": {
+      "resolved_path": {
+       "args": null,
+       "id": 87,
+       "path": "Point"
+      }
+     },
+     "generics": {
+      "params": [],
+      "where_predicates": []
+     },
+     "is_negative": false,
+     "is_synthetic": false,
+     "is_unsafe": false,
+     "items": [
+      132
+     ],
+     "provided_trait_methods": [
+      "clone_from"
+     ],
+     "trait": {
+      "args": null,
+      "id": 112,
+      "path": "Clone"
+     }
+    }
+   },
+   "links": {},
+   "name": null,
+   "span": {
+    "begin": [
+     43,
+     17
+    ],
+    "end": [
+     43,
+     22
+    ],
+    "filename": "src/lib.rs"
+   },
+   "stability": null,
+   "visibility": "default"
+  },
+  "134": {
+   "attrs": [
+    "automatically_derived"
+   ],
+   "const_stability": null,
+   "crate_id": 0,
+   "deprecation": null,
+   "docs": null,
+   "id": 134,
+   "inner": {
+    "impl": {
+     "blanket_impl": null,
+     "for": {
+      "resolved_path": {
+       "args": null,
+       "id": 87,
+       "path": "Point"
+      }
+     },
+     "generics": {
+      "params": [],
+      "where_predicates": []
+     },
+     "is_negative": false,
+     "is_synthetic": false,
+     "is_unsafe": false,
+     "items": [],
+     "provided_trait_methods": [],
+     "trait": {
+      "args": null,
+      "id": 135,
+      "path": "Copy"
+     }
+    }
+   },
+   "links": {},
+   "name": null,
+   "span": {
+    "begin": [
+     43,
+     24
+    ],
+    "end": [
+     43,
+     28
+    ],
+    "filename": "src/lib.rs"
+   },
+   "stability": null,
+   "visibility": "default"
+  },
+  "136": {
+   "attrs": [
+    "automatically_derived"
+   ],
+   "const_stability": null,
+   "crate_id": 0,
+   "deprecation": null,
+   "docs": null,
+   "id": 136,
+   "inner": {
+    "impl": {
+     "blanket_impl": null,
+     "for": {
+      "resolved_path": {
+       "args": null,
+       "id": 87,
+       "path": "Point"
+      }
+     },
+     "generics": {
+      "params": [],
+      "where_predicates": []
+     },
+     "is_negative": false,
+     "is_synthetic": false,
+     "is_unsafe": false,
+     "items": [],
+     "provided_trait_methods": [],
+     "trait": {
+      "args": null,
+      "id": 137,
+      "path": "StructuralPartialEq"
+     }
+    }
+   },
+   "links": {},
+   "name": null,
+   "span": {
+    "begin": [
+     43,
+     30
+    ],
+    "end": [
+     43,
+     39
+    ],
+    "filename": "src/lib.rs"
+   },
+   "stability": null,
+   "visibility": "default"
+  },
+  "138": {
+   "attrs": [
+    {
+     "other": "#[attr = Inline(Hint)]"
+    }
+   ],
+   "const_stability": null,
+   "crate_id": 0,
+   "deprecation": null,
+   "docs": null,
+   "id": 138,
+   "inner": {
+    "function": {
+     "default_unstable": null,
+     "generics": {
+      "params": [],
+      "where_predicates": []
+     },
+     "has_body": true,
+     "header": {
+      "abi": "Rust",
+      "is_async": false,
+      "is_const": false,
+      "is_unsafe": false
+     },
+     "sig": {
+      "inputs": [
+       [
+        "self",
+        {
+         "borrowed_ref": {
+          "is_mutable": false,
+          "lifetime": null,
+          "type": {
+           "generic": "Self"
+          }
+         }
+        }
+       ],
+       [
+        "other",
+        {
+         "borrowed_ref": {
+          "is_mutable": false,
+          "lifetime": null,
+          "type": {
+           "generic": "Self"
+          }
+         }
+        }
+       ]
+      ],
+      "is_c_variadic": false,
+      "output": {
+       "primitive": "bool"
+      }
+     }
+    }
+   },
+   "links": {},
+   "name": "eq",
+   "span": {
+    "begin": [
+     43,
+     30
+    ],
+    "end": [
+     43,
+     39
+    ],
+    "filename": "src/lib.rs"
+   },
+   "stability": null,
+   "visibility": "default"
+  },
+  "139": {
+   "attrs": [
+    "automatically_derived"
+   ],
+   "const_stability": null,
+   "crate_id": 0,
+   "deprecation": null,
+   "docs": null,
+   "id": 139,
+   "inner": {
+    "impl": {
+     "blanket_impl": null,
+     "for": {
+      "resolved_path": {
+       "args": null,
+       "id": 87,
+       "path": "Point"
+      }
+     },
+     "generics": {
+      "params": [],
+      "where_predicates": []
+     },
+     "is_negative": false,
+     "is_synthetic": false,
+     "is_unsafe": false,
+     "items": [
+      138
+     ],
+     "provided_trait_methods": [
+      "ne"
+     ],
+     "trait": {
+      "args": null,
+      "id": 140,
+      "path": "PartialEq"
+     }
+    }
+   },
+   "links": {},
+   "name": null,
+   "span": {
+    "begin": [
+     43,
+     30
+    ],
+    "end": [
+     43,
+     39
+    ],
+    "filename": "src/lib.rs"
+   },
+   "stability": null,
+   "visibility": "default"
+  },
+  "141": {
+   "attrs": [],
+   "const_stability": null,
+   "crate_id": 0,
+   "deprecation": null,
+   "docs": null,
+   "id": 141,
+   "inner": {
+    "function": {
+     "default_unstable": null,
+     "generics": {
+      "params": [],
+      "where_predicates": []
+     },
+     "has_body": true,
+     "header": {
+      "abi": "Rust",
+      "is_async": false,
+      "is_const": false,
+      "is_unsafe": false
+     },
+     "sig": {
+      "inputs": [
+       [
+        "self",
+        {
+         "borrowed_ref": {
+          "is_mutable": false,
+          "lifetime": null,
+          "type": {
+           "generic": "Self"
+          }
+         }
+        }
+       ],
+       [
+        "f",
+        {
+         "borrowed_ref": {
+          "is_mutable": true,
+          "lifetime": null,
+          "type": {
+           "resolved_path": {
+            "args": {
+             "angle_bracketed": {
+              "args": [
+               {
+                "lifetime": "'_"
+               }
+              ],
+              "constraints": []
+             }
+            },
+            "id": 128,
+            "path": "std::fmt::Formatter"
+           }
+          }
+         }
+        }
+       ]
+      ],
+      "is_c_variadic": false,
+      "output": {
+       "resolved_path": {
+        "args": null,
+        "id": 129,
+        "path": "std::fmt::Result"
+       }
+      }
+     }
+    }
+   },
+   "links": {},
+   "name": "fmt",
+   "span": {
+    "begin": [
+     70,
+     5
+    ],
+    "end": [
+     72,
+     6
+    ],
+    "filename": "src/lib.rs"
+   },
+   "stability": null,
+   "visibility": "default"
+  },
+  "142": {
+   "attrs": [],
+   "const_stability": null,
+   "crate_id": 0,
+   "deprecation": null,
+   "docs": null,
+   "id": 142,
+   "inner": {
+    "impl": {
+     "blanket_impl": null,
+     "for": {
+      "resolved_path": {
+       "args": null,
+       "id": 87,
+       "path": "Point"
+      }
+     },
+     "generics": {
+      "params": [],
+      "where_predicates": []
+     },
+     "is_negative": false,
+     "is_synthetic": false,
+     "is_unsafe": false,
+     "items": [
+      141
+     ],
+     "provided_trait_methods": [],
+     "trait": {
+      "args": null,
+      "id": 88,
+      "path": "Display"
+     }
+    }
+   },
+   "links": {},
+   "name": null,
+   "span": {
+    "begin": [
+     69,
+     1
+    ],
+    "end": [
+     73,
+     2
+    ],
+    "filename": "src/lib.rs"
+   },
+   "stability": null,
+   "visibility": "default"
+  },
+  "143": {
+   "attrs": [],
+   "const_stability": null,
+   "crate_id": 0,
+   "deprecation": null,
+   "docs": null,
+   "id": 143,
+   "inner": {
+    "variant": {
+     "discriminant": null,
+     "kind": "plain"
+    }
+   },
+   "links": {},
+   "name": "Green",
+   "span": {
+    "begin": [
+     79,
+     5
+    ],
+    "end": [
+     79,
+     10
+    ],
+    "filename": "src/lib.rs"
+   },
+   "stability": null,
+   "visibility": "default"
+  },
+  "144": {
+   "attrs": [],
+   "const_stability": null,
+   "crate_id": 0,
+   "deprecation": null,
+   "docs": "Pure red, not [`Colour::Green`].",
+   "id": 144,
+   "inner": {
+    "variant": {
+     "discriminant": null,
+     "kind": "plain"
+    }
+   },
+   "links": {
+    "`Colour::Green`": 143
+   },
+   "name": "Red",
+   "span": {
+    "begin": [
+     78,
+     5
+    ],
+    "end": [
+     78,
+     8
+    ],
+    "filename": "src/lib.rs"
+   },
+   "stability": null,
+   "visibility": "default"
+  },
+  "145": {
+   "attrs": [],
+   "const_stability": null,
+   "crate_id": 0,
+   "deprecation": null,
+   "docs": null,
+   "id": 145,
+   "inner": {
+    "struct_field": {
+     "primitive": "u8"
+    }
+   },
+   "links": {},
+   "name": "0",
+   "span": {
+    "begin": [
+     81,
+     9
+    ],
+    "end": [
+     81,
+     11
+    ],
+    "filename": "src/lib.rs"
+   },
+   "stability": null,
+   "visibility": "default"
+  },
+  "146": {
+   "attrs": [],
+   "const_stability": null,
+   "crate_id": 0,
+   "deprecation": null,
+   "docs": null,
+   "id": 146,
+   "inner": {
+    "struct_field": {
+     "primitive": "u8"
+    }
+   },
+   "links": {},
+   "name": "1",
+   "span": {
+    "begin": [
+     81,
+     13
+    ],
+    "end": [
+     81,
+     15
+    ],
+    "filename": "src/lib.rs"
+   },
+   "stability": null,
+   "visibility": "default"
+  },
+  "147": {
+   "attrs": [],
+   "const_stability": null,
+   "crate_id": 0,
+   "deprecation": null,
+   "docs": null,
+   "id": 147,
+   "inner": {
+    "struct_field": {
+     "primitive": "u8"
+    }
+   },
+   "links": {},
+   "name": "2",
+   "span": {
+    "begin": [
+     81,
+     17
+    ],
+    "end": [
+     81,
+     19
+    ],
+    "filename": "src/lib.rs"
+   },
+   "stability": null,
+   "visibility": "default"
+  },
+  "148": {
+   "attrs": [],
+   "const_stability": null,
+   "crate_id": 0,
+   "deprecation": null,
+   "docs": "A colour by its parts.",
+   "id": 148,
+   "inner": {
+    "variant": {
+     "discriminant": null,
+     "kind": {
+      "tuple": [
+       145,
+       146,
+       147
+      ]
+     }
+    }
+   },
+   "links": {},
+   "name": "Rgb",
+   "span": {
+    "begin": [
+     81,
+     5
+    ],
+    "end": [
+     81,
+     20
+    ],
+    "filename": "src/lib.rs"
+   },
+   "stability": null,
+   "visibility": "default"
+  },
+  "149": {
+   "attrs": [],
+   "const_stability": null,
+   "crate_id": 0,
+   "deprecation": null,
+   "docs": null,
+   "id": 149,
+   "inner": {
+    "struct_field": {
+     "resolved_path": {
+      "args": null,
+      "id": 55,
+      "path": "String"
+     }
+    }
+   },
+   "links": {},
+   "name": "name",
+   "span": {
+    "begin": [
+     83,
+     13
+    ],
+    "end": [
+     83,
+     25
+    ],
+    "filename": "src/lib.rs"
+   },
+   "stability": null,
+   "visibility": "default"
+  },
+  "150": {
+   "attrs": [],
+   "const_stability": null,
+   "crate_id": 0,
+   "deprecation": null,
+   "docs": "A named colour.",
+   "id": 150,
+   "inner": {
+    "variant": {
+     "discriminant": null,
+     "kind": {
+      "struct": {
+       "fields": [
+        149
+       ],
+       "has_stripped_fields": false
+      }
+     }
+    }
+   },
+   "links": {},
+   "name": "Named",
+   "span": {
+    "begin": [
+     83,
+     5
+    ],
+    "end": [
+     83,
+     27
+    ],
+    "filename": "src/lib.rs"
+   },
+   "stability": null,
+   "visibility": "default"
+  },
+  "151": {
+   "attrs": [],
+   "const_stability": null,
+   "crate_id": 0,
+   "deprecation": null,
+   "docs": null,
+   "id": 151,
+   "inner": {
+    "struct_field": {
+     "resolved_path": {
+      "args": null,
+      "id": 55,
+      "path": "String"
+     }
+    }
+   },
+   "links": {},
+   "name": "first",
+   "span": {
+    "begin": [
+     85,
+     11
+    ],
+    "end": [
+     85,
+     24
+    ],
+    "filename": "src/lib.rs"
+   },
+   "stability": null,
+   "visibility": "default"
+  },
+  "152": {
+   "attrs": [],
+   "const_stability": null,
+   "crate_id": 0,
+   "deprecation": null,
+   "docs": null,
+   "id": 152,
+   "inner": {
+    "struct_field": {
+     "resolved_path": {
+      "args": null,
+      "id": 55,
+      "path": "String"
+     }
+    }
+   },
+   "links": {},
+   "name": "second",
+   "span": {
+    "begin": [
+     85,
+     26
+    ],
+    "end": [
+     85,
+     40
+    ],
+    "filename": "src/lib.rs"
+   },
+   "stability": null,
+   "visibility": "default"
+  },
+  "153": {
+   "attrs": [],
+   "const_stability": null,
+   "crate_id": 0,
+   "deprecation": null,
+   "docs": null,
+   "id": 153,
+   "inner": {
+    "struct_field": {
+     "resolved_path": {
+      "args": null,
+      "id": 55,
+      "path": "String"
+     }
+    }
+   },
+   "links": {},
+   "name": "third",
+   "span": {
+    "begin": [
+     85,
+     42
+    ],
+    "end": [
+     85,
+     55
+    ],
+    "filename": "src/lib.rs"
+   },
+   "stability": null,
+   "visibility": "default"
+  },
+  "154": {
+   "attrs": [],
+   "const_stability": null,
+   "crate_id": 0,
+   "deprecation": null,
+   "docs": null,
+   "id": 154,
+   "inner": {
+    "struct_field": {
+     "primitive": "f64"
+    }
+   },
+   "links": {},
+   "name": "weight",
+   "span": {
+    "begin": [
+     85,
+     57
+    ],
+    "end": [
+     85,
+     68
+    ],
+    "filename": "src/lib.rs"
+   },
+   "stability": null,
+   "visibility": "default"
+  },
+  "155": {
+   "attrs": [],
+   "const_stability": null,
+   "crate_id": 0,
+   "deprecation": null,
+   "docs": "A mix of three named colours.",
+   "id": 155,
+   "inner": {
+    "variant": {
+     "discriminant": null,
+     "kind": {
+      "struct": {
+       "fields": [
+        151,
+        152,
+        153,
+        154
+       ],
+       "has_stripped_fields": false
+      }
+     }
+    }
+   },
+   "links": {},
+   "name": "Mix",
+   "span": {
+    "begin": [
+     85,
+     5
+    ],
+    "end": [
+     85,
+     70
+    ],
+    "filename": "src/lib.rs"
+   },
+   "stability": null,
+   "visibility": "default"
+  },
+  "156": {
+   "attrs": [],
+   "const_stability": null,
+   "crate_id": 0,
+   "deprecation": null,
+   "docs": "A colour.",
+   "id": 156,
+   "inner": {
+    "enum": {
+     "generics": {
+      "params": [],
+      "where_predicates": []
+     },
+     "has_stripped_variants": false,
+     "impls": [
+      157,
+      166
+     ],
+     "variants": [
+      144,
+      143,
+      148,
+      150,
+      155
+     ]
+    }
+   },
+   "links": {},
+   "name": "Colour",
+   "span": {
+    "begin": [
+     76,
+     1
+    ],
+    "end": [
+     86,
+     2
+    ],
+    "filename": "src/lib.rs"
+   },
+   "stability": null,
+   "visibility": "public"
+  },
+  "157": {
+   "attrs": [],
+   "const_stability": null,
+   "crate_id": 0,
+   "deprecation": null,
+   "docs": null,
+   "id": 157,
+   "inner": {
+    "impl": {
+     "blanket_impl": null,
+     "for": {
+      "resolved_path": {
+       "args": null,
+       "id": 156,
+       "path": "Colour"
+      }
+     },
+     "generics": {
+      "params": [],
+      "where_predicates": []
+     },
+     "is_negative": false,
+     "is_synthetic": true,
+     "is_unsafe": false,
+     "items": [],
+     "provided_trait_methods": [],
+     "trait": {
+      "args": null,
+      "id": 3,
+      "path": "Send"
+     }
+    }
+   },
+   "links": {},
+   "name": null,
+   "span": null,
+   "stability": null,
+   "visibility": "default"
+  },
+  "166": {
+   "attrs": [],
+   "const_stability": null,
+   "crate_id": 0,
+   "deprecation": null,
+   "docs": null,
+   "id": 166,
+   "inner": {
+    "impl": {
+     "blanket_impl": {
+      "generic": "T"
+     },
+     "for": {
+      "resolved_path": {
+       "args": null,
+       "id": 156,
+       "path": "Colour"
+      }
+     },
+     "generics": {
+      "params": [
+       {
+        "kind": {
+         "type": {
+          "bounds": [],
+          "default": null,
+          "is_synthetic": false
+         }
+        },
+        "name": "T"
+       }
+      ],
+      "where_predicates": [
+       {
+        "bound_predicate": {
+         "bounds": [
+          {
+           "trait_bound": {
+            "generic_params": [],
+            "modifier": "maybe",
+            "trait": {
+             "args": null,
+             "id": 22,
+             "path": "Sized"
+            }
+           }
+          }
+         ],
+         "generic_params": [],
+         "type": {
+          "generic": "T"
+         }
+        }
+       }
+      ]
+     },
+     "is_negative": false,
+     "is_synthetic": false,
+     "is_unsafe": false,
+     "items": [
+      20
+     ],
+     "provided_trait_methods": [],
+     "trait": {
+      "args": {
+       "angle_bracketed": {
+        "args": [
+         {
+          "type": {
+           "generic": "T"
+          }
+         }
+        ],
+        "constraints": []
+       }
+      },
+      "id": 23,
+      "path": "Borrow"
+     }
+    }
+   },
+   "links": {},
+   "name": null,
+   "span": {
+    "begin": [
+     212,
+     1
+    ],
+    "end": [
+     212,
+     38
+    ],
+    "filename": "/rustc/3ef0c22cdb86ac42dc6b8f0f1ec36857daa6f2a1/library/core/src/borrow.rs"
+   },
+   "stability": null,
+   "visibility": "default"
+  },
+  "173": {
+   "attrs": [],
+   "const_stability": null,
+   "crate_id": 0,
+   "deprecation": null,
+   "docs": "The area.",
+   "id": 173,
+   "inner": {
+    "function": {
+     "default_unstable": null,
+     "generics": {
+      "params": [],
+      "where_predicates": []
+     },
+     "has_body": false,
+     "header": {
+      "abi": "Rust",
+      "is_async": false,
+      "is_const": false,
+      "is_unsafe": false
+     },
+     "sig": {
+      "inputs": [
+       [
+        "self",
+        {
+         "borrowed_ref": {
+          "is_mutable": false,
+          "lifetime": null,
+          "type": {
+           "generic": "Self"
+          }
+         }
+        }
+       ]
+      ],
+      "is_c_variadic": false,
+      "output": {
+       "primitive": "f64"
+      }
+     }
+    }
+   },
+   "links": {},
+   "name": "area",
+   "span": {
+    "begin": [
+     91,
+     5
+    ],
+    "end": [
+     91,
+     27
+    ],
+    "filename": "src/lib.rs"
+   },
+   "stability": null,
+   "visibility": "default"
+  },
+  "174": {
+   "attrs": [],
+   "const_stability": null,
+   "crate_id": 0,
+   "deprecation": null,
+   "docs": "The name of the shape.",
+   "id": 174,
+   "inner": {
+    "function": {
+     "default_unstable": null,
+     "generics": {
+      "params": [],
+      "where_predicates": []
+     },
+     "has_body": true,
+     "header": {
+      "abi": "Rust",
+      "is_async": false,
+      "is_const": false,
+      "is_unsafe": false
+     },
+     "sig": {
+      "inputs": [
+       [
+        "self",
+        {
+         "borrowed_ref": {
+          "is_mutable": false,
+          "lifetime": null,
+          "type": {
+           "generic": "Self"
+          }
+         }
+        }
+       ]
+      ],
+      "is_c_variadic": false,
+      "output": {
+       "resolved_path": {
+        "args": null,
+        "id": 55,
+        "path": "String"
+       }
+      }
+     }
+    }
+   },
+   "links": {},
+   "name": "name",
+   "span": {
+    "begin": [
+     94,
+     5
+    ],
+    "end": [
+     96,
+     6
+    ],
+    "filename": "src/lib.rs"
+   },
+   "stability": null,
+   "visibility": "default"
+  },
+  "175": {
+   "attrs": [],
+   "const_stability": null,
+   "crate_id": 0,
+   "deprecation": null,
+   "docs": "A number type.",
+   "id": 175,
+   "inner": {
+    "type_alias": {
+     "generics": {
+      "params": [],
+      "where_predicates": []
+     },
+     "type": {
+      "primitive": "f64"
+     }
+    }
+   },
+   "links": {},
+   "name": "Number",
+   "span": {
+    "begin": [
+     100,
+     1
+    ],
+    "end": [
+     100,
+     23
+    ],
+    "filename": "src/lib.rs"
+   },
+   "stability": null,
+   "visibility": "public"
+  },
+  "176": {
+   "attrs": [],
+   "const_stability": null,
+   "crate_id": 0,
+   "deprecation": null,
+   "docs": "The largest number.",
+   "id": 176,
+   "inner": {
+    "constant": {
+     "const": {
+      "expr": "100",
+      "is_literal": true,
+      "value": "100i32"
+     },
+     "type": {
+      "primitive": "i32"
+     }
+    }
+   },
+   "links": {},
+   "name": "MAX",
+   "span": {
+    "begin": [
+     103,
+     1
+    ],
+    "end": [
+     103,
+     26
+    ],
+    "filename": "src/lib.rs"
+   },
+   "stability": null,
+   "visibility": "public"
+  },
+  "177": {
+   "attrs": [],
+   "const_stability": null,
+   "crate_id": 0,
+   "deprecation": null,
+   "docs": "Wrap a value.",
+   "id": 177,
+   "inner": {
+    "function": {
+     "default_unstable": null,
+     "generics": {
+      "params": [
+       {
+        "kind": {
+         "type": {
+          "bounds": [],
+          "default": null,
+          "is_synthetic": false
+         }
+        },
+        "name": "T"
+       }
+      ],
+      "where_predicates": [
+       {
+        "bound_predicate": {
+         "bounds": [
+          {
+           "trait_bound": {
+            "generic_params": [],
+            "modifier": "none",
+            "trait": {
+             "args": null,
+             "id": 131,
+             "path": "std::fmt::Debug"
+            }
+           }
+          },
+          {
+           "trait_bound": {
+            "generic_params": [],
+            "modifier": "none",
+            "trait": {
+             "args": null,
+             "id": 112,
+             "path": "Clone"
+            }
+           }
+          }
+         ],
+         "generic_params": [],
+         "type": {
+          "generic": "T"
+         }
+        }
+       }
+      ]
+     },
+     "has_body": true,
+     "header": {
+      "abi": "Rust",
+      "is_async": false,
+      "is_const": false,
+      "is_unsafe": false
+     },
+     "sig": {
+      "inputs": [
+       [
+        "value",
+        {
+         "generic": "T"
+        }
+       ]
+      ],
+      "is_c_variadic": false,
+      "output": {
+       "resolved_path": {
+        "args": {
+         "angle_bracketed": {
+          "args": [
+           {
+            "type": {
+             "generic": "T"
+            }
+           }
+          ],
+          "constraints": []
+         }
+        },
+        "id": 178,
+        "path": "Option"
+       }
+      }
+     }
+    }
+   },
+   "links": {},
+   "name": "wrap",
+   "span": {
+    "begin": [
+     106,
+     1
+    ],
+    "end": [
+     112,
+     2
+    ],
+    "filename": "src/lib.rs"
+   },
+   "stability": null,
+   "visibility": "public"
+  },
+  "179": {
+   "attrs": [],
+   "const_stability": null,
+   "crate_id": 0,
+   "deprecation": null,
+   "docs": null,
+   "id": 179,
+   "inner": {
+    "use": {
+     "id": 74,
+     "is_glob": false,
+     "name": "deep",
+     "source": "hidden::deep"
+    }
+   },
+   "links": {},
+   "name": null,
+   "span": {
+    "begin": [
+     129,
+     1
+    ],
+    "end": [
+     129,
+     22
+    ],
+    "filename": "src/lib.rs"
+   },
+   "stability": null,
+   "visibility": "public"
+  },
+  "180": {
+   "attrs": [],
+   "const_stability": null,
+   "crate_id": 0,
+   "deprecation": null,
+   "docs": null,
+   "id": 180,
+   "inner": {
+    "use": {
+     "id": 75,
+     "is_glob": false,
+     "name": "plus",
+     "source": "hidden::add_two"
+    }
+   },
+   "links": {},
+   "name": null,
+   "span": {
+    "begin": [
+     130,
+     1
+    ],
+    "end": [
+     130,
+     33
+    ],
+    "filename": "src/lib.rs"
+   },
+   "stability": null,
+   "visibility": "public"
+  },
+  "181": {
+   "attrs": [],
+   "const_stability": null,
+   "crate_id": 0,
+   "deprecation": null,
+   "docs": null,
+   "id": 181,
+   "inner": {
+    "struct_field": {
+     "generic": "T"
+    }
+   },
+   "links": {},
+   "name": "0",
+   "span": {
+    "begin": [
+     147,
+     22
+    ],
+    "end": [
+     147,
+     27
+    ],
+    "filename": "src/lib.rs"
+   },
+   "stability": null,
+   "visibility": "public"
+  },
+  "182": {
+   "attrs": [],
+   "const_stability": null,
+   "crate_id": 0,
+   "deprecation": null,
+   "docs": "A value of either width.",
+   "id": 182,
+   "inner": {
+    "struct": {
+     "generics": {
+      "params": [
+       {
+        "kind": {
+         "type": {
+          "bounds": [],
+          "default": null,
+          "is_synthetic": false
+         }
+        },
+        "name": "T"
+       }
+      ],
+      "where_predicates": []
+     },
+     "impls": [
+      184,
+      186,
+      187,
+      196
+     ],
+     "kind": {
+      "tuple": [
+       181
+      ]
+     }
+    }
+   },
+   "links": {},
+   "name": "Holder",
+   "span": {
+    "begin": [
+     147,
+     1
+    ],
+    "end": [
+     147,
+     29
+    ],
+    "filename": "src/lib.rs"
+   },
+   "stability": null,
+   "visibility": "public"
+  },
+  "183": {
+   "attrs": [],
+   "const_stability": null,
+   "crate_id": 0,
+   "deprecation": null,
+   "docs": "Hold a byte.",
+   "id": 183,
+   "inner": {
+    "function": {
+     "default_unstable": null,
+     "generics": {
+      "params": [],
+      "where_predicates": []
+     },
+     "has_body": true,
+     "header": {
+      "abi": "Rust",
+      "is_async": false,
+      "is_const": false,
+      "is_unsafe": false
+     },
+     "sig": {
+      "inputs": [
+       [
+        "v",
+        {
+         "primitive": "u8"
+        }
+       ]
+      ],
+      "is_c_variadic": false,
+      "output": {
+       "generic": "Self"
+      }
+     }
+    }
+   },
+   "links": {},
+   "name": "new",
+   "span": {
+    "begin": [
+     151,
+     5
+    ],
+    "end": [
+     153,
+     6
+    ],
+    "filename": "src/lib.rs"
+   },
+   "stability": null,
+   "visibility": "public"
+  },
+  "184": {
+   "attrs": [],
+   "const_stability": null,
+   "crate_id": 0,
+   "deprecation": null,
+   "docs": null,
+   "id": 184,
+   "inner": {
+    "impl": {
+     "blanket_impl": null,
+     "for": {
+      "resolved_path": {
+       "args": {
+        "angle_bracketed": {
+         "args": [
+          {
+           "type": {
+            "primitive": "u8"
+           }
+          }
+         ],
+         "constraints": []
+        }
+       },
+       "id": 182,
+       "path": "Holder"
+      }
+     },
+     "generics": {
+      "params": [],
+      "where_predicates": []
+     },
+     "is_negative": false,
+     "is_synthetic": false,
+     "is_unsafe": false,
+     "items": [
+      183
+     ],
+     "provided_trait_methods": [],
+     "trait": null
+    }
+   },
+   "links": {},
+   "name": null,
+   "span": {
+    "begin": [
+     149,
+     1
+    ],
+    "end": [
+     154,
+     2
+    ],
+    "filename": "src/lib.rs"
+   },
+   "stability": null,
+   "visibility": "default"
+  },
+  "185": {
+   "attrs": [],
+   "const_stability": null,
+   "crate_id": 0,
+   "deprecation": null,
+   "docs": "Hold a word.",
+   "id": 185,
+   "inner": {
+    "function": {
+     "default_unstable": null,
+     "generics": {
+      "params": [],
+      "where_predicates": []
+     },
+     "has_body": true,
+     "header": {
+      "abi": "Rust",
+      "is_async": false,
+      "is_const": false,
+      "is_unsafe": false
+     },
+     "sig": {
+      "inputs": [
+       [
+        "v",
+        {
+         "primitive": "u16"
+        }
+       ]
+      ],
+      "is_c_variadic": false,
+      "output": {
+       "generic": "Self"
+      }
+     }
+    }
+   },
+   "links": {},
+   "name": "new",
+   "span": {
+    "begin": [
+     158,
+     5
+    ],
+    "end": [
+     160,
+     6
+    ],
+    "filename": "src/lib.rs"
+   },
+   "stability": null,
+   "visibility": "public"
+  },
+  "186": {
+   "attrs": [],
+   "const_stability": null,
+   "crate_id": 0,
+   "deprecation": null,
+   "docs": null,
+   "id": 186,
+   "inner": {
+    "impl": {
+     "blanket_impl": null,
+     "for": {
+      "resolved_path": {
+       "args": {
+        "angle_bracketed": {
+         "args": [
+          {
+           "type": {
+            "primitive": "u16"
+           }
+          }
+         ],
+         "constraints": []
+        }
+       },
+       "id": 182,
+       "path": "Holder"
+      }
+     },
+     "generics": {
+      "params": [],
+      "where_predicates": []
+     },
+     "is_negative": false,
+     "is_synthetic": false,
+     "is_unsafe": false,
+     "items": [
+      185
+     ],
+     "provided_trait_methods": [],
+     "trait": null
+    }
+   },
+   "links": {},
+   "name": null,
+   "span": {
+    "begin": [
+     156,
+     1
+    ],
+    "end": [
+     161,
+     2
+    ],
+    "filename": "src/lib.rs"
+   },
+   "stability": null,
+   "visibility": "default"
+  },
+  "187": {
+   "attrs": [],
+   "const_stability": null,
+   "crate_id": 0,
+   "deprecation": null,
+   "docs": null,
+   "id": 187,
+   "inner": {
+    "impl": {
+     "blanket_impl": null,
+     "for": {
+      "resolved_path": {
+       "args": {
+        "angle_bracketed": {
+         "args": [
+          {
+           "type": {
+            "generic": "T"
+           }
+          }
+         ],
+         "constraints": []
+        }
+       },
+       "id": 182,
+       "path": "Holder"
+      }
+     },
+     "generics": {
+      "params": [
+       {
+        "kind": {
+         "type": {
+          "bounds": [],
+          "default": null,
+          "is_synthetic": false
+         }
+        },
+        "name": "T"
+       }
+      ],
+      "where_predicates": [
+       {
+        "bound_predicate": {
+         "bounds": [
+          {
+           "trait_bound": {
+            "generic_params": [],
+            "modifier": "none",
+            "trait": {
+             "args": null,
+             "id": 3,
+             "path": "Send"
+            }
+           }
+          }
+         ],
+         "generic_params": [],
+         "type": {
+          "generic": "T"
+         }
+        }
+       }
+      ]
+     },
+     "is_negative": false,
+     "is_synthetic": true,
+     "is_unsafe": false,
+     "items": [],
+     "provided_trait_methods": [],
+     "trait": {
+      "args": null,
+      "id": 3,
+      "path": "Send"
+     }
+    }
+   },
+   "links": {},
+   "name": null,
+   "span": null,
+   "stability": null,
+   "visibility": "default"
+  },
+  "196": {
+   "attrs": [],
+   "const_stability": null,
+   "crate_id": 0,
+   "deprecation": null,
+   "docs": null,
+   "id": 196,
+   "inner": {
+    "impl": {
+     "blanket_impl": {
+      "generic": "T"
+     },
+     "for": {
+      "resolved_path": {
+       "args": {
+        "angle_bracketed": {
+         "args": [
+          {
+           "type": {
+            "generic": "T"
+           }
+          }
+         ],
+         "constraints": []
+        }
+       },
+       "id": 182,
+       "path": "Holder"
+      }
+     },
+     "generics": {
+      "params": [
+       {
+        "kind": {
+         "type": {
+          "bounds": [],
+          "default": null,
+          "is_synthetic": false
+         }
+        },
+        "name": "T"
+       }
+      ],
+      "where_predicates": [
+       {
+        "bound_predicate": {
+         "bounds": [
+          {
+           "trait_bound": {
+            "generic_params": [],
+            "modifier": "maybe",
+            "trait": {
+             "args": null,
+             "id": 22,
+             "path": "Sized"
+            }
+           }
+          }
+         ],
+         "generic_params": [],
+         "type": {
+          "generic": "T"
+         }
+        }
+       }
+      ]
+     },
+     "is_negative": false,
+     "is_synthetic": false,
+     "is_unsafe": false,
+     "items": [
+      20
+     ],
+     "provided_trait_methods": [],
+     "trait": {
+      "args": {
+       "angle_bracketed": {
+        "args": [
+         {
+          "type": {
+           "generic": "T"
+          }
+         }
+        ],
+        "constraints": []
+       }
+      },
+      "id": 23,
+      "path": "Borrow"
+     }
+    }
+   },
+   "links": {},
+   "name": null,
+   "span": {
+    "begin": [
+     212,
+     1
+    ],
+    "end": [
+     212,
+     38
+    ],
+    "filename": "/rustc/3ef0c22cdb86ac42dc6b8f0f1ec36857daa6f2a1/library/core/src/borrow.rs"
+   },
+   "stability": null,
+   "visibility": "default"
+  },
+  "2": {
+   "attrs": [],
+   "const_stability": null,
+   "crate_id": 0,
+   "deprecation": null,
+   "docs": null,
+   "id": 2,
+   "inner": {
+    "impl": {
+     "blanket_impl": null,
+     "for": {
+      "resolved_path": {
+       "args": null,
+       "id": 1,
+       "path": "Circle"
+      }
+     },
+     "generics": {
+      "params": [],
+      "where_predicates": []
+     },
+     "is_negative": false,
+     "is_synthetic": true,
+     "is_unsafe": false,
+     "items": [],
+     "provided_trait_methods": [],
+     "trait": {
+      "args": null,
+      "id": 3,
+      "path": "Send"
+     }
+    }
+   },
+   "links": {},
+   "name": null,
+   "span": null,
+   "stability": null,
+   "visibility": "default"
+  },
+  "203": {
+   "attrs": [],
+   "const_stability": null,
+   "crate_id": 0,
+   "deprecation": null,
+   "docs": "Apply a function, see [fn@add] and [struct@Point].",
+   "id": 203,
+   "inner": {
+    "function": {
+     "default_unstable": null,
+     "generics": {
+      "params": [
+       {
+        "kind": {
+         "type": {
+          "bounds": [],
+          "default": null,
+          "is_synthetic": false
+         }
+        },
+        "name": "F"
+       }
+      ],
+      "where_predicates": [
+       {
+        "bound_predicate": {
+         "bounds": [
+          {
+           "trait_bound": {
+            "generic_params": [],
+            "modifier": "none",
+            "trait": {
+             "args": null,
+             "id": 135,
+             "path": "Copy"
+            }
+           }
+          },
+          {
+           "trait_bound": {
+            "generic_params": [],
+            "modifier": "none",
+            "trait": {
+             "args": {
+              "parenthesized": {
+               "inputs": [
+                {
+                 "primitive": "u8"
+                }
+               ],
+               "output": {
+                "primitive": "u8"
+               }
+              }
+             },
+             "id": 204,
+             "path": "Fn"
+            }
+           }
+          }
+         ],
+         "generic_params": [],
+         "type": {
+          "generic": "F"
+         }
+        }
+       }
+      ]
+     },
+     "has_body": true,
+     "header": {
+      "abi": "Rust",
+      "is_async": false,
+      "is_const": false,
+      "is_unsafe": false
+     },
+     "sig": {
+      "inputs": [
+       [
+        "f",
+        {
+         "generic": "F"
+        }
+       ],
+       [
+        "x",
+        {
+         "primitive": "u8"
+        }
+       ]
+      ],
+      "is_c_variadic": false,
+      "output": {
+       "primitive": "u8"
+      }
+     }
+    }
+   },
+   "links": {
+    "fn@add": 89,
+    "struct@Point": 87
+   },
+   "name": "apply",
+   "span": {
+    "begin": [
+     164,
+     1
+    ],
+    "end": [
+     171,
+     2
+    ],
+    "filename": "src/lib.rs"
+   },
+   "stability": null,
+   "visibility": "public"
+  },
+  "205": {
+   "attrs": [],
+   "const_stability": null,
+   "crate_id": 0,
+   "deprecation": null,
+   "docs": "Add a pair.",
+   "id": 205,
+   "inner": {
+    "function": {
+     "default_unstable": null,
+     "generics": {
+      "params": [],
+      "where_predicates": []
+     },
+     "has_body": true,
+     "header": {
+      "abi": "Rust",
+      "is_async": false,
+      "is_const": false,
+      "is_unsafe": false
+     },
+     "sig": {
+      "inputs": [
+       [
+        "(b, c)",
+        {
+         "tuple": [
+          {
+           "primitive": "u8"
+          },
+          {
+           "primitive": "u8"
+          }
+         ]
+        }
+       ]
+      ],
+      "is_c_variadic": false,
+      "output": {
+       "primitive": "u8"
+      }
+     }
+    }
+   },
+   "links": {},
+   "name": "pair",
+   "span": {
+    "begin": [
+     174,
+     1
+    ],
+    "end": [
+     177,
+     2
+    ],
+    "filename": "src/lib.rs"
+   },
+   "stability": null,
+   "visibility": "public"
+  },
+  "206": {
+   "attrs": [],
+   "const_stability": null,
+   "crate_id": 0,
+   "deprecation": null,
+   "docs": "Quote a character.",
+   "id": 206,
+   "inner": {
+    "function": {
+     "default_unstable": null,
+     "generics": {
+      "params": [],
+      "where_predicates": []
+     },
+     "has_body": true,
+     "header": {
+      "abi": "Rust",
+      "is_async": false,
+      "is_const": false,
+      "is_unsafe": false
+     },
+     "sig": {
+      "inputs": [
+       [
+        "c",
+        {
+         "primitive": "char"
+        }
+       ]
+      ],
+      "is_c_variadic": false,
+      "output": {
+       "resolved_path": {
+        "args": null,
+        "id": 55,
+        "path": "String"
+       }
+      }
+     }
+    }
+   },
+   "links": {},
+   "name": "quote",
+   "span": {
+    "begin": [
+     180,
+     1
+    ],
+    "end": [
+     183,
+     2
+    ],
+    "filename": "src/lib.rs"
+   },
+   "stability": null,
+   "visibility": "public"
+  },
+  "207": {
+   "attrs": [],
+   "const_stability": null,
+   "crate_id": 0,
+   "deprecation": null,
+   "docs": "A function with a keyword for its name.",
+   "id": 207,
+   "inner": {
+    "function": {
+     "default_unstable": null,
+     "generics": {
+      "params": [],
+      "where_predicates": []
+     },
+     "has_body": true,
+     "header": {
+      "abi": "Rust",
+      "is_async": false,
+      "is_const": false,
+      "is_unsafe": false
+     },
+     "sig": {
+      "inputs": [],
+      "is_c_variadic": false,
+      "output": null
+     }
+    }
+   },
+   "links": {},
+   "name": "type",
+   "span": {
+    "begin": [
+     186,
+     1
+    ],
+    "end": [
+     186,
+     19
+    ],
+    "filename": "src/lib.rs"
+   },
+   "stability": null,
+   "visibility": "public"
+  },
+  "208": {
+   "attrs": [],
+   "const_stability": null,
+   "crate_id": 0,
+   "deprecation": null,
+   "docs": null,
+   "id": 208,
+   "inner": {
+    "struct_field": {
+     "primitive": "u32"
+    }
+   },
+   "links": {},
+   "name": "w",
+   "span": {
+    "begin": [
+     189,
+     19
+    ],
+    "end": [
+     189,
+     29
+    ],
+    "filename": "src/lib.rs"
+   },
+   "stability": null,
+   "visibility": "public"
+  },
+  "209": {
+   "attrs": [],
+   "const_stability": null,
+   "crate_id": 0,
+   "deprecation": null,
+   "docs": null,
+   "id": 209,
+   "inner": {
+    "struct_field": {
+     "primitive": "u32"
+    }
+   },
+   "links": {},
+   "name": "h",
+   "span": {
+    "begin": [
+     189,
+     31
+    ],
+    "end": [
+     189,
+     41
+    ],
+    "filename": "src/lib.rs"
+   },
+   "stability": null,
+   "visibility": "public"
+  },
+  "21": {
+   "attrs": [],
+   "const_stability": null,
+   "crate_id": 0,
+   "deprecation": null,
+   "docs": null,
+   "id": 21,
+   "inner": {
+    "impl": {
+     "blanket_impl": {
+      "generic": "T"
+     },
+     "for": {
+      "resolved_path": {
+       "args": null,
+       "id": 1,
+       "path": "Circle"
+      }
+     },
+     "generics": {
+      "params": [
+       {
+        "kind": {
+         "type": {
+          "bounds": [],
+          "default": null,
+          "is_synthetic": false
+         }
+        },
+        "name": "T"
+       }
+      ],
+      "where_predicates": [
+       {
+        "bound_predicate": {
+         "bounds": [
+          {
+           "trait_bound": {
+            "generic_params": [],
+            "modifier": "maybe",
+            "trait": {
+             "args": null,
+             "id": 22,
+             "path": "Sized"
+            }
+           }
+          }
+         ],
+         "generic_params": [],
+         "type": {
+          "generic": "T"
+         }
+        }
+       }
+      ]
+     },
+     "is_negative": false,
+     "is_synthetic": false,
+     "is_unsafe": false,
+     "items": [
+      20
+     ],
+     "provided_trait_methods": [],
+     "trait": {
+      "args": {
+       "angle_bracketed": {
+        "args": [
+         {
+          "type": {
+           "generic": "T"
+          }
+         }
+        ],
+        "constraints": []
+       }
+      },
+      "id": 23,
+      "path": "Borrow"
+     }
+    }
+   },
+   "links": {},
+   "name": null,
+   "span": {
+    "begin": [
+     212,
+     1
+    ],
+    "end": [
+     212,
+     38
+    ],
+    "filename": "/rustc/3ef0c22cdb86ac42dc6b8f0f1ec36857daa6f2a1/library/core/src/borrow.rs"
+   },
+   "stability": null,
+   "visibility": "default"
+  },
+  "210": {
+   "attrs": [],
+   "const_stability": null,
+   "crate_id": 0,
+   "deprecation": null,
+   "docs": "A size.",
+   "id": 210,
+   "inner": {
+    "struct": {
+     "generics": {
+      "params": [],
+      "where_predicates": []
+     },
+     "impls": [
+      211,
+      220
+     ],
+     "kind": {
+      "plain": {
+       "fields": [
+        208,
+        209
+       ],
+       "has_stripped_fields": false
+      }
+     }
+    }
+   },
+   "links": {},
+   "name": "Size",
+   "span": {
+    "begin": [
+     189,
+     1
+    ],
+    "end": [
+     189,
+     43
+    ],
+    "filename": "src/lib.rs"
+   },
+   "stability": null,
+   "visibility": "public"
+  },
+  "211": {
+   "attrs": [],
+   "const_stability": null,
+   "crate_id": 0,
+   "deprecation": null,
+   "docs": null,
+   "id": 211,
+   "inner": {
+    "impl": {
+     "blanket_impl": null,
+     "for": {
+      "resolved_path": {
+       "args": null,
+       "id": 210,
+       "path": "Size"
+      }
+     },
+     "generics": {
+      "params": [],
+      "where_predicates": []
+     },
+     "is_negative": false,
+     "is_synthetic": true,
+     "is_unsafe": false,
+     "items": [],
+     "provided_trait_methods": [],
+     "trait": {
+      "args": null,
+      "id": 3,
+      "path": "Send"
+     }
+    }
+   },
+   "links": {},
+   "name": null,
+   "span": null,
+   "stability": null,
+   "visibility": "default"
+  },
+  "220": {
+   "attrs": [],
+   "const_stability": null,
+   "crate_id": 0,
+   "deprecation": null,
+   "docs": null,
+   "id": 220,
+   "inner": {
+    "impl": {
+     "blanket_impl": {
+      "generic": "T"
+     },
+     "for": {
+      "resolved_path": {
+       "args": null,
+       "id": 210,
+       "path": "Size"
+      }
+     },
+     "generics": {
+      "params": [
+       {
+        "kind": {
+         "type": {
+          "bounds": [],
+          "default": null,
+          "is_synthetic": false
+         }
+        },
+        "name": "T"
+       }
+      ],
+      "where_predicates": [
+       {
+        "bound_predicate": {
+         "bounds": [
+          {
+           "trait_bound": {
+            "generic_params": [],
+            "modifier": "maybe",
+            "trait": {
+             "args": null,
+             "id": 22,
+             "path": "Sized"
+            }
+           }
+          }
+         ],
+         "generic_params": [],
+         "type": {
+          "generic": "T"
+         }
+        }
+       }
+      ]
+     },
+     "is_negative": false,
+     "is_synthetic": false,
+     "is_unsafe": false,
+     "items": [
+      20
+     ],
+     "provided_trait_methods": [],
+     "trait": {
+      "args": {
+       "angle_bracketed": {
+        "args": [
+         {
+          "type": {
+           "generic": "T"
+          }
+         }
+        ],
+        "constraints": []
+       }
+      },
+      "id": 23,
+      "path": "Borrow"
+     }
+    }
+   },
+   "links": {},
+   "name": null,
+   "span": {
+    "begin": [
+     212,
+     1
+    ],
+    "end": [
+     212,
+     38
+    ],
+    "filename": "/rustc/3ef0c22cdb86ac42dc6b8f0f1ec36857daa6f2a1/library/core/src/borrow.rs"
+   },
+   "stability": null,
+   "visibility": "default"
+  },
+  "227": {
+   "attrs": [],
+   "const_stability": null,
+   "crate_id": 0,
+   "deprecation": null,
+   "docs": "Show fences.\n\n````text\n```\nnot closed\n````\n\n# Panics\n\nNever.",
+   "id": 227,
+   "inner": {
+    "function": {
+     "default_unstable": null,
+     "generics": {
+      "params": [],
+      "where_predicates": []
+     },
+     "has_body": true,
+     "header": {
+      "abi": "Rust",
+      "is_async": false,
+      "is_const": false,
+      "is_unsafe": false
+     },
+     "sig": {
+      "inputs": [],
+      "is_c_variadic": false,
+      "output": null
+     }
+    }
+   },
+   "links": {},
+   "name": "fences",
+   "span": {
+    "begin": [
+     201,
+     1
+    ],
+    "end": [
+     201,
+     19
+    ],
+    "filename": "src/lib.rs"
+   },
+   "stability": null,
+   "visibility": "public"
+  },
+  "228": {
+   "attrs": [],
+   "const_stability": null,
+   "crate_id": 0,
+   "deprecation": null,
+   "docs": "Make a point from its parts.",
+   "id": 228,
+   "inner": {
+    "function": {
+     "default_unstable": null,
+     "generics": {
+      "params": [],
+      "where_predicates": []
+     },
+     "has_body": true,
+     "header": {
+      "abi": "Rust",
+      "is_async": false,
+      "is_const": false,
+      "is_unsafe": false
+     },
+     "sig": {
+      "inputs": [
+       [
+        "x",
+        {
+         "primitive": "f64"
+        }
+       ],
+       [
+        "y",
+        {
+         "primitive": "f64"
+        }
+       ]
+      ],
+      "is_c_variadic": false,
+      "output": {
+       "resolved_path": {
+        "args": null,
+        "id": 87,
+        "path": "Point"
+       }
+      }
+     }
+    }
+   },
+   "links": {},
+   "name": "point",
+   "span": {
+    "begin": [
+     204,
+     1
+    ],
+    "end": [
+     208,
+     2
+    ],
+    "filename": "src/lib.rs"
+   },
+   "stability": null,
+   "visibility": "public"
+  },
+  "229": {
+   "attrs": [],
+   "const_stability": null,
+   "crate_id": 0,
+   "deprecation": null,
+   "docs": null,
+   "id": 229,
+   "inner": {
+    "struct_field": {
+     "borrowed_ref": {
+      "is_mutable": false,
+      "lifetime": "'a",
+      "type": {
+       "generic": "T"
+      }
+     }
+    }
+   },
+   "links": {},
+   "name": "inner",
+   "span": {
+    "begin": [
+     220,
+     5
+    ],
+    "end": [
+     220,
+     21
+    ],
+    "filename": "src/lib.rs"
+   },
+   "stability": null,
+   "visibility": "public"
+  },
+  "230": {
+   "attrs": [],
+   "const_stability": null,
+   "crate_id": 0,
+   "deprecation": null,
+   "docs": "A borrowed value.\n\n# Examples\n\n```\n# use tinycrate::Wrapper;\nlet w = Wrapper { inner: &3 };\nassert_eq!(*w.get(), 3);\n```",
+   "id": 230,
+   "inner": {
+    "struct": {
+     "generics": {
+      "params": [
+       {
+        "kind": {
+         "lifetime": {
+          "outlives": []
+         }
+        },
+        "name": "'a"
+       },
+       {
+        "kind": {
+         "type": {
+          "bounds": [],
+          "default": null,
+          "is_synthetic": false
+         }
+        },
+        "name": "T"
+       }
+      ],
+      "where_predicates": []
+     },
+     "impls": [
+      232,
+      233,
+      242
+     ],
+     "kind": {
+      "plain": {
+       "fields": [
+        229
+       ],
+       "has_stripped_fields": false
+      }
+     }
+    }
+   },
+   "links": {},
+   "name": "Wrapper",
+   "span": {
+    "begin": [
+     219,
+     1
+    ],
+    "end": [
+     221,
+     2
+    ],
+    "filename": "src/lib.rs"
+   },
+   "stability": null,
+   "visibility": "public"
+  },
+  "231": {
+   "attrs": [],
+   "const_stability": null,
+   "crate_id": 0,
+   "deprecation": null,
+   "docs": "The value inside.",
+   "id": 231,
+   "inner": {
+    "function": {
+     "default_unstable": null,
+     "generics": {
+      "params": [],
+      "where_predicates": []
+     },
+     "has_body": true,
+     "header": {
+      "abi": "Rust",
+      "is_async": false,
+      "is_const": false,
+      "is_unsafe": false
+     },
+     "sig": {
+      "inputs": [
+       [
+        "self",
+        {
+         "borrowed_ref": {
+          "is_mutable": false,
+          "lifetime": null,
+          "type": {
+           "generic": "Self"
+          }
+         }
+        }
+       ]
+      ],
+      "is_c_variadic": false,
+      "output": {
+       "borrowed_ref": {
+        "is_mutable": false,
+        "lifetime": "'a",
+        "type": {
+         "generic": "T"
+        }
+       }
+      }
+     }
+    }
+   },
+   "links": {},
+   "name": "get",
+   "span": {
+    "begin": [
+     225,
+     5
+    ],
+    "end": [
+     227,
+     6
+    ],
+    "filename": "src/lib.rs"
+   },
+   "stability": null,
+   "visibility": "public"
+  },
+  "232": {
+   "attrs": [],
+   "const_stability": null,
+   "crate_id": 0,
+   "deprecation": null,
+   "docs": null,
+   "id": 232,
+   "inner": {
+    "impl": {
+     "blanket_impl": null,
+     "for": {
+      "resolved_path": {
+       "args": {
+        "angle_bracketed": {
+         "args": [
+          {
+           "lifetime": "'a"
+          },
+          {
+           "type": {
+            "generic": "T"
+           }
+          }
+         ],
+         "constraints": []
+        }
+       },
+       "id": 230,
+       "path": "Wrapper"
+      }
+     },
+     "generics": {
+      "params": [
+       {
+        "kind": {
+         "lifetime": {
+          "outlives": []
+         }
+        },
+        "name": "'a"
+       },
+       {
+        "kind": {
+         "type": {
+          "bounds": [
+           {
+            "trait_bound": {
+             "generic_params": [],
+             "modifier": "none",
+             "trait": {
+              "args": null,
+              "id": 112,
+              "path": "Clone"
+             }
+            }
+           }
+          ],
+          "default": null,
+          "is_synthetic": false
+         }
+        },
+        "name": "T"
+       }
+      ],
+      "where_predicates": []
+     },
+     "is_negative": false,
+     "is_synthetic": false,
+     "is_unsafe": false,
+     "items": [
+      231
+     ],
+     "provided_trait_methods": [],
+     "trait": null
+    }
+   },
+   "links": {},
+   "name": null,
+   "span": {
+    "begin": [
+     223,
+     1
+    ],
+    "end": [
+     228,
+     2
+    ],
+    "filename": "src/lib.rs"
+   },
+   "stability": null,
+   "visibility": "default"
+  },
+  "233": {
+   "attrs": [],
+   "const_stability": null,
+   "crate_id": 0,
+   "deprecation": null,
+   "docs": null,
+   "id": 233,
+   "inner": {
+    "impl": {
+     "blanket_impl": null,
+     "for": {
+      "resolved_path": {
+       "args": {
+        "angle_bracketed": {
+         "args": [
+          {
+           "lifetime": "'a"
+          },
+          {
+           "type": {
+            "generic": "T"
+           }
+          }
+         ],
+         "constraints": []
+        }
+       },
+       "id": 230,
+       "path": "Wrapper"
+      }
+     },
+     "generics": {
+      "params": [
+       {
+        "kind": {
+         "lifetime": {
+          "outlives": []
+         }
+        },
+        "name": "'a"
+       },
+       {
+        "kind": {
+         "type": {
+          "bounds": [],
+          "default": null,
+          "is_synthetic": false
+         }
+        },
+        "name": "T"
+       }
+      ],
+      "where_predicates": [
+       {
+        "bound_predicate": {
+         "bounds": [
+          {
+           "trait_bound": {
+            "generic_params": [],
+            "modifier": "none",
+            "trait": {
+             "args": null,
+             "id": 3,
+             "path": "Send"
+            }
+           }
+          }
+         ],
+         "generic_params": [],
+         "type": {
+          "borrowed_ref": {
+           "is_mutable": false,
+           "lifetime": "'a",
+           "type": {
+            "generic": "T"
+           }
+          }
+         }
+        }
+       }
+      ]
+     },
+     "is_negative": false,
+     "is_synthetic": true,
+     "is_unsafe": false,
+     "items": [],
+     "provided_trait_methods": [],
+     "trait": {
+      "args": null,
+      "id": 3,
+      "path": "Send"
+     }
+    }
+   },
+   "links": {},
+   "name": null,
+   "span": null,
+   "stability": null,
+   "visibility": "default"
+  },
+  "242": {
+   "attrs": [],
+   "const_stability": null,
+   "crate_id": 0,
+   "deprecation": null,
+   "docs": null,
+   "id": 242,
+   "inner": {
+    "impl": {
+     "blanket_impl": {
+      "generic": "T"
+     },
+     "for": {
+      "resolved_path": {
+       "args": {
+        "angle_bracketed": {
+         "args": [
+          {
+           "lifetime": "'a"
+          },
+          {
+           "type": {
+            "generic": "T"
+           }
+          }
+         ],
+         "constraints": []
+        }
+       },
+       "id": 230,
+       "path": "Wrapper"
+      }
+     },
+     "generics": {
+      "params": [
+       {
+        "kind": {
+         "type": {
+          "bounds": [],
+          "default": null,
+          "is_synthetic": false
+         }
+        },
+        "name": "T"
+       }
+      ],
+      "where_predicates": [
+       {
+        "bound_predicate": {
+         "bounds": [
+          {
+           "trait_bound": {
+            "generic_params": [],
+            "modifier": "maybe",
+            "trait": {
+             "args": null,
+             "id": 22,
+             "path": "Sized"
+            }
+           }
+          }
+         ],
+         "generic_params": [],
+         "type": {
+          "generic": "T"
+         }
+        }
+       }
+      ]
+     },
+     "is_negative": false,
+     "is_synthetic": false,
+     "is_unsafe": false,
+     "items": [
+      20
+     ],
+     "provided_trait_methods": [],
+     "trait": {
+      "args": {
+       "angle_bracketed": {
+        "args": [
+         {
+          "type": {
+           "generic": "T"
+          }
+         }
+        ],
+        "constraints": []
+       }
+      },
+      "id": 23,
+      "path": "Borrow"
+     }
+    }
+   },
+   "links": {},
+   "name": null,
+   "span": {
+    "begin": [
+     212,
+     1
+    ],
+    "end": [
+     212,
+     38
+    ],
+    "filename": "/rustc/3ef0c22cdb86ac42dc6b8f0f1ec36857daa6f2a1/library/core/src/borrow.rs"
+   },
+   "stability": null,
+   "visibility": "default"
+  },
+  "249": {
+   "attrs": [
+    "macro_export"
+   ],
+   "const_stability": null,
+   "crate_id": 0,
+   "deprecation": null,
+   "docs": "Make a point from two numbers.",
+   "id": 249,
+   "inner": {
+    "macro": "macro_rules! point {\n    ($x:expr, $y:expr) => { ... };\n}"
+   },
+   "links": {},
+   "name": "point",
+   "span": {
+    "begin": [
+     232,
+     1
+    ],
+    "end": [
+     236,
+     2
+    ],
+    "filename": "src/lib.rs"
+   },
+   "stability": null,
+   "visibility": "public"
+  },
+  "250": {
+   "attrs": [],
+   "const_stability": null,
+   "crate_id": 0,
+   "deprecation": null,
+   "docs": null,
+   "id": 250,
+   "inner": {
+    "use": {
+     "id": 53,
+     "is_glob": true,
+     "name": "helpers",
+     "source": "inner::helpers"
+    }
+   },
+   "links": {},
+   "name": null,
+   "span": {
+    "begin": [
+     10,
+     1
+    ],
+    "end": [
+     10,
+     27
+    ],
+    "filename": "src/lib.rs"
+   },
+   "stability": null,
+   "visibility": "public"
+  },
+  "251": {
+   "attrs": [],
+   "const_stability": null,
+   "crate_id": 0,
+   "deprecation": null,
+   "docs": null,
+   "id": 251,
+   "inner": {
+    "use": {
+     "id": 80,
+     "is_glob": true,
+     "name": "cyc_a",
+     "source": "cyc_a"
+    }
+   },
+   "links": {},
+   "name": null,
+   "span": {
+    "begin": [
+     144,
+     1
+    ],
+    "end": [
+     144,
+     18
+    ],
+    "filename": "src/lib.rs"
+   },
+   "stability": null,
+   "visibility": "public"
+  },
+  "252": {
+   "attrs": [],
+   "const_stability": null,
+   "crate_id": 0,
+   "deprecation": null,
+   "docs": "A tiny crate for the tests of smalldocs.\n\nIt has a function, a struct, an enum, a trait and a module.",
+   "id": 252,
+   "inner": {
+    "module": {
+     "is_crate": true,
+     "is_stripped": false,
+     "items": [
+      50,
+      83,
+      84,
+      85,
+      89,
+      90,
+      91,
+      92,
+      87,
+      156,
+      48,
+      175,
+      176,
+      177,
+      179,
+      180,
+      182,
+      203,
+      205,
+      206,
+      207,
+      210,
+      227,
+      228,
+      230,
+      249,
+      250,
+      251
+     ]
+    }
+   },
+   "links": {},
+   "name": "tinycrate",
+   "span": {
+    "begin": [
+     1,
+     1
+    ],
+    "end": [
+     236,
+     2
+    ],
+    "filename": "src/lib.rs"
+   },
+   "stability": null,
+   "visibility": "public"
+  },
+  "46": {
+   "attrs": [],
+   "const_stability": null,
+   "crate_id": 0,
+   "deprecation": null,
+   "docs": null,
+   "id": 46,
+   "inner": {
+    "function": {
+     "default_unstable": null,
+     "generics": {
+      "params": [],
+      "where_predicates": []
+     },
+     "has_body": true,
+     "header": {
+      "abi": "Rust",
+      "is_async": false,
+      "is_const": false,
+      "is_unsafe": false
+     },
+     "sig": {
+      "inputs": [
+       [
+        "self",
+        {
+         "borrowed_ref": {
+          "is_mutable": false,
+          "lifetime": null,
+          "type": {
+           "generic": "Self"
+          }
+         }
+        }
+       ]
+      ],
+      "is_c_variadic": false,
+      "output": {
+       "primitive": "f64"
+      }
+     }
+    }
+   },
+   "links": {},
+   "name": "area",
+   "span": {
+    "begin": [
+     12,
+     5
+    ],
+    "end": [
+     14,
+     6
+    ],
+    "filename": "src/shapes.rs"
+   },
+   "stability": null,
+   "visibility": "default"
+  },
+  "47": {
+   "attrs": [],
+   "const_stability": null,
+   "crate_id": 0,
+   "deprecation": null,
+   "docs": null,
+   "id": 47,
+   "inner": {
+    "impl": {
+     "blanket_impl": null,
+     "for": {
+      "resolved_path": {
+       "args": null,
+       "id": 1,
+       "path": "Circle"
+      }
+     },
+     "generics": {
+      "params": [],
+      "where_predicates": []
+     },
+     "is_negative": false,
+     "is_synthetic": false,
+     "is_unsafe": false,
+     "items": [
+      46
+     ],
+     "provided_trait_methods": [
+      "name"
+     ],
+     "trait": {
+      "args": null,
+      "id": 48,
+      "path": "Shape"
+     }
+    }
+   },
+   "links": {},
+   "name": null,
+   "span": {
+    "begin": [
+     11,
+     1
+    ],
+    "end": [
+     15,
+     2
+    ],
+    "filename": "src/shapes.rs"
+   },
+   "stability": null,
+   "visibility": "default"
+  },
+  "48": {
+   "attrs": [],
+   "const_stability": null,
+   "crate_id": 0,
+   "deprecation": null,
+   "docs": "Something with an area.",
+   "id": 48,
+   "inner": {
+    "trait": {
+     "bounds": [],
+     "generics": {
+      "params": [],
+      "where_predicates": []
+     },
+     "implementations": [
+      47
+     ],
+     "is_auto": false,
+     "is_dyn_compatible": true,
+     "is_unsafe": false,
+     "items": [
+      173,
+      174
+     ]
+    }
+   },
+   "links": {},
+   "name": "Shape",
+   "span": {
+    "begin": [
+     89,
+     1
+    ],
+    "end": [
+     97,
+     2
+    ],
+    "filename": "src/lib.rs"
+   },
+   "stability": null,
+   "visibility": "public"
+  },
+  "49": {
+   "attrs": [],
+   "const_stability": null,
+   "crate_id": 0,
+   "deprecation": null,
+   "docs": "Make a unit circle.",
+   "id": 49,
+   "inner": {
+    "function": {
+     "default_unstable": null,
+     "generics": {
+      "params": [],
+      "where_predicates": []
+     },
+     "has_body": true,
+     "header": {
+      "abi": "Rust",
+      "is_async": false,
+      "is_const": false,
+      "is_unsafe": false
+     },
+     "sig": {
+      "inputs": [],
+      "is_c_variadic": false,
+      "output": {
+       "resolved_path": {
+        "args": null,
+        "id": 1,
+        "path": "Circle"
+       }
+      }
+     }
+    }
+   },
+   "links": {},
+   "name": "unit",
+   "span": {
+    "begin": [
+     18,
+     1
+    ],
+    "end": [
+     20,
+     2
+    ],
+    "filename": "src/shapes.rs"
+   },
+   "stability": null,
+   "visibility": "public"
+  },
+  "50": {
+   "attrs": [],
+   "const_stability": null,
+   "crate_id": 0,
+   "deprecation": null,
+   "docs": "Shapes, read from `&[u8]`.",
+   "id": 50,
+   "inner": {
+    "module": {
+     "is_crate": false,
+     "is_stripped": false,
+     "items": [
+      1,
+      49
+     ]
+    }
+   },
+   "links": {},
+   "name": "shapes",
+   "span": {
+    "begin": [
+     1,
+     1
+    ],
+    "end": [
+     20,
+     2
+    ],
+    "filename": "src/shapes.rs"
+   },
+   "stability": null,
+   "visibility": "public"
+  },
+  "51": {
+   "attrs": [],
+   "const_stability": null,
+   "crate_id": 0,
+   "deprecation": null,
+   "docs": "Count the tokens.",
+   "id": 51,
+   "inner": {
+    "function": {
+     "default_unstable": null,
+     "generics": {
+      "params": [],
+      "where_predicates": []
+     },
+     "has_body": true,
+     "header": {
+      "abi": "Rust",
+      "is_async": false,
+      "is_const": false,
+      "is_unsafe": false
+     },
+     "sig": {
+      "inputs": [
+       [
+        "tokens",
+        {
+         "borrowed_ref": {
+          "is_mutable": false,
+          "lifetime": null,
+          "type": {
+           "slice": {
+            "resolved_path": {
+             "args": null,
+             "id": 52,
+             "path": "super::Token"
+            }
+           }
+          }
+         }
+        }
+       ]
+      ],
+      "is_c_variadic": false,
+      "output": {
+       "primitive": "usize"
+      }
+     }
+    }
+   },
+   "links": {},
+   "name": "count",
+   "span": {
+    "begin": [
+     10,
+     5
+    ],
+    "end": [
+     13,
+     6
+    ],
+    "filename": "src/inner.rs"
+   },
+   "stability": null,
+   "visibility": "public"
+  },
+  "52": {
+   "attrs": [],
+   "const_stability": null,
+   "crate_id": 0,
+   "deprecation": null,
+   "docs": "A token of text.",
+   "id": 52,
+   "inner": {
+    "struct": {
+     "generics": {
+      "params": [],
+      "where_predicates": []
+     },
+     "impls": [
+      56,
+      65
+     ],
+     "kind": {
+      "tuple": [
+       54
+      ]
+     }
+    }
+   },
+   "links": {},
+   "name": "Token",
+   "span": {
+    "begin": [
+     4,
+     1
+    ],
+    "end": [
+     4,
+     30
+    ],
+    "filename": "src/inner.rs"
+   },
+   "stability": null,
+   "visibility": "public"
+  },
+  "53": {
+   "attrs": [],
+   "const_stability": null,
+   "crate_id": 0,
+   "deprecation": null,
+   "docs": null,
+   "id": 53,
+   "inner": {
+    "module": {
+     "is_crate": false,
+     "is_stripped": true,
+     "items": [
+      51
+     ]
+    }
+   },
+   "links": {},
+   "name": "helpers",
+   "span": {
+    "begin": [
+     6,
+     1
+    ],
+    "end": [
+     6,
+     16
+    ],
+    "filename": "src/inner.rs"
+   },
+   "stability": null,
+   "visibility": "public"
+  },
+  "54": {
+   "attrs": [],
+   "const_stability": null,
+   "crate_id": 0,
+   "deprecation": null,
+   "docs": null,
+   "id": 54,
+   "inner": {
+    "struct_field": {
+     "resolved_path": {
+      "args": null,
+      "id": 55,
+      "path": "String"
+     }
+    }
+   },
+   "links": {},
+   "name": "0",
+   "span": {
+    "begin": [
+     4,
+     18
+    ],
+    "end": [
+     4,
+     28
+    ],
+    "filename": "src/inner.rs"
+   },
+   "stability": null,
+   "visibility": "public"
+  },
+  "56": {
+   "attrs": [],
+   "const_stability": null,
+   "crate_id": 0,
+   "deprecation": null,
+   "docs": null,
+   "id": 56,
+   "inner": {
+    "impl": {
+     "blanket_impl": null,
+     "for": {
+      "resolved_path": {
+       "args": null,
+       "id": 52,
+       "path": "Token"
+      }
+     },
+     "generics": {
+      "params": [],
+      "where_predicates": []
+     },
+     "is_negative": false,
+     "is_synthetic": true,
+     "is_unsafe": false,
+     "items": [],
+     "provided_trait_methods": [],
+     "trait": {
+      "args": null,
+      "id": 3,
+      "path": "Send"
+     }
+    }
+   },
+   "links": {},
+   "name": null,
+   "span": null,
+   "stability": null,
+   "visibility": "default"
+  },
+  "65": {
+   "attrs": [],
+   "const_stability": null,
+   "crate_id": 0,
+   "deprecation": null,
+   "docs": null,
+   "id": 65,
+   "inner": {
+    "impl": {
+     "blanket_impl": {
+      "generic": "T"
+     },
+     "for": {
+      "resolved_path": {
+       "args": null,
+       "id": 52,
+       "path": "Token"
+      }
+     },
+     "generics": {
+      "params": [
+       {
+        "kind": {
+         "type": {
+          "bounds": [],
+          "default": null,
+          "is_synthetic": false
+         }
+        },
+        "name": "T"
+       }
+      ],
+      "where_predicates": [
+       {
+        "bound_predicate": {
+         "bounds": [
+          {
+           "trait_bound": {
+            "generic_params": [],
+            "modifier": "maybe",
+            "trait": {
+             "args": null,
+             "id": 22,
+             "path": "Sized"
+            }
+           }
+          }
+         ],
+         "generic_params": [],
+         "type": {
+          "generic": "T"
+         }
+        }
+       }
+      ]
+     },
+     "is_negative": false,
+     "is_synthetic": false,
+     "is_unsafe": false,
+     "items": [
+      20
+     ],
+     "provided_trait_methods": [],
+     "trait": {
+      "args": {
+       "angle_bracketed": {
+        "args": [
+         {
+          "type": {
+           "generic": "T"
+          }
+         }
+        ],
+        "constraints": []
+       }
+      },
+      "id": 23,
+      "path": "Borrow"
+     }
+    }
+   },
+   "links": {},
+   "name": null,
+   "span": {
+    "begin": [
+     212,
+     1
+    ],
+    "end": [
+     212,
+     38
+    ],
+    "filename": "/rustc/3ef0c22cdb86ac42dc6b8f0f1ec36857daa6f2a1/library/core/src/borrow.rs"
+   },
+   "stability": null,
+   "visibility": "default"
+  },
+  "73": {
+   "attrs": [],
+   "const_stability": null,
+   "crate_id": 0,
+   "deprecation": null,
+   "docs": "A function deep inside.",
+   "id": 73,
+   "inner": {
+    "function": {
+     "default_unstable": null,
+     "generics": {
+      "params": [],
+      "where_predicates": []
+     },
+     "has_body": true,
+     "header": {
+      "abi": "Rust",
+      "is_async": false,
+      "is_const": false,
+      "is_unsafe": false
+     },
+     "sig": {
+      "inputs": [],
+      "is_c_variadic": false,
+      "output": null
+     }
+    }
+   },
+   "links": {},
+   "name": "deepfn",
+   "span": {
+    "begin": [
+     118,
+     9
+    ],
+    "end": [
+     118,
+     27
+    ],
+    "filename": "src/lib.rs"
+   },
+   "stability": null,
+   "visibility": "public"
+  },
+  "74": {
+   "attrs": [],
+   "const_stability": null,
+   "crate_id": 0,
+   "deprecation": null,
+   "docs": "A public module inside a private one.",
+   "id": 74,
+   "inner": {
+    "module": {
+     "is_crate": false,
+     "is_stripped": false,
+     "items": [
+      73
+     ]
+    }
+   },
+   "links": {},
+   "name": "deep",
+   "span": {
+    "begin": [
+     116,
+     5
+    ],
+    "end": [
+     116,
+     17
+    ],
+    "filename": "src/lib.rs"
+   },
+   "stability": null,
+   "visibility": "public"
+  },
+  "75": {
+   "attrs": [],
+   "const_stability": null,
+   "crate_id": 0,
+   "deprecation": null,
+   "docs": "Add, under another name.",
+   "id": 75,
+   "inner": {
+    "function": {
+     "default_unstable": null,
+     "generics": {
+      "params": [],
+      "where_predicates": []
+     },
+     "has_body": true,
+     "header": {
+      "abi": "Rust",
+      "is_async": false,
+      "is_const": false,
+      "is_unsafe": false
+     },
+     "sig": {
+      "inputs": [
+       [
+        "a",
+        {
+         "primitive": "i32"
+        }
+       ],
+       [
+        "b",
+        {
+         "primitive": "i32"
+        }
+       ]
+      ],
+      "is_c_variadic": false,
+      "output": {
+       "primitive": "i32"
+      }
+     }
+    }
+   },
+   "links": {},
+   "name": "add_two",
+   "span": {
+    "begin": [
+     122,
+     5
+    ],
+    "end": [
+     126,
+     6
+    ],
+    "filename": "src/lib.rs"
+   },
+   "stability": null,
+   "visibility": "public"
+  },
+  "77": {
+   "attrs": [],
+   "const_stability": null,
+   "crate_id": 0,
+   "deprecation": null,
+   "docs": "In a.",
+   "id": 77,
+   "inner": {
+    "function": {
+     "default_unstable": null,
+     "generics": {
+      "params": [],
+      "where_predicates": []
+     },
+     "has_body": true,
+     "header": {
+      "abi": "Rust",
+      "is_async": false,
+      "is_const": false,
+      "is_unsafe": false
+     },
+     "sig": {
+      "inputs": [],
+      "is_c_variadic": false,
+      "output": null
+     }
+    }
+   },
+   "links": {},
+   "name": "in_a",
+   "span": {
+    "begin": [
+     135,
+     5
+    ],
+    "end": [
+     135,
+     21
+    ],
+    "filename": "src/lib.rs"
+   },
+   "stability": null,
+   "visibility": "public"
+  },
+  "78": {
+   "attrs": [],
+   "const_stability": null,
+   "crate_id": 0,
+   "deprecation": null,
+   "docs": null,
+   "id": 78,
+   "inner": {
+    "use": {
+     "id": 79,
+     "is_glob": true,
+     "name": "cyc_b",
+     "source": "super::cyc_b"
+    }
+   },
+   "links": {},
+   "name": null,
+   "span": {
+    "begin": [
+     133,
+     5
+    ],
+    "end": [
+     133,
+     29
+    ],
+    "filename": "src/lib.rs"
+   },
+   "stability": null,
+   "visibility": "public"
+  },
+  "79": {
+   "attrs": [],
+   "const_stability": null,
+   "crate_id": 0,
+   "deprecation": null,
+   "docs": null,
+   "id": 79,
+   "inner": {
+    "module": {
+     "is_crate": false,
+     "is_stripped": true,
+     "items": [
+      81,
+      82
+     ]
+    }
+   },
+   "links": {},
+   "name": "cyc_b",
+   "span": {
+    "begin": [
+     138,
+     1
+    ],
+    "end": [
+     138,
+     10
+    ],
+    "filename": "src/lib.rs"
+   },
+   "stability": null,
+   "visibility": "crate"
+  },
+  "80": {
+   "attrs": [],
+   "const_stability": null,
+   "crate_id": 0,
+   "deprecation": null,
+   "docs": null,
+   "id": 80,
+   "inner": {
+    "module": {
+     "is_crate": false,
+     "is_stripped": true,
+     "items": [
+      77,
+      78
+     ]
+    }
+   },
+   "links": {},
+   "name": "cyc_a",
+   "span": {
+    "begin": [
+     132,
+     1
+    ],
+    "end": [
+     132,
+     10
+    ],
+    "filename": "src/lib.rs"
+   },
+   "stability": null,
+   "visibility": "crate"
+  },
+  "81": {
+   "attrs": [],
+   "const_stability": null,
+   "crate_id": 0,
+   "deprecation": null,
+   "docs": "In b.",
+   "id": 81,
+   "inner": {
+    "function": {
+     "default_unstable": null,
+     "generics": {
+      "params": [],
+      "where_predicates": []
+     },
+     "has_body": true,
+     "header": {
+      "abi": "Rust",
+      "is_async": false,
+      "is_const": false,
+      "is_unsafe": false
+     },
+     "sig": {
+      "inputs": [],
+      "is_c_variadic": false,
+      "output": null
+     }
+    }
+   },
+   "links": {},
+   "name": "in_b",
+   "span": {
+    "begin": [
+     141,
+     5
+    ],
+    "end": [
+     141,
+     21
+    ],
+    "filename": "src/lib.rs"
+   },
+   "stability": null,
+   "visibility": "public"
+  },
+  "82": {
+   "attrs": [],
+   "const_stability": null,
+   "crate_id": 0,
+   "deprecation": null,
+   "docs": null,
+   "id": 82,
+   "inner": {
+    "use": {
+     "id": 80,
+     "is_glob": true,
+     "name": "cyc_a",
+     "source": "super::cyc_a"
+    }
+   },
+   "links": {},
+   "name": null,
+   "span": {
+    "begin": [
+     139,
+     5
+    ],
+    "end": [
+     139,
+     29
+    ],
+    "filename": "src/lib.rs"
+   },
+   "stability": null,
+   "visibility": "public"
+  },
+  "83": {
+   "attrs": [],
+   "const_stability": null,
+   "crate_id": 0,
+   "deprecation": null,
+   "docs": null,
+   "id": 83,
+   "inner": {
+    "use": {
+     "id": 1,
+     "is_glob": false,
+     "name": "Circle",
+     "source": "shapes::Circle"
+    }
+   },
+   "links": {},
+   "name": null,
+   "span": {
+    "begin": [
+     8,
+     1
+    ],
+    "end": [
+     8,
+     24
+    ],
+    "filename": "src/lib.rs"
+   },
+   "stability": null,
+   "visibility": "public"
+  },
+  "84": {
+   "attrs": [],
+   "const_stability": null,
+   "crate_id": 0,
+   "deprecation": null,
+   "docs": null,
+   "id": 84,
+   "inner": {
+    "use": {
+     "id": 52,
+     "is_glob": false,
+     "name": "Token",
+     "source": "inner::Token"
+    }
+   },
+   "links": {},
+   "name": null,
+   "span": {
+    "begin": [
+     9,
+     1
+    ],
+    "end": [
+     9,
+     22
+    ],
+    "filename": "src/lib.rs"
+   },
+   "stability": null,
+   "visibility": "public"
+  },
+  "85": {
+   "attrs": [],
+   "const_stability": null,
+   "crate_id": 0,
+   "deprecation": null,
+   "docs": null,
+   "id": 85,
+   "inner": {
+    "use": {
+     "id": 86,
+     "is_glob": false,
+     "name": "Map",
+     "source": "std::collections::HashMap"
+    }
+   },
+   "links": {},
+   "name": null,
+   "span": {
+    "begin": [
+     11,
+     1
+    ],
+    "end": [
+     11,
+     42
+    ],
+    "filename": "src/lib.rs"
+   },
+   "stability": null,
+   "visibility": "public"
+  },
+  "87": {
+   "attrs": [],
+   "const_stability": null,
+   "crate_id": 0,
+   "deprecation": null,
+   "docs": "A point in the plane.",
+   "id": 87,
+   "inner": {
+    "struct": {
+     "generics": {
+      "params": [],
+      "where_predicates": []
+     },
+     "impls": [
+      98,
+      99,
+      108,
+      130,
+      133,
+      134,
+      136,
+      139,
+      142
+     ],
+     "kind": {
+      "plain": {
+       "fields": [
+        93,
+        94
+       ],
+       "has_stripped_fields": true
+      }
+     }
+    }
+   },
+   "links": {},
+   "name": "Point",
+   "span": {
+    "begin": [
+     44,
+     1
+    ],
+    "end": [
+     49,
+     2
+    ],
+    "filename": "src/lib.rs"
+   },
+   "stability": null,
+   "visibility": "public"
+  },
+  "89": {
+   "attrs": [],
+   "const_stability": null,
+   "crate_id": 0,
+   "deprecation": null,
+   "docs": "Add two numbers.\n\nSee [`Point`] and [`std::fmt::Display`].",
+   "id": 89,
+   "inner": {
+    "function": {
+     "default_unstable": null,
+     "generics": {
+      "params": [],
+      "where_predicates": []
+     },
+     "has_body": true,
+     "header": {
+      "abi": "Rust",
+      "is_async": false,
+      "is_const": false,
+      "is_unsafe": false
+     },
+     "sig": {
+      "inputs": [
+       [
+        "a",
+        {
+         "primitive": "i32"
+        }
+       ],
+       [
+        "b",
+        {
+         "primitive": "i32"
+        }
+       ]
+      ],
+      "is_c_variadic": false,
+      "output": {
+       "primitive": "i32"
+      }
+     }
+    }
+   },
+   "links": {
+    "`Point`": 87,
+    "`std::fmt::Display`": 88
+   },
+   "name": "add",
+   "span": {
+    "begin": [
+     16,
+     1
+    ],
+    "end": [
+     20,
+     2
+    ],
+    "filename": "src/lib.rs"
+   },
+   "stability": null,
+   "visibility": "public"
+  },
+  "90": {
+   "attrs": [],
+   "const_stability": null,
+   "crate_id": 0,
+   "deprecation": null,
+   "docs": "Scale a number.\n\n# Arguments\n\n* `x` - the number\n* `by` - the factor",
+   "id": 90,
+   "inner": {
+    "function": {
+     "default_unstable": null,
+     "generics": {
+      "params": [],
+      "where_predicates": []
+     },
+     "has_body": true,
+     "header": {
+      "abi": "Rust",
+      "is_async": false,
+      "is_const": false,
+      "is_unsafe": false
+     },
+     "sig": {
+      "inputs": [
+       [
+        "x",
+        {
+         "primitive": "f64"
+        }
+       ],
+       [
+        "by",
+        {
+         "primitive": "f64"
+        }
+       ]
+      ],
+      "is_c_variadic": false,
+      "output": {
+       "primitive": "f64"
+      }
+     }
+    }
+   },
+   "links": {},
+   "name": "scale",
+   "span": {
+    "begin": [
+     28,
+     1
+    ],
+    "end": [
+     30,
+     2
+    ],
+    "filename": "src/lib.rs"
+   },
+   "stability": null,
+   "visibility": "public"
+  },
+  "91": {
+   "attrs": [],
+   "const_stability": null,
+   "crate_id": 0,
+   "deprecation": null,
+   "docs": "Print a greeting.",
+   "id": 91,
+   "inner": {
+    "function": {
+     "default_unstable": null,
+     "generics": {
+      "params": [],
+      "where_predicates": []
+     },
+     "has_body": true,
+     "header": {
+      "abi": "Rust",
+      "is_async": false,
+      "is_const": false,
+      "is_unsafe": false
+     },
+     "sig": {
+      "inputs": [
+       [
+        "name",
+        {
+         "resolved_path": {
+          "args": null,
+          "id": 55,
+          "path": "String"
+         }
+        }
+       ]
+      ],
+      "is_c_variadic": false,
+      "output": null
+     }
+    }
+   },
+   "links": {},
+   "name": "greet",
+   "span": {
+    "begin": [
+     33,
+     1
+    ],
+    "end": [
+     36,
+     2
+    ],
+    "filename": "src/lib.rs"
+   },
+   "stability": null,
+   "visibility": "public"
+  },
+  "92": {
+   "attrs": [],
+   "const_stability": null,
+   "crate_id": 0,
+   "deprecation": null,
+   "docs": null,
+   "id": 92,
+   "inner": {
+    "function": {
+     "default_unstable": null,
+     "generics": {
+      "params": [],
+      "where_predicates": []
+     },
+     "has_body": true,
+     "header": {
+      "abi": "Rust",
+      "is_async": false,
+      "is_const": false,
+      "is_unsafe": false
+     },
+     "sig": {
+      "inputs": [
+       [
+        "x",
+        {
+         "primitive": "u8"
+        }
+       ]
+      ],
+      "is_c_variadic": false,
+      "output": {
+       "primitive": "u8"
+      }
+     }
+    }
+   },
+   "links": {},
+   "name": "undocumented",
+   "span": {
+    "begin": [
+     38,
+     1
+    ],
+    "end": [
+     40,
+     2
+    ],
+    "filename": "src/lib.rs"
+   },
+   "stability": null,
+   "visibility": "public"
+  },
+  "93": {
+   "attrs": [],
+   "const_stability": null,
+   "crate_id": 0,
+   "deprecation": null,
+   "docs": "Across.",
+   "id": 93,
+   "inner": {
+    "struct_field": {
+     "primitive": "f64"
+    }
+   },
+   "links": {},
+   "name": "x",
+   "span": {
+    "begin": [
+     46,
+     5
+    ],
+    "end": [
+     46,
+     15
+    ],
+    "filename": "src/lib.rs"
+   },
+   "stability": null,
+   "visibility": "public"
+  },
+  "94": {
+   "attrs": [],
+   "const_stability": null,
+   "crate_id": 0,
+   "deprecation": null,
+   "docs": null,
+   "id": 94,
+   "inner": {
+    "struct_field": {
+     "primitive": "f64"
+    }
+   },
+   "links": {},
+   "name": "y",
+   "span": {
+    "begin": [
+     47,
+     5
+    ],
+    "end": [
+     47,
+     15
+    ],
+    "filename": "src/lib.rs"
+   },
+   "stability": null,
+   "visibility": "public"
+  },
+  "96": {
+   "attrs": [],
+   "const_stability": null,
+   "crate_id": 0,
+   "deprecation": null,
+   "docs": "Make a point at the origin.",
+   "id": 96,
+   "inner": {
+    "function": {
+     "default_unstable": null,
+     "generics": {
+      "params": [],
+      "where_predicates": []
+     },
+     "has_body": true,
+     "header": {
+      "abi": "Rust",
+      "is_async": false,
+      "is_const": false,
+      "is_unsafe": false
+     },
+     "sig": {
+      "inputs": [],
+      "is_c_variadic": false,
+      "output": {
+       "generic": "Self"
+      }
+     }
+    }
+   },
+   "links": {},
+   "name": "origin",
+   "span": {
+    "begin": [
+     53,
+     5
+    ],
+    "end": [
+     55,
+     6
+    ],
+    "filename": "src/lib.rs"
+   },
+   "stability": null,
+   "visibility": "public"
+  },
+  "97": {
+   "attrs": [],
+   "const_stability": null,
+   "crate_id": 0,
+   "deprecation": null,
+   "docs": "The distance to another point.",
+   "id": 97,
+   "inner": {
+    "function": {
+     "default_unstable": null,
+     "generics": {
+      "params": [],
+      "where_predicates": []
+     },
+     "has_body": true,
+     "header": {
+      "abi": "Rust",
+      "is_async": false,
+      "is_const": false,
+      "is_unsafe": false
+     },
+     "sig": {
+      "inputs": [
+       [
+        "self",
+        {
+         "borrowed_ref": {
+          "is_mutable": false,
+          "lifetime": null,
+          "type": {
+           "generic": "Self"
+          }
+         }
+        }
+       ],
+       [
+        "other",
+        {
+         "borrowed_ref": {
+          "is_mutable": false,
+          "lifetime": null,
+          "type": {
+           "resolved_path": {
+            "args": null,
+            "id": 87,
+            "path": "Point"
+           }
+          }
+         }
+        }
+       ]
+      ],
+      "is_c_variadic": false,
+      "output": {
+       "primitive": "f64"
+      }
+     }
+    }
+   },
+   "links": {},
+   "name": "distance",
+   "span": {
+    "begin": [
+     58,
+     5
+    ],
+    "end": [
+     62,
+     6
+    ],
+    "filename": "src/lib.rs"
+   },
+   "stability": null,
+   "visibility": "public"
+  },
+  "98": {
+   "attrs": [],
+   "const_stability": null,
+   "crate_id": 0,
+   "deprecation": null,
+   "docs": null,
+   "id": 98,
+   "inner": {
+    "impl": {
+     "blanket_impl": null,
+     "for": {
+      "resolved_path": {
+       "args": null,
+       "id": 87,
+       "path": "Point"
+      }
+     },
+     "generics": {
+      "params": [],
+      "where_predicates": []
+     },
+     "is_negative": false,
+     "is_synthetic": false,
+     "is_unsafe": false,
+     "items": [
+      96,
+      97
+     ],
+     "provided_trait_methods": [],
+     "trait": null
+    }
+   },
+   "links": {},
+   "name": null,
+   "span": {
+    "begin": [
+     51,
+     1
+    ],
+    "end": [
+     67,
+     2
+    ],
+    "filename": "src/lib.rs"
+   },
+   "stability": null,
+   "visibility": "default"
+  },
+  "99": {
+   "attrs": [],
+   "const_stability": null,
+   "crate_id": 0,
+   "deprecation": null,
+   "docs": null,
+   "id": 99,
+   "inner": {
+    "impl": {
+     "blanket_impl": null,
+     "for": {
+      "resolved_path": {
+       "args": null,
+       "id": 87,
+       "path": "Point"
+      }
+     },
+     "generics": {
+      "params": [],
+      "where_predicates": []
+     },
+     "is_negative": false,
+     "is_synthetic": true,
+     "is_unsafe": false,
+     "items": [],
+     "provided_trait_methods": [],
+     "trait": {
+      "args": null,
+      "id": 3,
+      "path": "Send"
+     }
+    }
+   },
+   "links": {},
+   "name": null,
+   "span": null,
+   "stability": null,
+   "visibility": "default"
+  }
+ },
+ "paths": {
+  "1": {
+   "crate_id": 0,
+   "kind": "struct",
+   "path": [
+    "tinycrate",
+    "shapes",
+    "Circle"
+   ]
+  },
+  "112": {
+   "crate_id": 2,
+   "kind": "trait",
+   "path": [
+    "core",
+    "clone",
+    "Clone"
+   ]
+  },
+  "128": {
+   "crate_id": 2,
+   "kind": "struct",
+   "path": [
+    "core",
+    "fmt",
+    "Formatter"
+   ]
+  },
+  "129": {
+   "crate_id": 2,
+   "kind": "type_alias",
+   "path": [
+    "core",
+    "fmt",
+    "Result"
+   ]
+  },
+  "131": {
+   "crate_id": 2,
+   "kind": "trait",
+   "path": [
+    "core",
+    "fmt",
+    "Debug"
+   ]
+  },
+  "135": {
+   "crate_id": 2,
+   "kind": "trait",
+   "path": [
+    "core",
+    "marker",
+    "Copy"
+   ]
+  },
+  "137": {
+   "crate_id": 2,
+   "kind": "trait",
+   "path": [
+    "core",
+    "marker",
+    "StructuralPartialEq"
+   ]
+  },
+  "140": {
+   "crate_id": 2,
+   "kind": "trait",
+   "path": [
+    "core",
+    "cmp",
+    "PartialEq"
+   ]
+  },
+  "143": {
+   "crate_id": 0,
+   "kind": "variant",
+   "path": [
+    "tinycrate",
+    "Colour",
+    "Green"
+   ]
+  },
+  "144": {
+   "crate_id": 0,
+   "kind": "variant",
+   "path": [
+    "tinycrate",
+    "Colour",
+    "Red"
+   ]
+  },
+  "148": {
+   "crate_id": 0,
+   "kind": "variant",
+   "path": [
+    "tinycrate",
+    "Colour",
+    "Rgb"
+   ]
+  },
+  "150": {
+   "crate_id": 0,
+   "kind": "variant",
+   "path": [
+    "tinycrate",
+    "Colour",
+    "Named"
+   ]
+  },
+  "155": {
+   "crate_id": 0,
+   "kind": "variant",
+   "path": [
+    "tinycrate",
+    "Colour",
+    "Mix"
+   ]
+  },
+  "156": {
+   "crate_id": 0,
+   "kind": "enum",
+   "path": [
+    "tinycrate",
+    "Colour"
+   ]
+  },
+  "175": {
+   "crate_id": 0,
+   "kind": "type_alias",
+   "path": [
+    "tinycrate",
+    "Number"
+   ]
+  },
+  "176": {
+   "crate_id": 0,
+   "kind": "constant",
+   "path": [
+    "tinycrate",
+    "MAX"
+   ]
+  },
+  "177": {
+   "crate_id": 0,
+   "kind": "function",
+   "path": [
+    "tinycrate",
+    "wrap"
+   ]
+  },
+  "178": {
+   "crate_id": 2,
+   "kind": "enum",
+   "path": [
+    "core",
+    "option",
+    "Option"
+   ]
+  },
+  "182": {
+   "crate_id": 0,
+   "kind": "struct",
+   "path": [
+    "tinycrate",
+    "Holder"
+   ]
+  },
+  "203": {
+   "crate_id": 0,
+   "kind": "function",
+   "path": [
+    "tinycrate",
+    "apply"
+   ]
+  },
+  "204": {
+   "crate_id": 2,
+   "kind": "trait",
+   "path": [
+    "core",
+    "ops",
+    "function",
+    "Fn"
+   ]
+  },
+  "205": {
+   "crate_id": 0,
+   "kind": "function",
+   "path": [
+    "tinycrate",
+    "pair"
+   ]
+  },
+  "206": {
+   "crate_id": 0,
+   "kind": "function",
+   "path": [
+    "tinycrate",
+    "quote"
+   ]
+  },
+  "207": {
+   "crate_id": 0,
+   "kind": "function",
+   "path": [
+    "tinycrate",
+    "type"
+   ]
+  },
+  "210": {
+   "crate_id": 0,
+   "kind": "struct",
+   "path": [
+    "tinycrate",
+    "Size"
+   ]
+  },
+  "22": {
+   "crate_id": 2,
+   "kind": "trait",
+   "path": [
+    "core",
+    "marker",
+    "Sized"
+   ]
+  },
+  "227": {
+   "crate_id": 0,
+   "kind": "function",
+   "path": [
+    "tinycrate",
+    "fences"
+   ]
+  },
+  "228": {
+   "crate_id": 0,
+   "kind": "function",
+   "path": [
+    "tinycrate",
+    "point"
+   ]
+  },
+  "23": {
+   "crate_id": 2,
+   "kind": "trait",
+   "path": [
+    "core",
+    "borrow",
+    "Borrow"
+   ]
+  },
+  "230": {
+   "crate_id": 0,
+   "kind": "struct",
+   "path": [
+    "tinycrate",
+    "Wrapper"
+   ]
+  },
+  "249": {
+   "crate_id": 0,
+   "kind": "macro",
+   "path": [
+    "tinycrate",
+    "point"
+   ]
+  },
+  "252": {
+   "crate_id": 0,
+   "kind": "module",
+   "path": [
+    "tinycrate"
+   ]
+  },
+  "3": {
+   "crate_id": 2,
+   "kind": "trait",
+   "path": [
+    "core",
+    "marker",
+    "Send"
+   ]
+  },
+  "48": {
+   "crate_id": 0,
+   "kind": "trait",
+   "path": [
+    "tinycrate",
+    "Shape"
+   ]
+  },
+  "49": {
+   "crate_id": 0,
+   "kind": "function",
+   "path": [
+    "tinycrate",
+    "shapes",
+    "unit"
+   ]
+  },
+  "50": {
+   "crate_id": 0,
+   "kind": "module",
+   "path": [
+    "tinycrate",
+    "shapes"
+   ]
+  },
+  "51": {
+   "crate_id": 0,
+   "kind": "function",
+   "path": [
+    "tinycrate",
+    "inner",
+    "helpers",
+    "count"
+   ]
+  },
+  "52": {
+   "crate_id": 0,
+   "kind": "struct",
+   "path": [
+    "tinycrate",
+    "inner",
+    "Token"
+   ]
+  },
+  "55": {
+   "crate_id": 3,
+   "kind": "struct",
+   "path": [
+    "alloc",
+    "string",
+    "String"
+   ]
+  },
+  "73": {
+   "crate_id": 0,
+   "kind": "function",
+   "path": [
+    "tinycrate",
+    "hidden",
+    "deep",
+    "deepfn"
+   ]
+  },
+  "74": {
+   "crate_id": 0,
+   "kind": "module",
+   "path": [
+    "tinycrate",
+    "hidden",
+    "deep"
+   ]
+  },
+  "75": {
+   "crate_id": 0,
+   "kind": "function",
+   "path": [
+    "tinycrate",
+    "hidden",
+    "add_two"
+   ]
+  },
+  "77": {
+   "crate_id": 0,
+   "kind": "function",
+   "path": [
+    "tinycrate",
+    "cyc_a",
+    "in_a"
+   ]
+  },
+  "81": {
+   "crate_id": 0,
+   "kind": "function",
+   "path": [
+    "tinycrate",
+    "cyc_b",
+    "in_b"
+   ]
+  },
+  "86": {
+   "crate_id": 1,
+   "kind": "struct",
+   "path": [
+    "std",
+    "collections",
+    "hash",
+    "map",
+    "HashMap"
+   ]
+  },
+  "87": {
+   "crate_id": 0,
+   "kind": "struct",
+   "path": [
+    "tinycrate",
+    "Point"
+   ]
+  },
+  "88": {
+   "crate_id": 2,
+   "kind": "trait",
+   "path": [
+    "core",
+    "fmt",
+    "Display"
+   ]
+  },
+  "89": {
+   "crate_id": 0,
+   "kind": "function",
+   "path": [
+    "tinycrate",
+    "add"
+   ]
+  },
+  "90": {
+   "crate_id": 0,
+   "kind": "function",
+   "path": [
+    "tinycrate",
+    "scale"
+   ]
+  },
+  "91": {
+   "crate_id": 0,
+   "kind": "function",
+   "path": [
+    "tinycrate",
+    "greet"
+   ]
+  },
+  "92": {
+   "crate_id": 0,
+   "kind": "function",
+   "path": [
+    "tinycrate",
+    "undocumented"
+   ]
+  }
+ },
+ "root": 252
+}
