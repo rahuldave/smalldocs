@@ -1,0 +1,17 @@
+---
+title: smalldocs 0.5.8
+subtitle: smalldocs needs fastcore 2.0
+date: 2026-11-12
+author: Rahul Dave
+categories: [release]
+image: ../images/mark.svg
+---
+
+smalldocs now needs fastcore 2.0 or newer. Before, it took fastcore 1.8.
+
+fastcore 1.10 and older do not read the comment on a `**kwargs` parameter. So with them, a reference
+page showed `**kwargs` with no description, and nothing said why. fastcore 2.0 reads the comment.
+
+A project with fastcore 1.x gets the newest fastcore when it installs this version of smalldocs. A
+project that pins fastcore below 2.0 cannot install it. With fastcore 1.10 or older, a reference page
+now shows the comment on `**kwargs`. Nothing else changes.

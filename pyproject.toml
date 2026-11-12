@@ -1,6 +1,6 @@
 [project]
 name = "smalldocs"
-version = "0.5.7"
+version = "0.5.8"
 description = "Quarto-like websites from a _quarto.yml project, in pure Python: pages, API reference and listings"
 readme = "README.md"
 license = "MIT"
@@ -8,7 +8,7 @@ license-files = ["LICENSE", "src/smalldocs/assets/vendor/*/LICENSE*"]
 authors = [{ name = "Rahul Dave", email = "rahuldave@gmail.com" }]
 requires-python = ">=3.11"
 dependencies = [
-    "fastcore>=1.8",
+    "fastcore>=2.0",
     "markdown-it-py>=3.0",
     "mdit-py-plugins>=0.4",
     "pyyaml>=6.0",
