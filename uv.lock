@@ -441,7 +441,7 @@ wheels = [
 
 [[package]]
 name = "smalldocs"
-version = "0.5.7"
+version = "0.5.8"
 source = { editable = "." }
 dependencies = [
     { name = "fastcore" },
@@ -468,7 +468,7 @@ dev = [
 
 [package.metadata]
 requires-dist = [
-    { name = "fastcore", specifier = ">=1.8" },
+    { name = "fastcore", specifier = ">=2.0" },
     { name = "jupyterlite-core", marker = "extra == 'notebooks'", specifier = ">=0.7,<0.8" },
     { name = "jupyterlite-pyodide-kernel", marker = "extra == 'notebooks'", specifier = ">=0.7,<0.8" },
     { name = "markdown-it-py", specifier = ">=3.0" },
