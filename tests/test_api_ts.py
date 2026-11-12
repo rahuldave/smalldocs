@@ -15,6 +15,7 @@ from smalldocs.api_ts import read_signature, split_comments, type_text
 from smalldocs.cli import main
 
 FIX = Path(__file__).parent / "fixtures" / "ts"
+TOP = f"---\n{api.MARK}\n"  # The start of each page that a build writes
 
 
 def fixture(
@@ -146,8 +147,8 @@ def test_parameter_with_no_comment_and_no_tag_is_empty(lib: str) -> None:
 def test_one_page_per_entry_point_holds_what_it_exports_again(lib: str, tmp_path: Path) -> None:
     "One entry point is one page, named after the project, with every item that `export *` brings in."
     assert list(pages(tmp_path)) == ["index.qmd", "lib.qmd"]
-    assert pages(tmp_path)["index.qmd"] == '---\ntitle: "Reference"\n---\n\n- [lib](lib.qmd)\n'
-    assert lib.startswith('---\ntitle: "lib"\ndescription: "A small library of shapes and sums."\n---\n')
+    assert pages(tmp_path)["index.qmd"] == TOP + 'title: "Reference"\n---\n\n| Name | Summary |\n| --- | --- |\n| [`lib`](/api/lib.qmd) | A small library of shapes and sums. |\n'
+    assert lib.startswith(TOP + 'title: "lib"\ndescription: "A small library of shapes and sums."\n---\n')
     for name in ["add", "Rect", "Point", "Button", "ButtonProps", "Style", "Size", "Colour"]:
         assert f"{{#{name}}}" in lib
 
@@ -156,27 +157,29 @@ def test_one_page_per_file_when_entry_is_a_folder(app: dict[str, str]) -> None:
     "A folder as entry makes a page per file, in the folders of the source, titled by the file's own name."
     pages_ = {"components/Badge.qmd", "components/Chip.qmd", "components/format.qmd", "components/index.qmd", "hooks/useCounter.qmd", "utils/format.qmd"}
     assert set(app) == pages_ | {"index.qmd", "hooks/index.qmd", "utils/index.qmd"}
-    assert app["components/Badge.qmd"].startswith('---\ntitle: "Badge"\n')
-    assert app["utils/format.qmd"].startswith('---\ntitle: "format"\n')
+    assert app["components/Badge.qmd"].startswith(TOP + 'title: "Badge"\n')
+    assert app["utils/format.qmd"].startswith(TOP + 'title: "format"\n')
 
 
 def test_each_folder_has_an_index_that_lists_its_pages(app: dict[str, str]) -> None:
-    "A folder with no module of its own gets an `index.qmd`, titled by the folder, that links to its pages."
-    assert app["hooks/index.qmd"] == '---\ntitle: "hooks"\n---\n\n- [useCounter](useCounter.qmd)\n'
-    assert app["components/index.qmd"].endswith("\n\n- [Badge](Badge.qmd)\n- [Chip](Chip.qmd)\n- [format](format.qmd)\n")
+    "A folder with no module of its own gets an `index.qmd`, titled by the folder, with a table of its pages; a module that is a folder's index has the table too."
+    assert app["hooks/index.qmd"] == TOP + 'title: "hooks"\n---\n\n| Name | Summary |\n| --- | --- |\n| [`useCounter`](/api/hooks/useCounter.qmd) |  |\n'
+    rows = "| [`Badge`](/api/components/Badge.qmd) | Badge: a small label with a tone. |\n| [`Chip`](/api/components/Chip.qmd) |  |\n"
+    assert "\n\n| Name | Summary |\n| --- | --- |\n" + rows + "| [`format`](/api/components/format.qmd) |  |\n\nIt exports again" in app["components/index.qmd"]
 
 
 def test_nested_folders_list_their_subfolders() -> None:
     "A folder's index links to each subfolder's index, so nested folders become nested sections."
-    rels = ["components/A", "components/charts/Bar", "components/charts/deep/Line", "hooks/useX"]
-    assert api_ts.folder_index("components", rels) == "- [A](A.qmd)\n- [charts](charts/index.qmd)"
-    assert api_ts.folder_index("components/charts", rels) == "- [Bar](Bar.qmd)\n- [deep](deep/index.qmd)"
+    said = {"components/A.qmd": "a", "components/charts/Bar.qmd": "", "components/charts/index.qmd": "Charts.", "components/charts/deep/Line.qmd": "", "hooks/useX.qmd": ""}
+    assert api.folder_listing("api", "components", said) == "| Name | Summary |\n| --- | --- |\n| [`A`](/api/components/A.qmd) | a |\n| [`charts`](/api/components/charts/index.qmd) | Charts. |"
+    assert api.folder_listing("api", "components/charts", said) == "| Name | Summary |\n| --- | --- |\n| [`Bar`](/api/components/charts/Bar.qmd) |  |\n| [`deep`](/api/components/charts/deep/index.qmd) |  |"
 
 
 def test_an_index_file_is_named_by_its_folder_and_never_index(app: dict[str, str]) -> None:
     "`components/index.ts` is the folder's `index.qmd`; `api/index.qmd` is the reference's front page, which lists the top level."
-    assert app["index.qmd"] == '---\ntitle: "Reference"\n---\n\n- [components](components/index.qmd)\n- [hooks](hooks/index.qmd)\n- [utils](utils/index.qmd)\n'
-    assert app["components/index.qmd"].startswith('---\ntitle: "components"\ndescription: "The components, in one place."\n')
+    rows = "| [`components`](/api/components/index.qmd) | The components, in one place. |\n| [`hooks`](/api/hooks/index.qmd) |  |\n| [`utils`](/api/utils/index.qmd) |  |\n"
+    assert app["index.qmd"] == TOP + 'title: "Reference"\n---\n\n| Name | Summary |\n| --- | --- |\n' + rows
+    assert app["components/index.qmd"].startswith(TOP + 'title: "components"\ndescription: "The components, in one place."\n')
 
 
 def test_reexports_have_one_entry_where_they_are_declared(app: dict[str, str]) -> None:
@@ -201,7 +204,7 @@ def test_type_aliases_with_and_without_fields(lib: str) -> None:
 def test_enum_members_with_values_and_comments(lib: str) -> None:
     "An enum shows its members in source order, with their values, and the comment after each or its JSDoc."
     e = entry_of(lib, "Style")
-    assert '| `Outline` | "outline" | Only the outline. |\n| `Filled` | "filled" | the inside too |' in e
+    assert '| `Outline` | \\"outline\\" | Only the outline. |\n| `Filled` | \\"filled\\" | the inside too |' in e
 
 
 def test_class_constructor_fields_and_methods(lib: str) -> None:
@@ -222,16 +225,16 @@ def test_react_component_shows_its_props(lib: str) -> None:
     assert "function Button(props: ButtonProps): string" in e
     assert "| `label` | string | required | the text on it |" in e
     assert "| `disabled` | boolean | `false` | whether it is grey |" in e
-    assert "| `onClick` | () =\\> void | optional | what a click does |" in e
+    assert "| `onClick` | () =&gt; void | optional | what a click does |" in e
 
 
 def test_component_props_that_are_not_exported_come_from_the_source(app: dict[str, str]) -> None:
     "TypeDoc leaves out a `Props` the file does not export, so its fields are read from the file, with their strings and JSDoc."
     e = entry_of(app["components/Badge.qmd"], "Badge")
     assert "| `text` | string | required | the words on the badge |" in e
-    assert '| `tone` | "info" \\| "warn" | `"info"` | How it looks. |' in e
+    assert '| `tone` | \\"info\\" \\| \\"warn\\" | `"info"` | How it looks. |' in e
     assert "| `loud` | boolean | `false` |  |" in e
-    assert "| `onPick` | (text: string, at: number) =\\> void | optional |  |" in e  # the comment is on its last line, not its first
+    assert "| `onPick` | (text: string, at: number) =&gt; void | optional |  |" in e  # the comment is on its last line, not its first
     assert "| returns | string |  | the HTML of the badge |" in e
 
 
@@ -242,7 +245,7 @@ def test_default_export_takes_its_name_from_the_source(app: dict[str, str]) -> N
 
 def test_opening_comment_of_a_file_describes_its_module(app: dict[str, str]) -> None:
     "A file's opening comment, before its imports, is its module's description and text, though it has no `@module` tag."
-    assert app["components/Badge.qmd"].startswith('---\ntitle: "Badge"\ndescription: "Badge: a small label with a tone."\n---\n\nPages use it beside a name.\n')
+    assert app["components/Badge.qmd"].startswith(TOP + 'title: "Badge"\ndescription: "Badge: a small label with a tone."\n---\n\nPages use it beside a name.\n')
 
 
 def test_rest_of_the_module_comment_is_dedented_prose(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
@@ -253,14 +256,14 @@ def test_rest_of_the_module_comment_is_dedented_prose(tmp_path: Path, monkeypatc
     monkeypatch.setattr(api_ts, "typedoc_json", lambda s: (data, project))
     assert main(["api", "build", "--dir", str(tmp_path)]) == 0
     text = pages(tmp_path)["lib.qmd"]
-    assert text.startswith('---\ntitle: "lib"\ndescription: "First line of the first paragraph."\n---\n\nIndented prose.\nMore of it.\n\n## ')
+    assert text.startswith(TOP + 'title: "lib"\ndescription: "First line of the first paragraph."\n---\n\nIndented prose.\nMore of it.\n\n## ')
 
 
 def test_comment_keeps_lists_and_shows_angle_brackets() -> None:
     "An indented `- item` after prose stays a list; `<Opp>` is escaped outside code, and `<br>` and code spans stay."
     assert api_ts.structure("Phrases:\n    - one\n    - two\n\nMore.") == "Phrases:\n\n- one\n- two\n\nMore."
     assert api_ts.structure("```ts\n  x = 1\n```") == "```ts\n  x = 1\n```"
-    assert api_ts.prose("vs <Opp> -> `a<b>` <br> a > b") == "vs \\<Opp\\> -\\> `a<b>` <br> a \\> b"
+    assert api.escape_angles("vs <Opp> -> `a<b>` <br> a > b") == "vs &lt;Opp> -> `a<b>` <br> a > b"
 
 
 def test_generic_interface_hook_and_constant(app: dict[str, str]) -> None:
@@ -268,7 +271,7 @@ def test_generic_interface_hook_and_constant(app: dict[str, str]) -> None:
     u = app["hooks/useCounter.qmd"]
     assert "interface Counter<T>" in u and "| `last` | T \\| null | the last thing counted |" in u
     assert "function useCounter<T>(start: number = 0, step: number = 1): Counter<T>" in u
-    assert "| returns | Counter\\<T\\> |  |  |" in u
+    assert "| returns | Counter&lt;T&gt; |  |  |" in u
     assert "```ts\nconst MAX_ITEMS: 50\n```" in app["utils/format.qmd"]
 
 
@@ -294,7 +297,7 @@ def test_source_links_from_a_repository_root(tmp_path: Path, monkeypatch: pytest
     built = pages(docs)
     assert "## Badge {#Badge}\n\n[source](https://example.com/r/blob/main/frontend/src/components/Badge.ts#L18){.source-link}\n" in built["components/Badge.qmd"]
     for text in built.values():
-        heads = [ln for ln in text.split("\n") if ln.startswith("#")]
+        heads = [ln for ln in text.split("\n---\n", 1)[1].split("\n") if ln.startswith("#")]
         assert text.count("{.source-link}") == len(heads)  # every entry has its link
 
 
@@ -327,7 +330,7 @@ def test_types_in_tables_are_plain_text_escaped(tmp_path: Path, monkeypatch: pyt
     assert main(["render", str(tmp_path), "-q"]) == 0
     html = (tmp_path / "_site/api/hooks/useCounter.html").read_text()
     assert "<td>Counter&lt;T&gt;</td>" in html and "<td>T | null</td>" in html
-    assert api_ts.type_cell("A<`*`>") == "A\\<\\`\\*\\`\\>"
+    assert api.type_cell("A<`*`>") == "A&lt;\\`\\*\\`&gt;"
 
 
 # ---------------------------------------------------------------- links, the manifest and `out`
@@ -347,9 +350,9 @@ def test_build_deletes_only_pages_in_its_manifest(tmp_path: Path, monkeypatch: p
     site(tmp_path, "app", monkeypatch)
     (tmp_path / "api").mkdir()
     (tmp_path / "api/index.qmd").write_text("# Reference\n")
-    (tmp_path / "api/gone.qmd").write_text("# Gone\n")
+    (tmp_path / "api/gone.qmd").write_text(TOP + "---\n# Gone\n")
     (tmp_path / "api/old").mkdir()
-    (tmp_path / "api/old/gone.qmd").write_text("# Gone\n")
+    (tmp_path / "api/old/gone.qmd").write_text(TOP + "---\n# Gone\n")
     (tmp_path / "api/old/mine.qmd").write_text("# Mine\n")
     (tmp_path / "keep.qmd").write_text("# Keep\n")
     (tmp_path / "api/.smalldocs-api").write_text("gone.qmd\nold/gone.qmd\n../keep.qmd\n/etc/x.qmd\nindex-x.qmd")
@@ -364,7 +367,7 @@ def test_stale_page_leaves_no_empty_folder(tmp_path: Path, monkeypatch: pytest.M
     site(tmp_path, "app", monkeypatch)
     for rel in ["api/gone/a.qmd", "api/held/b.qmd", "api/held/notes.md"]:
         (tmp_path / rel).parent.mkdir(parents=True, exist_ok=True)
-        (tmp_path / rel).write_text("x\n")
+        (tmp_path / rel).write_text(TOP + "---\nx\n")
     (tmp_path / "api/.smalldocs-api").write_text("gone/a.qmd\nheld/b.qmd")
     assert main(["api", "build", "--dir", str(tmp_path)]) == 0
     assert not (tmp_path / "api/gone").exists() and (tmp_path / "api/held/notes.md").exists()
@@ -390,12 +393,12 @@ def test_page_paths_stay_inside_out() -> None:
     with pytest.raises(ValueError, match=r"no path inside api\.out"):
         api_ts.page_paths(mods)
     out = FIX / "app"
-    assert api_ts.inside(out, "a/b.qmd") == out / "a/b.qmd"
-    assert [api_ts.inside(out, r) for r in ["../b.qmd", "/b.qmd", "a/../b.qmd", "a//b.qmd", "b.md", "a\\b.qmd"]] == [None] * 6
+    assert api.inside(out, "a/b.qmd") == out / "a/b.qmd"
+    assert [api.inside(out, r) for r in ["../b.qmd", "/b.qmd", "a/../b.qmd", "a//b.qmd", "b.md", "a\\b.qmd"]] == [None] * 6
 
 
 def test_sidebar_shows_names_in_folder_sections(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    "With `auto: api/**`, the sidebar has one section, the reference, then a page per file by its name and a section per folder."
+    "With `auto: api/**`, the sidebar has a page per file by its name and a section per folder; as in Quarto, no section for `api` and no `api/index.qmd`."
     site(tmp_path, "app", monkeypatch)
     side_conf = 'website:\n  sidebar:\n    contents:\n      - auto: "api/**"\n'
     conf = (tmp_path / "_smalldocs.yml").read_text().replace("project:\n  type: website\n", "project:\n  type: website\n" + side_conf)
@@ -405,9 +408,9 @@ def test_sidebar_shows_names_in_folder_sections(tmp_path: Path, monkeypatch: pyt
     side = html[html.index('id="quarto-sidebar"') :]
     side = side[: side.index("</nav>")]
     texts = re.findall(r'<span class="menu-text">([^<]*)</span>', side)
-    for name in ["Reference", "components", "hooks", "utils", "Badge", "Chip", "useCounter", "format"]:
+    for name in ["components", "hooks", "utils", "Badge", "Chip", "useCounter", "format"]:
         assert name in texts
-    assert texts[0] == "Reference" and "Api" not in texts and not [x for x in texts if "/" in x]
+    assert texts[0] == "components" and "Reference" not in texts and "Api" not in texts and not [x for x in texts if "/" in x]
 
 
 @pytest.mark.parametrize("out", [".", "..", "../x"])
@@ -462,7 +465,7 @@ def test_unknown_language_is_an_error(tmp_path: Path, capsys: pytest.CaptureFixt
     "A language that is not python, typescript or rust stops with a message that names it."
     (tmp_path / "_smalldocs.yml").write_text("project:\n  type: website\napi:\n  language: go\n")
     assert main(["api", "build", "--dir", str(tmp_path)]) == 2
-    assert "api.language must be python, typescript or rust, not 'go'" in capsys.readouterr().err
+    assert "language must be python, rust or typescript, not 'go'" in capsys.readouterr().err
 
 
 def test_typescript_needs_entry_not_packages(tmp_path: Path, capsys: pytest.CaptureFixture) -> None:
@@ -698,9 +701,9 @@ def test_index_in_any_case_and_folders_in_one_spelling() -> None:
 
 
 def test_prose_keeps_quotes_autolinks_comments_and_links() -> None:
-    "`prose` keeps a `>` quote, `<https://x>`, `<!-- c -->` and `<a href>`; a bare `<a>` in a sentence is text."
-    assert api_ts.prose("> Note\nsee <https://x.org> <!-- c --> <a href='u'>u</a>") == "> Note\nsee <https://x.org> <!-- c --> <a href='u'>u</a>"
-    assert api_ts.prose("the <a> element") == "the \\<a\\> element"
+    "`escape_angles` keeps a `>` quote, `<https://x>`, `<!-- c -->` and `<a href>`; a bare `<a>` in a sentence is text."
+    assert api.escape_angles("> Note\nsee <https://x.org> <!-- c --> <a href='u'>u</a>") == "> Note\nsee <https://x.org> <!-- c --> <a href='u'>u</a>"
+    assert api.escape_angles("the <a> element") == "the &lt;a> element"
 
 
 def test_structure_keeps_nesting_tight_lists_and_fences() -> None:
@@ -711,17 +714,110 @@ def test_structure_keeps_nesting_tight_lists_and_fences() -> None:
 
 def test_type_cell_escapes_maths_and_links() -> None:
     "A template-literal type is no maths, and `_`, `[`, `]` and `&` are escaped too."
-    assert api_ts.type_cell("`${A}-${B}`") == "\\`\\${A}-\\${B}\\`"
-    assert api_ts.type_cell("[a_b] & c") == "\\[a\\_b\\] \\& c"
+    assert api.type_cell("`${A}-${B}`") == "\\`\\${A}-\\${B}\\`"
+    assert api.type_cell("[a_b] & c") == "\\[a\\_b\\] &amp; c"
 
 
 def test_stopped_build_keeps_its_pages_in_the_manifest(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    "A build that stops part way lists the pages it wrote, so the next build may write them again."
+    "A build that stops part way, here at a page it cannot write, lists the pages it wrote, so the next build may write them again."
+    site(tmp_path, "app", monkeypatch)
+    write = Path.write_text
+
+    def fail(self: Path, text: str, **kw: object) -> int:
+        "Write as usual, except `utils/format.qmd`, which fails as a full disk would."
+        if self.as_posix().endswith("api/utils/format.qmd"):
+            raise OSError("no space left")
+        return write(self, text, **kw)
+
+    monkeypatch.setattr(Path, "write_text", fail)
+    assert main(["api", "build", "--dir", str(tmp_path)]) != 0
+    listed = set((tmp_path / "api/.smalldocs-api").read_text().split("\n"))
+    assert "components/Badge.qmd" in listed and "utils/format.qmd" not in listed
+    monkeypatch.setattr(Path, "write_text", write)
+    assert main(["api", "build", "--dir", str(tmp_path)]) == 0
+
+
+def test_hand_written_page_stops_the_build_before_it_writes(tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture) -> None:
+    "A hand-written page where a module's page goes stops the build before it writes any page, and the page stays."
     site(tmp_path, "app", monkeypatch)
     (tmp_path / "api/utils").mkdir(parents=True)
     (tmp_path / "api/utils/format.qmd").write_text("# Mine\n")
     assert main(["api", "build", "--dir", str(tmp_path)]) == 2
-    listed = set((tmp_path / "api/.smalldocs-api").read_text().split("\n"))
-    assert "components/Badge.qmd" in listed and "utils/format.qmd" not in listed
-    (tmp_path / "api/utils/format.qmd").unlink()
+    assert "no earlier API build wrote it" in capsys.readouterr().err
+    assert [p.relative_to(tmp_path / "api").as_posix() for p in (tmp_path / "api").rglob("*")] == ["utils", "utils/format.qmd"]
+
+
+def test_hand_written_index_of_a_module_folder_is_kept(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    "A hand-written `components/index.qmd` stays; the page of `components/index.ts` then sits beside it as `components/components.qmd`, as on a Rust site."
+    site(tmp_path, "app", monkeypatch)
+    (tmp_path / "api/components").mkdir(parents=True)
+    (tmp_path / "api/components/index.qmd").write_text("# Mine\n")
     assert main(["api", "build", "--dir", str(tmp_path)]) == 0
+    p = pages(tmp_path)
+    assert p["components/index.qmd"] == "# Mine\n" and "It exports again `Badge`" in p["components/components.qmd"]
+    assert "| [`components`](/api/components/index.qmd) |" in p["index.qmd"]
+
+
+# ---------------------------------------------------------------- findings of the review of the merged Rust and TypeScript pages
+
+
+def test_emoji_in_a_summary_renders(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    "An emoji in a module's comment is one character in the front matter, so the site renders; JSON's surrogate pair broke PyYAML."
+    data, project = fixture("lib")
+    data["comment"] = {"summary": [{"kind": "text", "text": "Shapes 🦀 and sums, with Vec<T>. "}]}
+    site(tmp_path, "lib", monkeypatch)
+    monkeypatch.setattr(api_ts, "typedoc_json", lambda s: (data, project))
+    assert main(["render", str(tmp_path), "-q"]) == 0
+    assert 'description: "Shapes 🦀 and sums, with Vec<T>."' in pages(tmp_path)["lib.qmd"] and api.yaml_text("a\u2028b") == '"a\\u2028b"'
+    assert '<meta name="description" content="Shapes 🦀 and sums, with Vec&lt;T&gt;.' in (tmp_path / "_site/api/lib.html").read_text()
+
+
+def test_page_renamed_only_in_case_takes_its_new_spelling(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    "A module renamed only in case, `Chip` to `chip`, or a folder `hooks` to `Hooks`, is written in its new spelling, and the old page is gone, on any disk."
+    site(tmp_path, "app", monkeypatch)
+    assert main(["api", "build", "--dir", str(tmp_path)]) == 0
+    data, project = fixture("app")
+    text = json.dumps(data).replace('"src/components/Chip"', '"src/components/chip"').replace('"src/hooks/useCounter"', '"src/Hooks/useCounter"')
+    monkeypatch.setattr(api_ts, "typedoc_json", lambda s: (json.loads(text), project))
+    assert main(["api", "build", "--dir", str(tmp_path)]) == 0
+    names = {p.relative_to(tmp_path / "api").as_posix() for p in (tmp_path / "api").rglob("*.qmd")}
+    assert {"components/chip.qmd", "Hooks/useCounter.qmd", "Hooks/index.qmd"} <= names
+    assert not {"components/Chip.qmd", "hooks/useCounter.qmd", "hooks/index.qmd"} & names
+
+
+@pytest.mark.parametrize("rel", ["utils/format.md", "utils/format.ipynb", "index.md"])
+def test_hand_written_md_or_notebook_counts_as_a_page(tmp_path: Path, monkeypatch: pytest.MonkeyPatch, rel: str) -> None:
+    "A hand-written `.md` or `.ipynb` is a page as a `.qmd` is: a module's page there stops the build, and a folder's index there is not written."
+    site(tmp_path, "app", monkeypatch)
+    (tmp_path / "api" / rel).parent.mkdir(parents=True, exist_ok=True)
+    (tmp_path / "api" / rel).write_text("# Mine\n")
+    code = main(["api", "build", "--dir", str(tmp_path)])
+    if rel == "index.md":
+        assert code == 0 and not (tmp_path / "api/index.qmd").exists()
+    else:
+        assert code == 2 and not (tmp_path / "api/utils/format.qmd").exists()
+    assert (tmp_path / "api" / rel).read_text() == "# Mine\n"
+
+
+def test_escape_angles_leaves_fenced_code_with_a_blank_line() -> None:
+    "A fenced code block that holds a blank line is code, so its `<` stays; the prose around it is escaped."
+    text = "Use Map<K>.\n\n```ts\nconst m = new Map<string, number>()\n\nm.set('a', 1)\n```\n\nThen Set<T>.\n~~~\na<b\n~~~"
+    want = "Use Map&lt;K>.\n\n```ts\nconst m = new Map<string, number>()\n\nm.set('a', 1)\n```\n\nThen Set&lt;T>.\n~~~\na<b\n~~~"
+    assert api.escape_angles(text) == want
+
+
+def test_edited_page_is_never_written_over(tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture) -> None:
+    "A page that a build wrote and someone then edited, so it has lost the mark, stops the next build, though the manifest lists it."
+    site(tmp_path, "app", monkeypatch)
+    assert main(["api", "build", "--dir", str(tmp_path)]) == 0
+    (tmp_path / "api/utils/format.qmd").write_text("---\ntitle: My notes\n---\n")
+    assert main(["api", "build", "--dir", str(tmp_path)]) == 2
+    assert "has no mark" in capsys.readouterr().err and (tmp_path / "api/utils/format.qmd").read_text() == "---\ntitle: My notes\n---\n"
+
+
+def test_type_cells_keep_quotes_tildes_and_carets(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    "A string-literal type keeps straight quotes, and `~` and `^` are no subscript or superscript."
+    assert api.type_cell("\"a\" | 'b' ~T~ x^2^") == "\\\"a\\\" | \\'b\\' \\~T\\~ x\\^2\\^"
+    site(tmp_path, "app", monkeypatch)
+    assert main(["render", str(tmp_path), "-q"]) == 0
+    assert "<td>&quot;info&quot; | &quot;warn&quot;</td>" in (tmp_path / "_site/api/components/Badge.html").read_text()

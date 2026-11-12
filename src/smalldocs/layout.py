@@ -2,6 +2,7 @@
 
 import datetime as dt
 import html
+import itertools
 import json
 import posixpath
 import re
@@ -258,14 +259,23 @@ class SiteNav:
         self,
         pattern: str = "*",  # A glob, or `*` for every page
     ) -> list[Item]:  # A tree of entries for the pages under a pattern
-        "Make Quarto's `auto` tree: one section for each folder, titled by its index page."
+        "Make Quarto's `auto` tree: one section for each folder, titled by its index page; as Quarto does, the folder a pattern starts in, such as `api` in `api/**`, is no section, and its index is left out."
         pages = self.glob(pattern if pattern != "*" else "**") if pattern not in ("*", "auto") else self.listed()
         if pattern in ("*", "auto"):
             pages = sorted(pages, key=lambda p: (p.front.get("order", 10**9) if isinstance(p.front.get("order"), int | float) else 10**9, len(p.src.parts), p.src.stem != "index", str(p.src)))
+        start: tuple[str, ...] = ()
+        if pattern not in ("*", "auto") and is_glob_str(pattern.lstrip("/")):
+            parts = PurePosixPath(pattern.lstrip("/")).parts
+            start = tuple(itertools.takewhile(lambda part: not is_glob_str(part), parts[:-1]))
         tree: dict = {}
         for p in pages:
+            folder = p.src.parent.parts
+            if start and folder[: len(start)] == start:
+                if folder == start and p.src.stem == "index":
+                    continue  # the index of the folder the pattern starts in
+                folder = folder[len(start) :]
             node = tree
-            for part in p.src.parent.parts:
+            for part in folder:
                 node = node.setdefault(part, {})
             node.setdefault("__pages__", []).append(p)
         return self.tree_items(tree, PurePosixPath("."))
