@@ -239,6 +239,15 @@ def test_tables_scroll_in_their_own_box() -> None:
     assert ".sd-table { overflow-x: auto; }" in css
 
 
+def test_toc_links_wrap_long_names() -> None:
+    "A long name with no spaces, such as DRAFT_SAFETY_NO_AUTHORITY_EXPANSION, wraps in the table of contents and the listing categories, and is not cut off."
+    css = (Path(smalldocs.__file__).parent / "assets" / "smalldocs.css").read_text()
+    link = re.search(r"#TOC \.nav-link \{([^}]*)\}", css)
+    assert link and "overflow-wrap: anywhere;" in link[1]
+    assert "main.content > #TOC a, #TOC-body a { text-decoration: none; overflow-wrap: anywhere; }" in css
+    assert "color: var(--sd-muted); overflow-wrap: anywhere; }" in re.search(r"\.quarto-listing-category \.category \{[^}]*\}", css)[0]
+
+
 def test_executable_cells_are_shown_not_run() -> None:
     "A `{python}` cell is shown as code, without its `#|` options, and noted."
     env: dict = {}
