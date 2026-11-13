@@ -319,9 +319,9 @@ These options belong to smalldocs. They are at the top level of `_smalldocs.yml`
 
 | Key | What it does | Default |
 |---|---|---|
-| `linkify` | A documented name in backticks links to its entry in the API reference. See [Linkify](#linkify) | On when `api` has `packages`, or when the `filters` of a `_quarto.yml` name `linkify.lua`. Off otherwise |
+| `linkify` | A documented name in backticks links to its entry in the API reference. See [Linkify](#linkify) | On when the config has `api`, or when the `filters` of a `_quarto.yml` name `linkify.lua`. Off otherwise |
 | `symbols` | The index of names that linkify reads, from the folder of the project. Set it only for an index that you write yourself, without `api`. The `api` section always writes `_symbols.json` | `_symbols.json` |
-| `api` | The API reference. See [The API reference](api.qmd#turn-on-the-reference) | None: no reference |
+| `api` | The API reference: one section, or a list of sections. See [The API reference](api.qmd#turn-on-the-reference) and [Rust, TypeScript and HTTP references](api-languages.qmd) | None: no reference |
 
 ## Linkify
 
@@ -330,6 +330,10 @@ example, `` `Site.build` `` and `` `Site.build()` `` link to the entry of `Site.
 only names that look like code, such as a call, a dotted name or a class. A plain lowercase word, such
 as `main`, stays as code. See [Links from the text](api.qmd#links-from-the-text).
 
+On a site with a Rust, TypeScript or OpenAPI reference, every name in the index links, unless it has the class
+`nolink` or is inside a link. See
+[Link names from the text](api-languages.qmd#link-names-from-the-text).
+
 Linkify reads the names and their links from the file `_symbols.json`, in the folder of the project. When
 the config has `api`, each build writes this file before it builds the pages. See
 [The index of names](api.qmd#the-index-of-names).
@@ -337,8 +341,8 @@ the config has `api`, each build writes this file before it builds the pages. Se
 smalldocs decides whether linkify is on in this order:
 
 1. `linkify`, if you set it. `linkify: true` turns it on, and `linkify: false` turns it off.
-2. `api.linkify`, if you set it.
-3. Otherwise, linkify is on when `api` has `packages`, or when the `filters` of a `_quarto.yml` name
+2. `api.linkify`, if you set it. When `api` is a list of sections, smalldocs skips this step.
+3. Otherwise, linkify is on when the config has `api`, or when the `filters` of a `_quarto.yml` name
    `linkify.lua`.
 
 ## What a build writes

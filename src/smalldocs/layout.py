@@ -258,13 +258,14 @@ class SiteNav:
     def auto(
         self,
         pattern: str = "*",  # A glob, or `*` for every page
+        whole: bool = False,  # Keep the folder the pattern starts in as a section, for a folder named in `contents`, as 0.5.8 did
     ) -> list[Item]:  # A tree of entries for the pages under a pattern
         "Make Quarto's `auto` tree: one section for each folder, titled by its index page; as Quarto does, the folder a pattern starts in, such as `api` in `api/**`, is no section, and its index is left out."
         pages = self.glob(pattern if pattern != "*" else "**") if pattern not in ("*", "auto") else self.listed()
         if pattern in ("*", "auto"):
             pages = sorted(pages, key=lambda p: (p.front.get("order", 10**9) if isinstance(p.front.get("order"), int | float) else 10**9, len(p.src.parts), p.src.stem != "index", str(p.src)))
         start: tuple[str, ...] = ()
-        if pattern not in ("*", "auto") and is_glob_str(pattern.lstrip("/")):
+        if not whole and pattern not in ("*", "auto") and is_glob_str(pattern.lstrip("/")):
             parts = PurePosixPath(pattern.lstrip("/")).parts
             start = tuple(itertools.takewhile(lambda part: not is_glob_str(part), parts[:-1]))
         tree: dict = {}
@@ -311,7 +312,7 @@ class SiteNav:
                     if not self.site.hidden(page):
                         out.append(self.page_item(page))
                 elif (self.site.root / c).is_dir():
-                    out += self.auto(c.rstrip("/") + "/**")
+                    out += self.auto(c.rstrip("/") + "/**", whole=True)
                 elif c.strip().startswith("---"):
                     out.append(Item(text="", sep=True))
                 else:

@@ -1,0 +1,43 @@
+---
+title: smalldocs 0.5.9
+subtitle: Reference pages for Rust, TypeScript and HTTP APIs
+date: 2026-11-12
+author: Rahul Dave
+categories: [release]
+image: ../images/mark.svg
+---
+
+smalldocs can now make reference pages for three more kinds of code. Before, it read Python only. The
+key `language` in the `api` section chooses the kind:
+
+- **`rust`** reads a crate, through the JSON that rustdoc writes. It needs a nightly toolchain of Rust.
+- **`typescript`** reads a package or an app, through the JSON that TypeDoc writes. It needs Node.
+- **`openapi`** reads the OpenAPI document of an HTTP API, from a file, from a command, or from a
+  FastAPI app.
+
+The pages look like the Python pages, with a heading, a source link, a code block and a table for each
+entry. `smalldocs api check` reports each gap in the comments, as it does for Python. On these sites, a
+name in backticks links to its entry when it is a key of `_symbols.json`, even when it does not look like code.
+
+`api` can also be a list of sections, for several references in one site. Each section has its own
+`out` folder. `smalldocs api build --out NAME` builds one section of the list.
+
+[Rust, TypeScript and HTTP references](../guide/api-languages.qmd) says how to set up each one. The
+front end of cricsdb, in TypeScript, is the first site with one of these references.
+
+## What changes for a site that uses none of it
+
+A site whose `api` is one Python section builds its reference pages as before. Three other changes can
+touch any site:
+
+- **A key that an `api` section does not read gives a warning.** For example, `entry` in a Python
+  section gives "entry is not read for python; it is for typescript". So `render --strict` now fails on
+  such a key, and on `package` beside `packages`. Remove the key, or fix its name.
+- **A sidebar entry `auto` with a glob that starts in a folder, such as `auto: api/**`, makes no section
+  for that folder, and leaves out its index page,** as Quarto does. The folders inside it are still
+  sections. To keep the index in the sidebar, list it
+  by name before the `auto` entry. A glob such as `contents: api/*` does not change.
+- **An escaped dash or dot is never part of a dash or an ellipsis,** as in Pandoc. The same holds for a character
+  reference, such as `&#45;&#45;`. Before, smalldocs made
+  `\-\-` an en dash and `\.\.\.` an ellipsis. A heading that has one gets a new id, so a link to
+  it must change. For example, the id of `## Head \-\- one` was `#head-one`, and it is now `#head----one`.

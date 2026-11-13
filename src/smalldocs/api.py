@@ -649,7 +649,7 @@ class Settings:
     check: tuple[str, ...] = ()  # Globs, from the root, of more files that `check` holds to the convention; `**/` is any folders or none
     linkify: bool = True  # Whether a name in backticks links to its entry
     shown: bool = False  # Whether `check` holds the packages only to what their pages show, from `check-shown`
-    language: str = "python"  # The language of the code: `python`, `rust` or `typescript`
+    language: str = "python"  # The language of the code: `python`, `rust`, `typescript` or `openapi`
     entry: tuple[str, ...] = ()  # TypeScript: the entry points, files or folders, from the site's folder
     tsconfig: str = ""  # TypeScript: the tsconfig, from the site's folder; empty lets TypeDoc find it
     manifest: Path | None = None  # Rust: the crate's Cargo.toml; `None` is the one at the root
@@ -1272,8 +1272,10 @@ def sections(
         raise ValueError("the api settings: api must be a mapping, or a list of mappings with one section each")
     out = [Settings.read(site, c) for c in conf]
     folders = []
-    for s in out:
+    for c, s in zip(conf, out, strict=True):
         s.listed = True
+        if "linkify" in c:
+            s.warnings.append(f"the api section with out {s.out!r}: linkify is not read in a list of sections; give linkify at the top level of the config, or under smalldocs: in a _quarto.yml")
         here = out_folder(s)
         for other, there in folders:
             a, b = str(here).casefold(), str(there).casefold()  # case does not tell folders apart, as on macOS

@@ -15,8 +15,8 @@ smalldocs builds a website from a folder of Markdown pages and notebooks. A file
 the folder holds the options of the site. smalldocs writes the site into the folder `_site`.
 
 Each page of the site has a navbar at the top, a sidebar at the left and a table of contents at the
-right. smalldocs also makes reference pages from your Python code, and pages that list other pages,
-such as a blog.
+right. smalldocs also makes reference pages from your Python, Rust or TypeScript code, or from the
+OpenAPI document of an HTTP API. It also makes pages that list other pages, such as a blog.
 
 A theme is a stylesheet that sets the colours and the fonts of the site. smalldocs includes the
 [Bootswatch themes](https://bootswatch.com) and can install themes from a git repository.
@@ -29,7 +29,8 @@ The [theme handbook](https://rahuldave.com/elegant-themes/theme-guide.html) desc
 Optional [browser notebooks](guide/browser-notebooks.qmd) let readers edit and run Python with JupyterLite and Pyodide.
 Try the [plot example](guide/browser-plot/index.ipynb) or the [data example](guide/browser-data/index.ipynb).
 
-smalldocs is one Python package, and it needs no other programs. Install it from PyPI:
+smalldocs is one Python package, and it needs no other programs. Only a reference of Rust, TypeScript or
+an HTTP API needs the tools of that code. Install smalldocs from PyPI:
 
 ```bash
 pip install smalldocs

@@ -1,0 +1,475 @@
+---
+title: Rust, TypeScript and HTTP references
+description: Reference pages from a Rust crate, a TypeScript package or an OpenAPI document, and several references in one site.
+order: 5.5
+---
+
+[The API reference](api.qmd) makes pages from Python code. smalldocs can also make reference pages for
+a Rust crate, for a TypeScript package, and for an HTTP API that an OpenAPI document describes. The pages
+look like the Python pages. Each entry has a heading, a link to its source, a code block, its
+description and a table.
+
+The key `language` in the `api` section chooses the kind of code:
+
+| `language` | What smalldocs reads | What you install |
+|---|---|---|
+| `python` | The package, which smalldocs imports. It is the default | smalldocs, in the environment of the package |
+| `rust` | The JSON that rustdoc writes | A nightly toolchain of Rust |
+| `typescript` | The JSON that TypeDoc writes | Node, and the packages of the project |
+| `openapi` | An OpenAPI document, in JSON or YAML | Nothing for a file. uv for a FastAPI app |
+
+For Rust and TypeScript, smalldocs does not read the code itself. A tool of the language reads the code,
+and it writes what it knows as JSON. smalldocs runs that tool, reads the JSON and writes the pages. The
+tool writes its output into a temporary folder, outside the project.
+
+smalldocs does not import Rust or TypeScript code, so it needs no Python environment of the project.
+Run it with uvx, which runs a Python tool from PyPI in a temporary environment:
+
+```bash
+uvx smalldocs api build --dir docs
+uvx smalldocs render docs
+```
+
+## The keys of every language
+
+Each `api` section reads these keys, whatever its language:
+
+| Key | What it does | Default |
+|---|---|---|
+| `language` | `python`, `rust`, `typescript` or `openapi` | `python` |
+| `out` | The folder of the reference pages, from the folder of the project. It must be inside that folder | `api` |
+| `root` | The root of the repository, from the folder of the project. A source link is the path of the file from here | See the list below the table |
+| `source` | The address of the code. Each entry links to its line there | None: no links to the code |
+| `check-shown` | `smalldocs api check` holds the code only to what the pages show. See [Check the comments](#check-the-comments) | Off |
+| `linkify` | Names in backticks link to their entries. The top-level `linkify` wins over it. When `api` is a list, only the top-level `linkify` counts, and a `linkify` in a section is a warning | On |
+
+The default of `root` depends on the language:
+
+- **Python:** see [Turn on the reference](api.qmd#turn-on-the-reference).
+- **Rust:** with `manifest`, the git repository that holds the crate. Without it, the folder of the
+  project when that folder holds a `Cargo.toml`, a `package.json` or `.git`, and its parent otherwise.
+- **TypeScript:** the git repository that holds the first entry point. Without one, the folder of the
+  project when that folder holds a `Cargo.toml`, a `package.json` or `.git`, and its parent otherwise.
+- **OpenAPI:** the folder of the project when that folder holds a `Cargo.toml`, a `package.json`, a
+  `pyproject.toml` or `.git`, and its parent otherwise.
+
+Each build runs the tool of the language, before it builds the pages. A preview watches the folder of
+the site only. An edit to code outside that folder starts no new build; save a page of the site to start
+one.
+
+A section warns for each key that its language does not read. For example, `entry` in a Rust section
+gives this warning:
+
+```
+the api section with out 'api': entry is not read for rust; it is for typescript
+```
+
+A warning fails `smalldocs render --strict`. `smalldocs api build` and `smalldocs api check` print it.
+
+## A Rust crate
+
+### Install a nightly toolchain
+
+rustdoc writes JSON only with the option `-Z unstable-options`, and only a nightly toolchain takes it.
+Install one with rustup:
+
+```bash
+rustup toolchain install nightly
+```
+
+The nightly toolchain does not replace your default toolchain. smalldocs runs
+`cargo +nightly rustdoc`, which uses nightly for that one command. smalldocs never installs a toolchain
+itself. If cargo or the toolchain is missing, the build stops, and the message says how to install it.
+
+### Turn on the reference
+
+```yaml
+api:
+  language: rust
+  manifest: ../Cargo.toml     # the crate, from the folder of the project
+  out: api
+  source: https://github.com/me/mycrate/blob/main
+```
+
+| Key | What it does | Default |
+|---|---|---|
+| `manifest` | The `Cargo.toml` of the crate, from the folder of the project. In a workspace, name the `Cargo.toml` of one package | The `Cargo.toml` at `root` |
+| `toolchain` | The toolchain that runs rustdoc. Write it as text, in quotes if it looks like a number | `nightly` |
+| `private` | Document the private items too. Write `true` or `false` with no quotes | Off |
+
+The format of rustdoc's JSON changes between nightly releases. smalldocs reads the formats 57 and 61.
+If rustdoc writes another format, the build stops with the format that it found. Then pin a dated
+nightly that writes one of them, such as `toolchain: nightly-2026-11-11`.
+
+A crate with only a binary, such as one with `src/main.rs` and no `src/lib.rs`, has no public API. So
+smalldocs documents all of its items, the private ones too.
+
+rustdoc writes its output into a folder that only you can write, in the temporary folder of the computer. If cargo
+changes the `Cargo.lock` of the project, smalldocs puts the file back as it was.
+
+### Write the doc comments
+
+A doc comment is a comment that the doc tool of a language reads. In Rust it starts with `///`, or with
+`//!` for a module. Give each function a doc comment, each parameter a docment, and each return value a
+`# Returns` section. A docment is the `//` comment on the line of a parameter:
+
+```rust
+/// Add two numbers.
+///
+/// # Returns
+///
+/// The sum.
+pub fn add(a: i32,  // the first number
+           b: i32,  // the second number
+) -> i32 {
+    a + b
+}
+```
+
+Put each parameter on its own line. A comment on a line with two parameters documents neither, because
+smalldocs cannot tell which one it is for.
+
+rustfmt, the formatter of Rust, moves a comment after the `{` into the body of the function. So the
+return value takes a `# Returns` section, which is the convention of Rust. A comment on the line of `->`
+still counts, if rustfmt leaves it there. A function that returns nothing needs no `# Returns` section.
+
+A `# Arguments` list in the doc comment also documents the parameters, one line for each, as jagt does:
+
+```rust
+/// Render an `AGENT_TASK v1` packet, with its delegation and safety blocks, as text for standard
+/// output.
+///
+/// # Arguments
+///
+/// * `options` - what the packet holds
+///
+/// # Returns
+///
+/// The packet, from its start line to its end line, each line ending in a newline.
+pub fn render_task_packet(options: &TaskRenderOptions) -> Result<String> {
+```
+
+A `# Returns` section of one paragraph moves into the table of the function. A longer section, for
+example one with a list or an example, stays in the doc comment. The table then shows its first
+paragraph. A field of a struct and a variant of an enum take a `///` doc comment, or a `//` comment on
+their line.
+
+### What the pages show
+
+smalldocs writes one page for each module, in folders that follow the modules of the crate:
+
+- The root of the crate is `api/<crate>.qmd`, such as `api/mycrate.qmd`.
+- A module that holds other modules is the `index.qmd` of its folder, such as `api/geo/index.qmd`.
+- A module with no modules in it is a page of its own, such as `api/geo/plane.qmd`.
+- `api/index.qmd` lists the pages, with the summary of the crate. Its title is "Reference".
+
+Each heading names the kind of item, such as `## fn add` or `## struct Point`. A method is one level
+down, as `### Point::distance`. The methods of an `impl` block are entries under their type. An
+`impl` of a trait is a line, such as "Implements `Display`". An item that a module exports again with
+`pub use` has one entry, on the page of the module that declares it.
+
+A link in a doc comment, such as ``[`Point`]``, becomes a link to its entry. A name from another crate,
+such as `std::fmt::Display`, links to the documentation of that crate.
+
+## A TypeScript package
+
+### Install Node
+
+TypeDoc needs Node and the packages of the project. Install them in the folder of the TypeScript
+project:
+
+```bash
+npm install
+```
+
+If the project has TypeDoc, in `node_modules/.bin/typedoc`, smalldocs runs it. Otherwise smalldocs runs
+`npx --yes --package typedoc@0.28 typedoc`. npx is the tool of Node that runs a package, and it keeps
+TypeDoc 0.28 in the cache of npm. If Node is missing, the build stops and says so.
+
+### Turn on the reference
+
+`entry` names the entry points, the files that a package exports from. Give one path, a list of paths
+or a folder. The front end of cricsdb is an app with no index file, so its section names a folder:
+
+```yaml
+api:
+  language: typescript
+  entry: ../frontend/src
+  tsconfig: ../frontend/tsconfig.app.json
+  root: ..
+  source: https://github.com/rahuldave/cricsdb/blob/main
+  out: api
+```
+
+| Key | What it does | Default |
+|---|---|---|
+| `entry` | The entry points, from the folder of the project: one path, a list of paths, or a folder | None. A TypeScript section without it stops the build |
+| `tsconfig` | The `tsconfig.json` that TypeDoc reads, from the folder of the project | The one that TypeDoc finds |
+
+TypeDoc gives only what the entry points export, and it follows `export * from`. When `entry` is a
+folder, every file in the folder is an entry point.
+
+### Write the doc comments
+
+A doc comment in TypeScript is a JSDoc comment, which starts with `/**`. Give each export a doc
+comment, and each parameter and each return value a docment. In TypeScript, a docment is the `//`
+comment on the line of a parameter. The comment on the line of the `)` or the `{` documents the return
+value:
+
+```ts
+/** Add two numbers. */
+export function add(a: number,      // the first number
+                    b: number = 1,  // the second number
+): number {                         // the sum
+  return a + b;
+}
+```
+
+Without a docment, smalldocs uses the `@param` and `@returns` tags of the doc comment. On a signature of
+one line, a comment documents the return value, even when a parameter is on that line too.
+
+The description of a file is its module comment. smalldocs reads it as TypeDoc does:
+
+- A comment with `@module` or `@packageDocumentation` is the comment of the module.
+- A comment right before a declaration is the comment of that declaration.
+- The first comment of a file is the comment of the module when an import, a re-export, `"use client"`,
+  another doc comment or the end of the file follows it.
+
+A React component is a function with a capital name, which returns JSX and takes no parameter or one
+object of props. Its table shows the fields of its props, with the comment of each field and the
+default from the destructured props. A component needs no comment on its return value, because it
+returns what it draws. A destructured parameter takes the tags `@param props.footer` or `@param footer`:
+
+```ts
+/**
+ * A panel with a footer; its props join `PanelProps` and its own.
+ * @param props.footer the words at the bottom
+ */
+export function FooterPanel({ title, wide = false, footer }: PanelProps & { footer?: string }): JSX.Element {
+```
+
+Put each field of an interface or a type on its own line. A comment on a line with two fields documents
+neither of them.
+
+### What the pages show
+
+smalldocs writes one page for each file, in folders that follow the folders of the source:
+
+- A file `src/components/Badge.tsx` gives the page `api/components/Badge.qmd`. A folder that holds
+  every file, such as `src/`, is left out.
+- An `index.ts` gives the page of its folder, such as `api/components/index.qmd`.
+- A folder with no page of its own gets an `index.qmd` that lists its pages.
+
+Each heading names the kind of item, such as `## class Rect` or `## interface Point`. A function has
+its name only, such as `## add`. A method is one level down, as `### Rect.area`. A name from another
+package has no link.
+
+## An HTTP API
+
+An OpenAPI document is a JSON or YAML file in a standard format, which describes an HTTP API. It has an
+entry for each operation, and a schema for each kind of data. An operation is one method on one path,
+such as `GET /api/players/{player_id}`. A schema is the shape of one kind of data, such as a player.
+Most web frameworks can write the document.
+
+smalldocs reads OpenAPI 3.0 and 3.1. It reads 3.2 as 3.1, with a warning. A Swagger 2.0 document stops
+the build.
+
+### Give the document
+
+A section with `language: openapi` takes exactly one of three inputs:
+
+| Key | What it is | Use it for |
+|---|---|---|
+| `file` | A JSON or YAML file, from the folder of the project | A framework that writes a file, such as `cargo openapi generate` of dropshot or `tsoa spec` |
+| `command` | A command that prints the document on its standard output. It runs in `root`, with no shell. Give one line, or a list of words | A small program of the project that prints the document |
+| `fastapi` | A FastAPI app, as `module:attribute`, as uvicorn names it | A FastAPI app |
+
+```yaml
+api:
+  - language: openapi
+    file: ../openapi/my-api.json
+    out: http
+  - language: openapi
+    command: cargo run --quiet --bin openapi   # a binary that prints the document
+    out: rust-http
+```
+
+The standard output of a command must hold only the document. So a command must send its notices to
+standard error, as `cargo run --quiet` does. A command that fails stops the build, with its exit code
+and the end of its standard error. The key `timeout` gives the seconds to wait, and it is 300 by
+default. smalldocs writes nothing into the project, but the command can. For example, `cargo run`
+writes into `target/`.
+
+### A FastAPI app
+
+With `fastapi`, smalldocs runs a short program of its own in the environment of the project. The program
+imports the app, calls `app.openapi()` and adds the file and the line of each route. It never starts a
+server. smalldocs runs the program with `uv run --frozen python`, in `root`, so `root` must be the folder
+that the import of the app starts from. The option `--frozen` never changes `uv.lock`, but uv can still
+install packages into the `.venv` of the project. The key `python` gives another command for Python,
+such as `python: .venv/bin/python`.
+
+Some apps add their routes only when the server starts, in their lifespan function. An import of such
+an app gives a document with no operations, and the build stops. Then name the function that adds the
+routes in `setup`. The program calls it with the app before it calls `app.openapi()`. cricsdb adds its
+routers in this way:
+
+```yaml
+api:
+  - language: openapi
+    fastapi: api.app:app
+    setup: api.routers:register_routers
+    root: ..
+    out: reference
+    source: https://github.com/rahuldave/cricsdb/blob/main
+```
+
+The setup function can be an `async def` function. `setup` works only with `fastapi`, and with `file`
+or `command` it is an error. A command can do its own setup in its program. If a step of the program
+fails, the message names the step, such as `setup-import`, and gives the end of the traceback.
+
+Each operation gets a link to the line of its route, when `source` is set. A decorator without
+`functools.wraps` makes the link point at the code of the decorator. A route on a
+`functools.partial` has no link. The schemas of FastAPI get no link.
+
+A program of another producer can add the source link too. Give the operation or the schema the
+extension `x-smalldocs-source`, with a `file` and a `line`. A relative `file` starts at `root`.
+
+### What the pages show
+
+An OpenAPI tag is a name that groups operations, such as `Players`. FastAPI takes it from `tags=` on a
+route or a router.
+
+- Each tag gets a page, such as `reference/players.qmd`. The pages keep the order of the document.
+- The operations with no tag go on the page `default.qmd`.
+- An operation with several tags has one entry, on the page of its first tag.
+- The schemas are on the page `schemas.qmd`, and `index.qmd` lists the pages.
+
+The heading of an operation is its method and its path. Under it, the entry shows the request in a
+code block, the summary and the description. Then it gives a table of the parameters, the request
+body and a table of the responses. A type that is a schema links to its entry on `schemas.qmd`.
+
+The pages leave out callbacks, webhooks, links, security schemes, examples, `servers`, the headers of
+responses, and limits on a value such as `maximum`.
+
+## Several references in one site
+
+`api` can be a list of sections. Each section names its `language` and has its own `out` folder:
+
+```yaml
+api:
+  - packages: [cricsdb]         # python, the default language
+    root: ..
+    out: python
+  - language: openapi
+    fastapi: api.app:app
+    root: ..
+    out: reference
+```
+
+- **`out`** must differ for each section. Two sections with the same `out`, or one `out` inside another,
+  stop the build.
+- **`linkify`** is at the top level of the config for a list, or under `smalldocs:` in a `_quarto.yml`.
+- **`--out NAME`** runs only the section whose `out` is `NAME`, as in
+  `smalldocs api build --out reference --dir docs`.
+- **`smalldocs api list` and `smalldocs api module`** are for Python only. With a list, they use its
+  one Python section. With several Python sections, give `--out NAME`.
+
+All the sections write their names into one `_symbols.json`. A name that two sections give links to the
+first section. When two sections give the same full name, the build also warns. For example, a Python module
+`reference` and an OpenAPI section with `out: reference` can both give `reference.Player`.
+
+If you remove a section from the list, its pages stay, and the build warns with their folder. Remove
+the folder yourself.
+
+## The pages that a build writes
+
+A build never writes over a page that a person wrote. A Rust, TypeScript or OpenAPI build marks each page
+that it writes. The mark is the first line of the front matter:
+
+```yaml
+# written by smalldocs api build; a build writes over it
+```
+
+- A build writes over a page, or deletes it, only when the page has the mark, and when the manifest
+  `out/.smalldocs-api` lists it.
+- If a page of the build goes where a page without the mark is, the build stops. A page that you edited
+  loses its mark, so remove the edited page, or move it.
+- A folder index of your own, such as `api/components/index.qmd`, stays. The page of the module then
+  goes beside it, as `api/components/components.qmd`.
+
+A sidebar entry `auto: api/**` lists the pages in folders, as Quarto does. It makes no section for
+`api` itself, and it leaves out `api/index.qmd`. Each folder in `api` is a section.
+
+## Check the comments
+
+`smalldocs api check` runs the tool of the language and reports each gap, one on a line. Its exit code
+is 1 when it finds a gap. Here it runs on the small crate of the tests of smalldocs, with `--shown`:
+
+```
+tinycrate              26 of  32
+tinycrate::shapes       2 of   2
+tinycrate::geo          1 of   1
+tinycrate::geo::plane   1 of   1
+tinycrate::written      4 of   5
+tinycrate::deep         1 of   1
+
+tinycrate:scale: no return docment; write a `# Returns` section in its doc comment
+tinycrate:undocumented: no doc comment
+tinycrate:undocumented(x): no docment
+tinycrate:undocumented: no return docment; write a `# Returns` section in its doc comment
+tinycrate:Holder::new(v): no docment
+tinycrate:Holder::new(v): no docment
+tinycrate:apply: no return docment; write a `# Returns` section in its doc comment
+tinycrate:Size.w: no docment
+tinycrate:Size.h: no docment
+tinycrate::written:read_quietly: no return docment; write a `# Returns` section in its doc comment
+35 of 42 items are documented
+```
+
+Each line of the table gives a module, and how many of its items are documented. `Holder::new` is
+there twice, because the crate has two `impl` blocks with a `new` each.
+
+Each language holds the code to its own rules:
+
+- **Rust:** each item needs a doc comment, each parameter a docment or an `# Arguments` line, and each
+  return value a `# Returns` section. A field and a variant need a comment. Without `--shown` or
+  `check-shown: true`, `check` also holds the private items.
+- **TypeScript:** each file needs a module comment, and each export a doc comment. Each parameter and
+  each return value that is not `void` needs a docment or a tag. TypeDoc gives only what the package
+  exports, so `check` always holds only what the pages show.
+- **OpenAPI:** each operation needs a summary or a description, and each parameter a description. Each
+  schema and each of its fields needs a description. For a FastAPI app, an operation needs its
+  description, which is the docstring of its function. FastAPI makes every summary from the name of the
+  function. `check` also counts the parameters with no description by name.
+
+A field of a type that has its own entry is reported once, at that entry, such as `Box.width`. A field
+whose comment is on a line with other fields is reported with the reason.
+
+With `check-responses: true` in an OpenAPI section, each `2xx` response also needs a schema. A `2xx`
+response has a status from 200 to 299. A `204` response has no body, so `check` does not hold it. The
+empty schema `{}` and an object with no fields count as no schema. FastAPI writes them for a route that
+returns a plain `dict`, and a Pydantic `response_model` is the fix. The option is off by default.
+
+`check` does not hold the schemas `HTTPValidationError` and `ValidationError`, which FastAPI adds
+itself. With a list, `check` runs every section, and prints a line such as `api section reference
+(openapi)` before each one.
+
+## Link names from the text
+
+On a site with a Rust, TypeScript or OpenAPI section, a name in backticks links when it is a key of
+`_symbols.json`, letter for letter. A Python site also needs the name to look like code. So on these
+sites `useFetch` and `GET /api/players/{player_id}` link to their entries. A name with the
+class `nolink` stays as code, as on a Python site.
+
+The keys of `_symbols.json` are these names:
+
+| Language | The names |
+|---|---|
+| Rust | `Point`, `Point::distance`, `Point.distance` and `mycrate::Point::distance` |
+| TypeScript | `add`, a member such as `Rect.moved`, and the name with its file, such as `components/Badge.Badge` |
+| OpenAPI | The method and the path, such as `GET /api/players/{player_id}`. The `operationId`, such as `getPlayer`. The name of a schema, such as `Player`, and the name after `out`, such as `reference.Player` |
+
+A name links only when it is the same text as a key. So in the narrative of an HTTP API, write each
+path with the parameter names of the document. `GET /api/players/{id}` does not link to
+`GET /api/players/{player_id}`.

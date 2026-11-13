@@ -14,6 +14,9 @@ you write nothing twice:
 
 The [Reference](../api/site.qmd) of this site is made from the code of smalldocs in this way.
 
+This page is about Python code. For a Rust crate, a TypeScript package or an HTTP API, see
+[Rust, TypeScript and HTTP references](api-languages.qmd).
+
 ## Write the code
 
 Put one parameter on each line, with its comment beside it. Put the comment for the return value after
@@ -83,7 +86,9 @@ api:
   check-shown: true                  # `smalldocs api check` holds the packages only to what the pages show
 ```
 
-In a `_quarto.yml`, write the same section under `smalldocs:`, as `smalldocs.api`.
+In a `_quarto.yml`, write the same section under `smalldocs:`, as `smalldocs.api`. A key that a Python
+section does not read gives a warning. To make several references in one site, give `api` as a list of
+sections. See [Several references in one site](api-languages.qmd#several-references-in-one-site).
 
 | Key | What it does | Default |
 |---|---|---|
@@ -160,6 +165,9 @@ of these forms:
 A plain lowercase word, such as `main` or `check`, stays as code. Docs often name a branch, an option
 or a command with such a word, and a link would go to the wrong place. To link a function, write it
 as a call, `check()`, or with its module, `smalldocs.api.check`.
+
+On a site with a Rust, TypeScript or OpenAPI reference, a name links when it is in the index, though
+it does not look like code. See [Link names from the text](api-languages.qmd#link-names-from-the-text).
 
 These names also stay as code:
 
