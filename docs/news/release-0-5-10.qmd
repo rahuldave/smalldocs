@@ -1,0 +1,26 @@
+---
+title: smalldocs 0.5.10
+subtitle: Pattern parameters in Rust references
+date: 2026-11-13
+author: Rahul Dave
+categories: [release]
+image: ../images/mark.svg
+---
+
+A Rust function can take a pattern as a parameter, such as `State(state): State<AppState>`. The handlers
+of an axum server do this often. rustdoc's JSON names such a parameter `__arg0` in an `async fn`, and
+names `Holder(n)` only `Holder` in another function. So smalldocs 0.5.9 showed those names, and `smalldocs
+api check` reported each such parameter as undocumented, even when a comment described it.
+
+smalldocs 0.5.10 reads each parameter from the source instead. The page and the signature show the pattern
+as it is written, such as `State(state)`. A comment after the parameter documents it, and so does an
+`# Arguments` line for a name it binds, such as `state`. On gest, this documents 66
+parameters of 35 web handlers.
+
+## What changes for a site that uses none of it
+
+A Python, TypeScript or OpenAPI reference builds as before. A Rust reference changes only where a
+parameter is a pattern that rustdoc names badly. There, `__arg0` becomes the pattern, and so do the
+names that rustdoc gives some patterns, such as `Holder` for `Holder(n)` and `_` for `S { .. }`. An `# Arguments`
+line under the old name still counts. A comment after a pattern parameter, such as `(mut a, b): (u8, u8),  // the
+pair`, is now read where 0.5.9 missed it. A plain parameter such as `x` or `mut x` keeps its name.

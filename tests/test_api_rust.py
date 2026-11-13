@@ -270,7 +270,8 @@ def test_check_lists_gaps(site: Path, capsys: pytest.CaptureFixture) -> None:
         "tinycrate::inner::helpers: no module doc comment",
     ]:
         assert gap in out
-    assert "tinycrate:add:" not in out and "tinycrate:add(" not in out and "of 43 items are documented" in out
+    assert "tinycrate:add:" not in out and "tinycrate:add(" not in out and "of 45 items are documented" in out
+    assert "handle" not in out and "unhold" not in out, "a pattern parameter is documented by its comment, or by a name it binds"
     assert main(["api", "check", "--shown", "--dir", str(site)]) == 1
     shown = capsys.readouterr().out
     assert "secret" not in shown and "hidden" not in shown and "tinycrate:undocumented(x): no docment" in shown
@@ -399,6 +400,51 @@ def test_pattern_parameter(site: Path, capsys: pytest.CaptureFixture) -> None:
     assert "| `(b, c)` | (u8, u8) | the pair |" in entry(pages(site)["tinycrate.qmd"], "pair")
     main(["api", "check", "--shown", "--dir", str(site)])
     assert "pair" not in capsys.readouterr().out
+
+
+def test_pattern_parameters_as_written(site: Path) -> None:
+    "rustdoc names a pattern `__arg0` in an `async fn` and `Holder` for `Holder(n)` elsewhere; the page shows each as the source writes it."
+    p = pages(site)["tinycrate.qmd"]
+    handle = entry(p, "handle")
+    assert "pub async fn handle(Holder(n): Holder<u8>, (b, c): (u8, u8), k: u8) -> u8" in handle
+    assert "| `Holder(n)` |" in handle and "| the number in the holder |" in handle and "| `(b, c)` |" in handle and "__arg" not in handle
+    unhold = entry(p, "unhold")
+    assert "pub fn unhold(Holder(n): Holder<u8>) -> u8" in unhold and "| the number in the holder |" in unhold, "an `# Arguments` entry names a name the pattern binds"
+
+
+def test_source_params_reads_each_parameter() -> None:
+    "Each parameter is split at its top-level comma and cut at its own `:`, past generics, attributes, `::` paths and fields in a pattern."
+    def item(names: list[str]) -> dict:
+        return {"span": {"begin": [1, 1], "end": [3, 1]}, "inner": {"function": {"sig": {"inputs": [[n, {}] for n in names]}}}}
+    src = ["pub async fn h<F: Fn(u8) -> u8>(&self, #[allow(unused)] S { a: x, .. }: S,", "    Path((id, n)): axum::extract::Path<(String, u8)>, mut f: F,", ") -> u8 {"]
+    assert api_rust.source_params(src, item(["self", "__arg1", "__arg2", "f"]), "h") == ["S { a: x, .. }", "Path((id, n))", "mut f"]
+    assert api_rust.source_params(src, item(["self", "a"]), "h") == [], "a source that does not match the JSON is not used"
+    names = api_rust.param_names(src, item(["self", "__arg1", "__arg2", "f"]), "h")
+    assert [(n, b) for n, _, b, _ in names] == [("S { a: x, .. }", ["x"]), ("Path((id, n))", ["id", "n"]), ("f", ["f"])]
+
+
+def test_pattern_parameters_found_in_review() -> None:
+    "Each case an adversarial review found: several bound names, `]` in an attribute, `ref x`, rustdoc's name in `# Arguments`, a non-ASCII name."
+    def item(names: list[str]) -> dict:
+        return {"span": {"begin": [1, 1], "end": [2, 1]}, "inner": {"function": {"sig": {"inputs": [[n, {}] for n in names]}}}}
+    two = ["pub async fn ax(W2T((id, n)): W2T) -> u8 {", "}"]
+    (shown, _, binds, _), = api_rust.param_names(two, item(["__arg0"]), "ax")
+    assert api_rust.described(shown, binds, {}, {"id": "the id", "n": "the n"}) == "the id; the n", "every bound name's entry is kept"
+    attr = ['pub fn ba(#[cfg_attr(all(), doc = "[a]")] x: u8, // the x', ") -> u8 {"]
+    assert api_rust.source_params(attr, item(["x"]), "ba") == ["x"]
+    assert api_rust.param_comments(attr, item(["x"]), "ba")[0] == {"x": "the x"}
+    kept = ["pub fn k(ref x: u8, &(a, b): &(u8, u8), (mut c, d): (u8, u8), y @ W(_): W, W(z): W) {", "}"]
+    shown = [n for n, *_ in api_rust.param_names(kept, item(["x", "(a, b)", "(c, d)", "y", "W"]), "k")]
+    assert shown == ["x", "(a, b)", "(c, d)", "y", "W(z)"], "only a name rustdoc lost changes: `W` for `W(z)`"
+    (_, _, binds, _), = api_rust.param_names(["pub fn p(W(x): W) {", "}"], item(["W"]), "p")
+    assert "W" in binds and "x" in binds, "an `# Arguments` entry under rustdoc's name still matches"
+    (_, _, binds, _), = api_rust.param_names(["pub fn u((ñ, b): (u8, u8)) {", "}"], item(["(ñ, b)"]), "u")
+    assert binds[:2] == ["ñ", "b"]
+    assert [n for n, *_ in api_rust.param_names(["pub fn m(mut N: u8) {", "}"], item(["N"]), "m")] == ["N"], "`mut N` keeps rustdoc's name"
+    (_, _, binds, _), = api_rust.param_names(["pub fn r(S { r#type: t }: S) {", "}"], item(["_"]), "r")
+    assert "r" not in binds and "t" in binds, "a raw field name is not a binding"
+    (shown, *_), = api_rust.param_names(["pub fn ml(Holder(", "    x", "): Holder<u8>) {", "}"], {**item(["Holder"]), "span": {"begin": [1, 1], "end": [4, 1]}}, "ml")
+    assert shown == "Holder(x)", "a pattern over several lines is shown on one"
 
 
 def test_character_literal_and_block_comment(site: Path) -> None:

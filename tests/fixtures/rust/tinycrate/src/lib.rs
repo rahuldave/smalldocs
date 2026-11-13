@@ -177,6 +177,27 @@ pub fn pair((b, c): (u8, u8),  // the pair
     b + c
 }
 
+/// Add what a holder holds to a pair, as an async handler takes its parts.
+pub async fn handle(Holder(n): Holder<u8>,  // the number in the holder
+                    (b, c): (u8, u8),       // the pair
+                    k: u8,                  // the third
+) -> u8 {  // the sum
+    n + b + c + k
+}
+
+/// Take what a holder holds.
+///
+/// # Arguments
+///
+/// * `n` - the number in the holder
+///
+/// # Returns
+///
+/// The number.
+pub fn unhold(Holder(n): Holder<u8>) -> u8 {
+    n
+}
+
 /// Quote a character.
 pub fn quote(c: char /* '"' */,  // the character
 ) -> String {  // the quoted character

@@ -149,6 +149,22 @@ A `# Arguments` list in the doc comment also documents the parameters, one line 
 pub fn render_task_packet(options: &TaskRenderOptions) -> Result<String> {
 ```
 
+A parameter can be a pattern that unpacks its argument, as the handlers of a web server often are:
+
+```rust
+/// Show one task.
+///
+/// # Arguments
+///
+/// * `state` - the shared state of the server
+/// * `id` - the task's id, from the path
+pub async fn task_detail(State(state): State<AppState>, Path(id): Path<String>) -> Html<String> {
+```
+
+The page shows the pattern as the source writes it, such as `State(state)`. A comment after it on its
+line documents it, and so does an `# Arguments` line with a name it binds, such as `state`. rustdoc's JSON names such a parameter `__arg0` in an `async fn`, so smalldocs reads its name
+from the source.
+
 A `# Returns` section of one paragraph moves into the table of the function. A longer section, for
 example one with a list or an example, stays in the doc comment. The table then shows its first
 paragraph. A field of a struct and a variant of an enum take a `///` doc comment, or a `//` comment on
