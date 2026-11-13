@@ -1,0 +1,22 @@
+---
+title: smalldocs 0.5.11
+subtitle: Long names in the table of contents
+date: 2026-11-13
+author: Rahul Dave
+categories: [release]
+image: ../images/mark.svg
+---
+
+A heading can be a long name with no spaces, such as a Rust constant
+`DRAFT_SAFETY_NO_AUTHORITY_EXPANSION` or a path `crate::module::Type`. Reference pages have many such
+headings. Before, the table of contents cut off the end of such a name, so two names that start the same
+looked the same. A long category in the margin of a listing was cut off in the same way.
+
+smalldocs 0.5.11 breaks such a name onto more lines, in the table of contents and in the list of
+categories. So each name can be read in full.
+
+## What changes for a site that uses none of it
+
+Only the file `smalldocs.css` in `site_libs` changes. The pages are the same, apart from the version in
+the tag `<meta name="generator">`. The Folio theme has the same rule for the table of contents, for a
+site that still builds with an older smalldocs.
