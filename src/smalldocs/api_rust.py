@@ -1375,7 +1375,8 @@ def build(
     summaries = {p.file: summary(crate.item(p.id).get("docs") or "") for p in crate.pages}
     pages |= folder_indexes(crate.out, summaries, taken, summaries[crate.pages[0].file])
     warn_unlinked(s, crate.unlinked)
-    return write_reference(s, pages, symbols(crate), taken)
+    full = {f"{p.path}::{e.name}" for p in crate.pages for e in p.entries}
+    return write_reference(s, pages, symbols(crate), taken, full)
 
 
 # ---------------------------------------------------------------- checking the convention

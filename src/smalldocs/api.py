@@ -25,13 +25,15 @@ import importlib
 import importlib.util
 import inspect
 import json
+import os
 import re
+import shlex
 import sys
 import textwrap
 import tokenize
 import types
 import typing
-from dataclasses import dataclass, is_dataclass
+from dataclasses import dataclass, field, is_dataclass
 from pathlib import Path
 from pkgutil import walk_packages
 from types import FunctionType, ModuleType
@@ -626,6 +628,15 @@ def check(
 # ---------------------------------------------------------------- the site's pages
 
 
+COMMON_KEYS = ("language", "out", "root", "source", "linkify", "check-shown")  # The keys that an api section of any language reads
+SECTION_KEYS = {
+    "python": ("packages", "package", "check"),
+    "rust": ("manifest", "toolchain", "private"),
+    "typescript": ("entry", "tsconfig"),
+    "openapi": ("file", "command", "fastapi", "setup", "python", "timeout", "check-responses"),
+}  # The keys that an api section of each language reads, beside `COMMON_KEYS`
+
+
 @dataclass
 class Settings:
     "What the api settings say: `api` in `_smalldocs.yml`, or `smalldocs.api` in `_quarto.yml`."
@@ -644,6 +655,15 @@ class Settings:
     manifest: Path | None = None  # Rust: the crate's Cargo.toml; `None` is the one at the root
     toolchain: str = "nightly"  # Rust: the toolchain that runs rustdoc
     private: bool = False  # Rust: document private items too
+    file: str = ""  # OpenAPI: a JSON or YAML document, from the site's folder
+    command: tuple[str, ...] = ()  # OpenAPI: a command that prints the document, run in the root
+    fastapi: str = ""  # OpenAPI: a FastAPI app as `module:attribute`, imported in the project's environment
+    setup: str = ""  # OpenAPI: with `fastapi`, a function as `module:function` that adds the app's routes
+    python: tuple[str, ...] = ()  # OpenAPI: the command that runs Python in the project's environment; empty is `uv run --frozen python`
+    timeout: float = 300  # OpenAPI: the seconds to wait for the command or the program
+    check_responses: bool = False  # OpenAPI: whether `check` needs a schema for each `2xx` response, from `check-responses`
+    listed: bool = False  # Whether the section is one of a list, which keeps its names beside its manifest
+    warnings: list[str] = field(default_factory=list)  # What the build of the section found that is not an error
 
     @classmethod
     def read(
@@ -651,12 +671,31 @@ class Settings:
         site: Path,  # The site's folder
         conf: dict,  # The `smalldocs.api` section
     ) -> "Settings":  # The settings, with defaults
-        "Read the settings from the config."
+        "Read the settings from the config, with a warning for each key that the section's language does not read."
         language = str(conf.get("language", "python"))
-        if language not in ("python", "rust", "typescript"):
-            raise ValueError(f"the api settings: language must be python, rust or typescript, not {language!r}")
-        if language != "python":
-            return cls.read_other(site, conf, language)
+        if language not in SECTION_KEYS:
+            raise ValueError(f"the api settings: language must be python, rust, typescript or openapi, not {language!r}")
+        own = {k: v for k, v in conf.items() if k in COMMON_KEYS + SECTION_KEYS[language]}  # a key of another language warns, and its value is not checked
+        s = cls.read_python(site, own) if language == "python" else cls.read_other(site, own, language)
+        if own.get("packages") and own.get("package"):
+            s.warnings.append(f"the api section with out {s.out!r}: package is not read, because packages is given; give one of them")
+        for k, needs in (("python", "fastapi"), ("timeout", "command or fastapi")):
+            if language == "openapi" and k in own and not any(own.get(n) for n in needs.split(" or ")):
+                s.warnings.append(f"the api section with out {s.out!r}: {k} is not read without {needs}")
+        for k in conf:
+            if k not in COMMON_KEYS + SECTION_KEYS[language]:
+                langs = [n for n, keys in SECTION_KEYS.items() if k in keys]
+                why = f"it is for {' and '.join(langs)}" if langs else "smalldocs does not know it"
+                s.warnings.append(f"the api section with out {s.out!r}: {k} is not read for {language}; {why}")
+        return s
+
+    @classmethod
+    def read_python(
+        cls,
+        site: Path,  # The site's folder
+        conf: dict,  # The `api` section
+    ) -> "Settings":  # The settings, with defaults
+        "Read the settings of Python packages."
         pkgs = conf.get("packages") or conf.get("package") or []
         pkgs = [pkgs] if isinstance(pkgs, str) else list(pkgs)
         if not pkgs:
@@ -674,10 +713,10 @@ class Settings:
         cls,
         site: Path,  # The site's folder
         conf: dict,  # The `api` section
-        language: str,  # `rust` or `typescript`
+        language: str,  # `rust`, `typescript` or `openapi`
     ) -> "Settings":  # The settings, with defaults
-        "Read the settings of a crate or a TypeScript package, which has no packages to import."
-        marks = ("Cargo.toml", "package.json", ".git")
+        "Read the settings of a crate, a TypeScript package or an OpenAPI document, which have no packages to import."
+        marks = ("Cargo.toml", "package.json", ".git", *(("pyproject.toml",) if language == "openapi" else ()))
         root = (site / str(conf.get("root", "." if any((site / m).exists() for m in marks) else ".."))).resolve()
         flags = {k: conf.get(k, False) for k in ("check-shown", "private")}
         for k, v in flags.items():
@@ -699,9 +738,44 @@ class Settings:
         toolchain = conf.get("toolchain", "nightly")
         if not isinstance(toolchain, str):
             raise ValueError(f"toolchain must be text, such as nightly or \"nightly-2026-11-11\", not {toolchain!r}; put a number in quotes")
-        return cls(
+        s = cls(
             site, [], out, root, source, (), conf.get("linkify", True) is not False, flags["check-shown"], language, tuple(entry), tsconfig, manifest, toolchain, flags["private"]
         )  # fmt: skip
+        return s.read_openapi(conf) if language == "openapi" else s
+
+    def read_openapi(
+        self,
+        conf: dict,  # The `api` section
+    ) -> "Settings":  # The same settings, with the input of the OpenAPI document
+        "Read where an OpenAPI document comes from: exactly one of `file`, `command` and `fastapi`, and `setup` only with `fastapi`."
+        where = f"the api section with out {self.out!r}"
+        given = [k for k in ("file", "command", "fastapi") if conf.get(k) not in (None, "", [])]
+        if len(given) != 1:
+            raise ValueError(f"{where}: give exactly one of file, command and fastapi, not {', '.join(given) or 'none'}")
+        for k in ("file", "fastapi", "setup"):
+            if not isinstance(conf.get(k, ""), str):
+                raise ValueError(f"{where}: {k} must be text, not {conf[k]!r}")
+        for k in ("command", "python"):
+            v = conf.get(k) or []
+            if not (isinstance(v, str) or (isinstance(v, list) and all(isinstance(x, str) for x in v))):
+                raise ValueError(f"{where}: {k} must be a command, as one line or a list of words, not {v!r}")
+            setattr(self, k, tuple(shlex.split(v) if isinstance(v, str) else v))
+        self.file, self.fastapi, self.setup = conf.get("file", ""), conf.get("fastapi", ""), conf.get("setup", "")
+        if self.setup and not self.fastapi:
+            raise ValueError(f"{where}: setup is for fastapi only; a command or a file can do its own setup")
+        for k, v in (("fastapi", self.fastapi), ("setup", self.setup)):
+            mod, colon, name = v.partition(":")
+            if v and not (colon and mod.strip() and name.strip()):
+                raise ValueError(f"{where}: {k} {v!r} must be module:name, such as {'api.app:app' if k == 'fastapi' else 'api.routers:register_routers'}")
+        timeout = conf.get("timeout", 300)
+        if isinstance(timeout, bool) or not isinstance(timeout, (int, float)) or timeout <= 0:
+            raise ValueError(f"{where}: timeout must be a number of seconds, not {timeout!r}")
+        self.timeout = float(timeout)
+        responses = conf.get("check-responses", False)
+        if not isinstance(responses, bool):
+            raise ValueError(f"check-responses must be true or false, not {responses!r}")
+        self.check_responses = responses
+        return self
 
     def importable(self) -> None:
         "Let the packages import from the repository: its root and its `src` folder go on `sys.path`."
@@ -796,6 +870,7 @@ def build(
     manifest = out_dir / ".smalldocs-api"
     before = set(manifest.read_text(encoding="utf-8").split("\n")) if manifest.exists() else set()
     index: dict[str, str] = {}
+    full: set[str] = set()
     syms = inventory(s.packages)
     mods = [m for p in s.packages for m in package_modules(p)]
     shorts = [m.__name__.rpartition(".")[2] for m in mods]
@@ -814,23 +889,42 @@ def build(
                 target = f"/{s.out}/{stem}.qmd#{x.name}"
                 index.setdefault(x.name, target)
                 index[f"{mod.__name__}.{x.name}"] = target
+                full.add(f"{mod.__name__}.{x.name}")
     names = {f.name for f in written}
     for stale in sorted(before - names):
         f = out_dir / stale
         if stale.endswith(".qmd") and "/" not in stale and f.is_file():
             f.unlink()  # only a page that an earlier build wrote, and this one did not
     manifest.write_text("\n".join(sorted(names)), encoding="utf-8")
-    sym = s.site / "_symbols.json"
-    text = json.dumps(index, indent=1)
-    if not sym.exists() or sym.read_text(encoding="utf-8") != text:
-        sym.write_text(text, encoding="utf-8")
+    write_names(s, out_dir, index, full)
     return written
+
+
+def write_names(
+    s: Settings,  # The settings
+    out_dir: Path,  # The folder of pages, resolved
+    index: dict[str, str],  # The index of names for links
+    full: set[str],  # The names in it that are full names, such as `mypkg.api.build`, and not short ones
+) -> None:
+    "Write the index of names: `_symbols.json` for a single section, or the names file beside the manifest for a section of a list."
+    if s.listed:
+        f, text = out_dir / NAMES, json.dumps({"names": index, "full": sorted(full)}, indent=1)
+    else:
+        f, text = s.site / "_symbols.json", json.dumps(index, indent=1)
+    if not f.exists() or f.read_text(encoding="utf-8") != text:
+        f.write_text(text, encoding="utf-8")
 
 
 # ---------------------------------------------------------------- the pages of Rust and TypeScript, which `api_rust` and `api_ts` write
 
 
 MARK = "# written by smalldocs api build; a build writes over it"  # The first line of the front matter of each Rust or TypeScript page
+NAMES = ".smalldocs-symbols.json"  # The names file of a section of a list, beside its manifest: its index of names, and which of them are full names
+RESERVED_IDS = re.compile(  # The ids that a page's own markup writes, which no entry may take: matched whole, in any case
+    r"(?i)TOC|TOC-body|toc-title|title-block-header|navbarCollapse|nav-menu-\d+|smalldocs-page-style|giscus-(?:base|alt)-theme"
+    r"|quarto-(?:header|content|document-content|sidebar|sidebar-glass|sidebar-section-\d+|margin-sidebar|search|appendix|back-to-top|bootstrap-(?:light|dark))"
+    r"|fn\d+|fnref\d+(?::\d+)?|cb\d+(?:-\d+)?|callout-\d+|tabset-\d+-\d+(?:-tab)?"
+)  # `fn1` and `fnref1` are footnotes, `cb1` and `cb1-1` a code block and its lines; `toc-` before a heading's id is in `entry_ids`
 FENCE = re.compile(r"^ {0,3}(`{3,}|~{3,})")  # A line that opens or closes a fenced code block
 HTML_START = re.compile(  # what may follow a `<` that starts HTML on purpose: a common tag in lower case, an autolink or a comment
     r"(?:/?(?:b|i|p|s|u|br|hr|h[1-6]|em|strong|del|ins|abbr|code|pre|kbd|sub|sup|span|div|img|details|summary|table|thead|tbody|tr|td|th|ul|ol|li|dl|dt|dd"
@@ -839,10 +933,95 @@ HTML_START = re.compile(  # what may follow a `<` that starts HTML on purpose: a
 
 
 def language_module(
-    s: Settings,  # The settings of a Rust or TypeScript project
-) -> ModuleType:  # `smalldocs.api_rust` or `smalldocs.api_ts`
+    s: Settings,  # The settings of a Rust, TypeScript or OpenAPI project
+) -> ModuleType:  # `smalldocs.api_rust`, `smalldocs.api_ts` or `smalldocs.api_openapi`
     "Load the module that reads the language, only when it is needed."
-    return importlib.import_module({"typescript": "smalldocs.api_ts", "rust": "smalldocs.api_rust"}[s.language])
+    return importlib.import_module({"typescript": "smalldocs.api_ts", "rust": "smalldocs.api_rust", "openapi": "smalldocs.api_openapi"}[s.language])
+
+
+def one_line(
+    text: str,  # A comment or a description, which may span lines
+) -> str:  # It on one line, for a table cell
+    "Join the lines of a comment, because a table cell holds one line; never for the body of a page."
+    return " ".join(text.split())
+
+
+def unique(
+    names: list[str],  # Names that may repeat, such as `b` for `b.ts` and `b/index.ts`
+    reserved: "re.Pattern | PageIds | None" = None,  # Names that no item may take, matched whole; given, each name keeps its first place and a repeat skips every name of the list
+) -> list[str]:  # The same names, a repeat taking `-2`, `-3` and so on; letters' case does not tell names apart, as on macOS
+    "Make names unique, so that no page or id takes the place of another."
+    natural = {n.casefold() for n in names} if reserved is not None else set()
+    seen: set[str] = set()
+    out = []
+    for name in names:
+        base = f"{name}-id" if reserved is not None and reserved.fullmatch(f"{name}-2") else name  # `cb1-2` is reserved as `cb1` is, so `cb1` goes on as `cb1-id-2`
+        new, k = name, 1
+        while new.casefold() in seen or (reserved is not None and (reserved.fullmatch(new) or (new != name and new.casefold() in natural))):
+            k += 1
+            new = f"{base}-{k}"
+        seen.add(new.casefold())
+        out.append(new)
+    return out
+
+
+class PageIds:
+    "The ids that the entries of a page may not take: those of `RESERVED_IDS`, and some more, matched whole in any case."
+
+    def __init__(
+        self,
+        taken: set[str] = frozenset(),  # More ids that no entry may take, in lower case
+    ) -> None:
+        "Keep the ids to look them up in a set."
+        self.taken = taken
+
+    def fullmatch(
+        self,
+        name: str,  # An id that `unique` would give
+    ) -> bool:  # Whether it is reserved
+        "Tell whether an id is taken, as `re.Pattern.fullmatch` does for `unique`."
+        return bool(RESERVED_IDS.fullmatch(name)) or name.casefold() in self.taken
+
+
+def entry_ids(
+    names: list[str],  # The ids that the entries of a page would have, in order
+) -> list[str]:  # The same ids made unique, none of them an id of the page's markup, nor `toc-` before another of them, which the table of contents writes
+    "Make the ids of a page's entries, so that no entry's id is also an id of the page."
+    taken: set[str] = set()
+    while True:
+        out = unique(names, PageIds(taken))
+        final = {n.casefold() for n in out}
+        clash = {n for n in final if n.startswith("toc-") and n[4:] in final} - taken
+        if not clash:
+            return out
+        taken |= clash  # such an entry takes another id, and the next round looks again
+
+
+def code_span(
+    text: str,  # Any text on one line, such as a JSON value
+) -> str:  # It as a Markdown code span, its backticks longer than any run in the text
+    "Write text as code, so that a backtick in it ends nothing."
+    ticks = "`" * (max((len(r) for r in re.findall(r"`+", text)), default=0) + 1)
+    pad = " " if text.startswith("`") or text.endswith("`") or (text.startswith(" ") and text.endswith(" ") and text.strip()) else ""
+    return f"{ticks}{pad}{text}{pad}{ticks}"
+
+
+def code_block(
+    text: str,  # Code, of one line or more
+    lang: str,  # Its language, such as `http`
+) -> str:  # A fenced code block, its fence longer than any run of backticks in the code
+    "Put code in a fenced code block that no line of it closes."
+    ticks = "`" * max(3, max((len(r) for r in re.findall(r"`+", text)), default=0) + 1)
+    return f"{ticks}{lang}\n{text}\n{ticks}"
+
+
+def source_line(
+    s: Settings,  # The settings
+    path: str,  # The file, from the root, such as `api/routers/teams.py`
+    line: int,  # The line
+) -> str:  # A Markdown link to the line, or empty when there is no `source`
+    "Link a line of a file in the repository."
+    return f"[source]({s.source}/{link_path(path)}#L{line}){{.source-link}}" if s.source else ""
 
 
 def escape_angles(
@@ -922,10 +1101,12 @@ def warn_unlinked(
 def front_matter(
     title: str,  # The page's title, as plain text; it is escaped, because a title is Markdown
     description: str | None = None,  # Its description; `None` writes none
+    order: int | None = None,  # Its place in the sidebar; `None` writes none
 ) -> str:  # The front matter, with the mark of a build first, and the blank line after it
-    "Begin a Rust or TypeScript page, marked as written by a build, so that a lost manifest leaves no page frozen."
+    "Begin a Rust, TypeScript or OpenAPI page, marked as written by a build, so that a lost manifest leaves no page frozen."
     said = f"description: {yaml_text(description.replace('&lt;', '<'))}\n" if description is not None else ""  # a description is plain text, not Markdown
-    return f"---\n{MARK}\ntitle: {yaml_text(heading_text(title))}\n{said}---\n\n"
+    place = f"order: {order}\n" if order is not None else ""
+    return f"---\n{MARK}\ntitle: {yaml_text(heading_text(title))}\n{said}{place}---\n\n"
 
 
 def yaml_text(
@@ -1041,8 +1222,9 @@ def write_reference(
     pages: dict[str, str],  # The text of each page, by its path in the folder of pages
     index: dict[str, str],  # The index of names for links, for `_symbols.json`
     taken: set[str],  # The pages that someone wrote, from `hand_written`
+    full: set[str] = frozenset(),  # The names in the index that are full names, which two sections of a list must not share
 ) -> list[Path]:  # The pages written
-    "Write the pages, the manifest and `_symbols.json`; delete only the marked pages that an earlier build listed and this one does not write in that spelling."
+    "Write the pages, the manifest and the index of names; delete only the marked pages that an earlier build listed and this one does not write in that spelling."
     out_dir = out_folder(s)
     held = {page_key(t): t for t in taken}
     for rel in pages:
@@ -1075,22 +1257,109 @@ def write_reference(
         done = True
     finally:
         manifest.write_text("\n".join(sorted(mine if done else before | mine)), encoding="utf-8")  # a stopped build keeps what it wrote
-    sym = s.site / "_symbols.json"
+    write_names(s, out_dir, index, full)
+    return written
+
+
+def sections(
+    site: Path,  # The site's folder
+    conf: object,  # The `api` setting: one mapping, or a list of them
+) -> list[Settings]:  # The settings of each section, in the order of the list
+    "Read the api settings: one section, or each section of a list, whose `out` folders must be apart."
+    if isinstance(conf, dict):
+        return [Settings.read(site, conf)]
+    if not isinstance(conf, list) or not conf or not all(isinstance(c, dict) for c in conf):
+        raise ValueError("the api settings: api must be a mapping, or a list of mappings with one section each")
+    out = [Settings.read(site, c) for c in conf]
+    folders = []
+    for s in out:
+        s.listed = True
+        here = out_folder(s)
+        for other, there in folders:
+            a, b = str(here).casefold(), str(there).casefold()  # case does not tell folders apart, as on macOS
+            if a == b or a.startswith(b + "/") or b.startswith(a + "/"):
+                raise ValueError(f"the api sections with out {other!r} and {s.out!r} share a folder; give each section a folder of its own")
+        folders.append((s.out, here))
+    return out
+
+
+def chosen(
+    found: list[Settings],  # The sections
+    out: str | None,  # The `out` of the one section to run, from `--out`; `None` runs every section
+) -> list[Settings]:  # The sections to run
+    "Pick the section that `--out` names, or every section."
+    if out is None:
+        return found
+    want = str((found[0].site / out).resolve()).casefold() if found else ""
+    picked = [s for s in found if str(out_folder(s)).casefold() == want]  # `./api` and `api/` are `api`
+    if not picked:
+        raise ValueError(f"no api section has out {out!r}; the sections have out {', '.join(repr(s.out) for s in found)}")
+    return picked
+
+
+def merge_names(
+    site: Path,  # The site's folder
+    found: list[Settings],  # Every section of the list
+) -> list[str]:  # The warnings: a full name that two sections give, and a folder of pages that no section names
+    "Write `_symbols.json` from the names file of each section, in the order of the list; the first section to give a name keeps it."
+    index: dict[str, str] = {}
+    owner: dict[str, str] = {}
+    warnings = []
+    for s in found:
+        f = out_folder(s) / NAMES
+        if not f.exists():
+            continue
+        try:
+            data = json.loads(f.read_text(encoding="utf-8"))
+            names, full = dict(data["names"]), set(data["full"])
+        except (ValueError, KeyError, TypeError) as e:
+            raise ValueError(f"{f} is not a names file that smalldocs wrote ({e}); remove it, and build again") from e
+        for k, v in names.items():
+            if k not in index:
+                index[k] = v
+                if k in full:
+                    owner[k] = s.out
+            elif k in full and k in owner:
+                warnings.append(f"api: the name {k} is in the sections with out {owner[k]!r} and {s.out!r}; it links to {owner[k]!r}")
+    sym = site / "_symbols.json"
     text = json.dumps(index, indent=1)
     if not sym.exists() or sym.read_text(encoding="utf-8") != text:
         sym.write_text(text, encoding="utf-8")
-    return written
+    named = {str(out_folder(s)).casefold() for s in found}
+    top = site.resolve()
+    left = []
+    for folder, dirs, files in os.walk(top):
+        dirs[:] = sorted(d for d in dirs if not d.startswith((".", "_")))  # not `.git`, nor `_site`, which Quarto leaves out too
+        if ".smalldocs-api" in files and folder.casefold() not in named:
+            left.append(Path(folder).relative_to(top).as_posix())
+    return warnings + [f"api: {rel} holds the pages of an api section that the config no longer has; they stay. Remove the folder, or give the section again" for rel in sorted(left)]
+
+
+def build_sections(
+    site: Path,  # The site's folder
+    conf: object,  # The `api` setting: one mapping, or a list of them
+    out: str | None = None,  # The `out` of the one section to build; `None` builds every section
+) -> tuple[list[Path], list[str]]:  # The pages written, and the warnings
+    "Build each section of the api settings, then, for a list, merge their names into `_symbols.json`."
+    found = sections(site, conf)
+    pages: list[Path] = []
+    warnings: list[str] = []
+    for s in chosen(found, out):
+        pages += build(s)
+        warnings += s.warnings
+    if isinstance(conf, list):
+        warnings += merge_names(site, found)
+    return pages, warnings
 
 
 def build_from_config(
     project: "object",  # A loaded `config.Project`
-) -> list[Path]:  # The pages written
+) -> tuple[list[Path], list[str]]:  # The pages written, and the warnings, which `Site.build` keeps
     "Build the reference pages that `smalldocs.api` asks for, before the site is rendered."
     from .config import BuildError
 
     try:
-        s = Settings.read(project.root, project.smalldocs.get("api") or {})
-        return build(s)
+        return build_sections(project.root, project.smalldocs.get("api") or {})
     except ImportError as e:
         raise BuildError(f"the api settings: cannot import the package: {e}. Install smalldocs in the same environment as the package") from e
     except ValueError as e:
@@ -1102,6 +1371,7 @@ def main(
     action: str,  # `build`, `check`, `module` or `list`
     name: str | None = None,  # The module, for `module`
     shown: bool = False,  # For `check`: hold the packages only to what their pages show, as `check-shown: true` does
+    out: str | None = None,  # The `out` of the one section to run; `None` runs every section
 ) -> int:  # The exit code
     "Run one `smalldocs api` command."
     from .config import load
@@ -1116,9 +1386,32 @@ def main(
         if shown and action != "check":
             print(f"smalldocs api {action}: --shown is for check only", file=sys.stderr)
             return 2
-        s = Settings.read(project.root, conf)
-        s.shown = s.shown or shown
-        return run(s, action, name)
+        found = sections(project.root, conf)
+        picked = chosen(found, out)
+        for s in found:
+            s.shown = s.shown or shown
+        if not isinstance(conf, list):
+            return run(picked[0], action, name)
+        if action in ("module", "list"):
+            python = [s for s in picked if s.language == "python"]
+            if len(python) != 1:
+                why = "no api section is python" if not python else "several api sections are python; name one with --out NAME"
+                print(f"smalldocs api {action}: for Python only, and {why}", file=sys.stderr)
+                return 2
+            return run(python[0], action, name)
+        if action == "check":
+            codes = []
+            for s in picked:
+                print(f"api section {s.out} ({s.language})")
+                codes.append(run(s, action, name))
+            return max(codes)
+        for s in picked:
+            run(s, action, name)
+            for w in s.warnings:
+                print(f"warning: {w}", file=sys.stderr)
+        for w in merge_names(project.root, found):
+            print(f"warning: {w}", file=sys.stderr)
+        return 0
     except (ValueError, ImportError) as e:
         print(f"smalldocs api: {e}", file=sys.stderr)
         return 2
@@ -1133,8 +1426,13 @@ def run(
     s.importable()
     if action == "build":
         pages = build(s)
+        if not s.listed:
+            for w in s.warnings:
+                print(f"warning: {w}", file=sys.stderr)
         print(f"wrote {len(pages)} page(s) to {s.site / s.out}")
         return 0
+    for w in s.warnings:  # the keys that the section does not read; a build finds its warnings as it goes, and prints them above
+        print(f"warning: {w}", file=sys.stderr)
     if s.language != "python":
         if action == "check":
             return language_module(s).check(s, s.shown)

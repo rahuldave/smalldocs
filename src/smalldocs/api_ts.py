@@ -36,10 +36,12 @@ from .api import (
     hand_written,
     heading_text,
     link_path,
+    one_line,
     out_folder,
     page_key,
     table,
     type_cell,
+    unique,
     warn_unlinked,
     write_reference,
 )
@@ -1065,13 +1067,6 @@ def fields_table(
     return table([[f"`{f.name}`" + ("?" if f.optional else ""), type_cell(f.type), one_line(f.doc)] for f in fields], ["Field", "Type", "Description"])
 
 
-def one_line(
-    text: str,  # A comment, which may span lines
-) -> str:  # It on one line, for a table cell
-    "Join the lines of a comment, because a table cell holds one line."
-    return " ".join(text.split())
-
-
 def source_link(
     s: Settings,  # The settings
     src: Sources,  # The project's source files
@@ -1150,12 +1145,13 @@ def written_pages(
     s: Settings,  # The settings
     mods: list[Module],  # The modules
     taken: set[str] = frozenset(),  # Pages that someone wrote, from `hand_written`
-) -> tuple[dict[str, str], dict[str, str]]:  # Each page's text by its path in `out`; the index of names
+) -> tuple[dict[str, str], dict[str, str], set[str]]:  # Each page's text by its path in `out`; the index of names; the full names in it
     "Write every page in memory: one per module, in its folder, and an `index.qmd` for each folder with none, that lists its pages."
     rels = page_paths(mods, taken)
     summaries = {f"{rel}.qmd": one_line(m.summary().partition("\n\n")[0]) for m, rel in zip(mods, rels, strict=True)}
     out: dict[str, str] = {}
     names: dict[str, str] = {}
+    full: set[str] = set()
     for mod, rel in zip(mods, rels, strict=True):
         folder = rel.rpartition("/")[0] if rel.endswith("/index") or rel == "index" else None
         out[f"{rel}.qmd"] = page(s, mod, folder_listing(s.out, folder, summaries) if folder is not None else "")
@@ -1163,23 +1159,8 @@ def written_pages(
             target = f"{link_path(f'/{s.out}/{rel}.qmd')}#{id_}"
             names.setdefault(id_, target)
             names[f"{mod.name}.{id_}"] = target
-    return out | folder_indexes(s.out, summaries, taken), names
-
-
-def unique(
-    names: list[str],  # Names that may repeat, such as `b` for `b.ts` and `b/index.ts`
-) -> list[str]:  # The same names, a repeat taking `-2`, `-3` and so on; letters' case does not tell names apart, as on macOS
-    "Make names unique, so that no page or id takes the place of another."
-    seen: set[str] = set()
-    out = []
-    for name in names:
-        new, k = name, 1
-        while new.casefold() in seen:
-            k += 1
-            new = f"{name}-{k}"
-        seen.add(new.casefold())
-        out.append(new)
-    return out
+            full.add(f"{mod.name}.{id_}")
+    return out | folder_indexes(s.out, summaries, taken), names, full
 
 
 def page(
@@ -1218,9 +1199,9 @@ def build(
     "Write one reference page per entry point or file, and `_symbols.json`, the index of names that links use."
     taken = hand_written(out_folder(s))  # before TypeDoc runs, which refuses an `out` outside the site
     mods = load(s)
-    texts, index = written_pages(s, mods, taken)
+    texts, index, full = written_pages(s, mods, taken)
     warn_unlinked(s, mods[0].src.unlinked if mods else set())
-    return write_reference(s, texts, index, taken)
+    return write_reference(s, texts, index, taken, full)
 
 
 def check(

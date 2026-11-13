@@ -361,8 +361,14 @@ def check_native(
 ) -> Project:  # The same project, with its warnings
     "Check a `_smalldocs.yml`: its sections, and the keys that smalldocs does not read."
     cfg = proj.config
-    for key in ("project", "website", "book", "api"):
+    for key in ("project", "website", "book"):
         section(cfg, key)
+    api = cfg.get("api")
+    if isinstance(api, list):
+        if not all(isinstance(a, dict) for a in api):
+            raise ConfigError("the config: api must be a mapping of keys, or a list of mappings with one section each")
+    else:
+        section(cfg, "api")
     kind = proj.project.get("type", "website")
     if kind == "book":
         proj.warnings.append("project.type: book is built as a website; chapters become the sidebar")

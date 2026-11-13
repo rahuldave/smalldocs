@@ -1,0 +1,259 @@
+{
+ "openapi": "3.1.0",
+ "info": {
+  "title": "Tiny",
+  "description": "A tiny API of players.",
+  "version": "0.1.0"
+ },
+ "paths": {
+  "/api/players/{player_id}": {
+   "get": {
+    "tags": [
+     "Players"
+    ],
+    "summary": "Get Player",
+    "description": "Get one player.",
+    "operationId": "get_player_api_players__player_id__get",
+    "parameters": [
+     {
+      "name": "player_id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "description": "The player's id",
+       "title": "Player Id"
+      },
+      "description": "The player's id"
+     },
+     {
+      "name": "season",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "description": "Only this season",
+       "title": "Season"
+      },
+      "description": "Only this season"
+     },
+     {
+      "name": "limit",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "type": "integer",
+       "minimum": 1,
+       "description": "At most this many rows",
+       "default": 10,
+       "title": "Limit"
+      },
+      "description": "At most this many rows"
+     },
+     {
+      "name": "x-trace",
+      "in": "header",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "description": "A trace id",
+       "title": "X-Trace"
+      },
+      "description": "A trace id"
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Player"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    },
+    "x-smalldocs-source": {
+     "file": "tiny_app.py",
+     "line": 25
+    }
+   }
+  },
+  "/api/players": {
+   "post": {
+    "tags": [
+     "Players"
+    ],
+    "summary": "Make Player",
+    "description": "Make a player.",
+    "operationId": "make_player_api_players_post",
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/NewPlayer"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "201": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Player"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    },
+    "x-smalldocs-source": {
+     "file": "tiny_app.py",
+     "line": 35
+    }
+   }
+  }
+ },
+ "components": {
+  "schemas": {
+   "HTTPValidationError": {
+    "properties": {
+     "detail": {
+      "items": {
+       "$ref": "#/components/schemas/ValidationError"
+      },
+      "type": "array",
+      "title": "Detail"
+     }
+    },
+    "type": "object",
+    "title": "HTTPValidationError"
+   },
+   "NewPlayer": {
+    "properties": {
+     "name": {
+      "type": "string",
+      "title": "Name",
+      "description": "The full name"
+     }
+    },
+    "type": "object",
+    "required": [
+     "name"
+    ],
+    "title": "NewPlayer",
+    "description": "The fields to make a player."
+   },
+   "Player": {
+    "properties": {
+     "id": {
+      "type": "string",
+      "title": "Id",
+      "description": "The cricsheet id"
+     },
+     "name": {
+      "type": "string",
+      "title": "Name",
+      "description": "The full name"
+     },
+     "team": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Team",
+      "description": "The current team, if any"
+     }
+    },
+    "type": "object",
+    "required": [
+     "id",
+     "name"
+    ],
+    "title": "Player",
+    "description": "A player."
+   },
+   "ValidationError": {
+    "properties": {
+     "loc": {
+      "items": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "integer"
+        }
+       ]
+      },
+      "type": "array",
+      "title": "Location"
+     },
+     "msg": {
+      "type": "string",
+      "title": "Message"
+     },
+     "type": {
+      "type": "string",
+      "title": "Error Type"
+     },
+     "input": {
+      "title": "Input"
+     },
+     "ctx": {
+      "type": "object",
+      "title": "Context"
+     }
+    },
+    "type": "object",
+    "required": [
+     "loc",
+     "msg",
+     "type"
+    ],
+    "title": "ValidationError"
+   }
+  }
+ }
+}
