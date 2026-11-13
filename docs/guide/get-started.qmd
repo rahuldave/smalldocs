@@ -12,8 +12,9 @@ smalldocs needs Python 3.11 or later. Add it to a project as a development tool:
 uv add --dev smalldocs     # or: pip install smalldocs
 ```
 
-If the site documents the API of your package, install smalldocs in the environment of the package.
-smalldocs imports the package to read its code.
+If the site documents the API of your Python package, install smalldocs in the environment of the
+package. smalldocs imports the package to read its code. A reference of Rust or TypeScript code needs
+no Python environment. See [Rust, TypeScript and HTTP references](api-languages.qmd).
 
 ## Make a site
 

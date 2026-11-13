@@ -80,6 +80,10 @@ exists. A notebook that does not set them renders as before.
 
 ## Step 4: later
 
+- [ ] Sidebar folders, where smalldocs differs from Quarto 1.8 (each fix would change 0.5.8's output):
+      a folder with an index page in `contents` shows only the index, where Quarto shows the folder;
+      `contents: a/b` with no index makes `A > B`, where Quarto makes `B`; `auto: a` with no glob lists
+      only the pages of `a`, where Quarto goes into its subfolders
 - [ ] Code annotations, `# <1>`
 - [ ] `lightbox`
 - [ ] `footnotes-hover`

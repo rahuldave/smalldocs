@@ -561,3 +561,14 @@ def test_auto_folder_pattern_is_no_section(tmp_path: Path) -> None:
     bar = h[h.index('id="quarto-sidebar"') :]
     texts = re.findall(r'class="menu-text">([^<]*)<', bar[: bar.index("</nav>")])
     assert texts[-4:] == ["Reference", "alpha", "sub", "beta"] and "API" not in texts
+
+
+def test_a_bare_folder_in_contents_keeps_its_section(tmp_path: Path) -> None:
+    "A folder named in `contents` is a section of its own, as in 0.5.8; `auto: ex/**` leaves the starting folder out."
+    files = {"ex/one.qmd": "# One\n", "ex/geo/index.qmd": "# Geo index\n", "ex/geo/plane.qmd": "# Plane\n"}
+    site(tmp_path, "project: {type: website}\nwebsite:\n  sidebar:\n    contents:\n      - section: B\n        contents: ex\n", files)
+    names = lambda: re.findall(r'class="menu-text">([^<]+)<', out(tmp_path))  # noqa: E731
+    assert names() == ["B", "Ex", "One", "Geo index", "Plane"]
+    write(tmp_path, {"_quarto.yml": "project: {type: website}\nwebsite:\n  sidebar:\n    contents:\n      - section: B\n        contents:\n          - auto: ex/**\n"})
+    build(tmp_path, quiet=True)
+    assert names() == ["B", "One", "Geo index", "Plane"]

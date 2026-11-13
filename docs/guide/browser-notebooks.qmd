@@ -1,7 +1,7 @@
 ---
 title: Run notebooks in the browser
 description: Add run and download buttons to Python notebooks with JupyterLite and Pyodide.
-order: 5
+order: 5.7
 ---
 
 Readers can open a Python notebook in their browser with **Run in browser**.

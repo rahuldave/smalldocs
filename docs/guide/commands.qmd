@@ -46,14 +46,18 @@ If it finds anything, the exit code is 1.
 ## api
 
 ```bash
-smalldocs api build|check|list [--dir DIR]
-smalldocs api check --shown [--dir DIR]
-smalldocs api module NAME [--dir DIR]
+smalldocs api build|check|list [--dir DIR] [--out NAME]
+smalldocs api check --shown [--dir DIR] [--out NAME]
+smalldocs api module NAME [--dir DIR] [--out NAME]
 ```
 
 `api` makes the reference pages, checks the docments, lists the documented names, or prints one module as
 Markdown. With `--shown`, `check` looks only at what the pages show, and leaves out private names and
 names outside `__all__`. See [The API reference](api.qmd).
+
+`list` and `module` are for Python only. For Rust, TypeScript and OpenAPI, `api` has `build` and `check`.
+When `api` is a list of sections, `--out NAME` runs only the section whose `out` is `NAME`. See
+[Rust, TypeScript and HTTP references](api-languages.qmd).
 
 ## publish
 

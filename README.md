@@ -6,14 +6,16 @@ smalldocs builds a website from a folder of Markdown pages and notebooks, in Pyt
 
 - pages with a navbar, a sidebar and a table of contents
 - notebooks, with the outputs that were saved in them
-- reference pages, made from the code of a package
+- reference pages, made from the code of a Python package, a Rust crate or a TypeScript package, or
+  from the OpenAPI document of an HTTP API
 - listings of posts, with categories and a feed
 
 The site can use any [Bootswatch](https://bootswatch.com) theme, in a light version and a dark version, or a theme from a
 git repository.
 
 smalldocs makes websites only. It does not make PDF files, Word files, slides or books, and it runs no
-code. It is one package from PyPI, and it needs no other programs.
+code in the pages. It is one package from PyPI, and it needs no other programs. Only a reference of
+Rust, TypeScript or an HTTP API needs the tools of that code.
 
 smalldocs takes its conventions from [Quarto](https://quarto.org). They are the `.qmd` pages, the
 Markdown of [Pandoc](https://pandoc.org) and the options of a site. So a Quarto website builds with smalldocs, from its `_quarto.yml`,

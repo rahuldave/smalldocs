@@ -1089,6 +1089,13 @@ def test_a_key_of_another_language_is_not_checked(tmp_path: Path) -> None:
     assert section_warnings(tmp_path, {"language": "openapi", "file": "a.json", "entry": 5}) == ["the api section with out 'api': entry is not read for openapi; it is for typescript"]
 
 
+def test_linkify_in_a_list_section_warns(tmp_path: Path) -> None:
+    "`linkify` in a section of a list is not read, so it warns; a single section reads it."
+    got = [w for s in api.sections(tmp_path, [{"packages": ["x"], "linkify": False}, {"packages": ["y"], "out": "b"}]) for w in s.warnings]
+    assert got == ["the api section with out 'api': linkify is not read in a list of sections; give linkify at the top level of the config, or under smalldocs: in a _quarto.yml"]
+    assert section_warnings(tmp_path, {"packages": ["x"], "linkify": False}) == []
+
+
 def test_package_with_packages_warns(tmp_path: Path) -> None:
     "`package` beside `packages` is not read, and warns."
     assert section_warnings(tmp_path, {"packages": ["x"], "package": "y"}) == ["the api section with out 'api': package is not read, because packages is given; give one of them"]
