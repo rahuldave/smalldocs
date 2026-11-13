@@ -360,6 +360,7 @@ def fn_signature(
     name: str,  # Its name
     here: str = "",  # The id of the module it is in
     at_root: bool = False,  # Whether that module is the crate's root
+    lines: list[str] | None = None,  # The lines of its source file, to show a pattern parameter as written
 ) -> str:  # Its signature as Rust, on one line, or with a parameter per line when that is long
     "Write a function's signature: its visibility, its qualifiers, its generics, its parameters, its return and its `where` clause."
     f = item["inner"]["function"]
@@ -368,7 +369,8 @@ def fn_signature(
     quals = "".join(q for q, on in (("const ", h.get("is_const")), ("async ", h.get("is_async")), ("unsafe ", h.get("is_unsafe"))) if on)
     if abi != "Rust":
         quals += f'extern "{abi if isinstance(abi, str) else next(iter(abi))}" '
-    params = [self_text(t) if n == "self" else f"{n}: {type_text(t)}" for n, t in f["sig"]["inputs"]]
+    shown = iter([n for n, *_ in param_names(lines, item, item["name"])] if lines else [])
+    params = [self_text(t) if n == "self" else f"{next(shown, n)}: {type_text(t)}" for n, t in f["sig"]["inputs"]]
     if f["sig"].get("is_c_variadic"):
         params.append("...")
     out = f" -> {type_text(f['sig']['output'])}" if f["sig"].get("output") else ""
@@ -461,6 +463,122 @@ def signature_lines(
     return out
 
 
+def source_params(
+    lines: list[str],  # The lines of the source file
+    item: dict,  # A function or method of rustdoc's JSON, with its span
+    name: str,  # Its name
+) -> list[str]:  # The text before the `:` of each parameter but `self`, as written; empty when the source does not match the JSON
+    "Read each parameter as the source writes it, such as `State(state)`, which rustdoc's JSON names `__arg0` in an `async fn` and `State` in another."
+    code = "".join(c + " " for c, *_ in signature_lines(lines, item, name))
+    m = re.search(rf"\bfn\s+(?:r#)?{re.escape(name)}\b", code)
+    if not m:
+        return []
+    i, angle = m.end(), 0
+    while i < len(code) and not (code[i] == "(" and angle == 0):  # skip the generics to the `(` of the parameters
+        angle += 1 if code[i] == "<" else -1 if code[i] == ">" and code[i - 1] != "-" else 0
+        i += 1
+    parts, depth, start, j = [], 0, i + 1, i + 1
+    while j < len(code):
+        c = code[j]
+        if code.startswith("->", j):
+            j += 2
+            continue
+        if c in "([{<":
+            depth += 1
+        elif c in ")]}>":
+            if depth == 0:
+                parts.append(code[start:j])
+                break
+            depth -= 1
+        elif c == "," and depth == 0:
+            parts.append(code[start:j])
+            start = j + 1
+        j += 1
+    out = []
+    for part in parts:
+        part = without_attributes(part).strip()
+        if not part:
+            continue
+        if part.startswith("...") or min((depth_at(part, k) for k in range(len(part) + 1)), default=0) < 0:
+            return []  # a C variadic, or brackets this reading does not follow: use rustdoc's names
+        if re.fullmatch(r"&?\s*(?:'\w+\s+)?(?:mut\s+)?self", " ".join(part.split())):
+            continue
+        at = next((k for k in range(len(part)) if part[k] == ":" and part[k : k + 2] != "::" and part[k - 1 : k + 1] != "::" and depth_at(part, k) == 0), None)
+        if at is None:
+            return []
+        head = re.sub(r"([(\[]) | ([)\]])", r"\1\2", " ".join(part[:at].split()))  # `Holder(\n x\n )` as `Holder(x)`
+        if not re.fullmatch(r"(?:mut\s+)?self", head):
+            out.append(head)
+    names = [n for n, _ in item["inner"]["function"]["sig"]["inputs"] if n != "self"]
+    return out if len(out) == len(names) else []
+
+
+def without_attributes(
+    text: str,  # A parameter as written
+) -> str:  # It without its attributes, such as `#[cfg_attr(all(), doc = "[a]")]`
+    "Take out the attributes of a parameter, following brackets and strings to the `]` that closes each."
+    out, i = [], 0
+    while i < len(text):
+        if text.startswith("#[", i):
+            depth, j, quoted = 0, i + 1, False
+            while j < len(text):
+                c = text[j]
+                if quoted:
+                    j += 2 if c == "\\" else 1
+                    quoted = quoted and c != '"'
+                    continue
+                if c == '"':
+                    quoted = True
+                elif c == "[":
+                    depth += 1
+                elif c == "]":
+                    depth -= 1
+                    if depth == 0:
+                        break
+                j += 1
+            out.append(" ")
+            i = j + 1
+            continue
+        out.append(text[i])
+        i += 1
+    return "".join(out)
+
+
+def depth_at(
+    text: str,  # A parameter as written
+    k: int,  # A place in it
+) -> int:  # How many brackets are open there
+    "Count the brackets open before a place in a parameter, so that a `:` inside a pattern such as `S { a: x }` is not its type's."
+    return sum({"(": 1, "[": 1, "{": 1, ")": -1, "]": -1, "}": -1}.get(c, 0) for c in text[:k])
+
+
+def param_names(
+    lines: list[str],  # The lines of the source file
+    item: dict,  # A function or method of rustdoc's JSON
+    name: str,  # Its name in the source
+) -> list[tuple[str, dict, list[str], str]]:  # For each parameter but `self`: the name to show, its type, the names it binds, and its text in the source
+    "Name each parameter: rustdoc's name, unless rustdoc lost the pattern (`__arg0`, or `W` for `W(x)`); then the source's text. List the names it binds."
+    inputs = [(n, t) for n, t in item["inner"]["function"]["sig"]["inputs"] if n != "self"]
+    written = source_params(lines, item, name) or [n for n, _ in inputs]
+    out = []
+    for (n, t), w in zip(inputs, written, strict=True):
+        bare = re.sub(r"^(?:ref\s+)?(?:mut\s+)?", "", w)
+        lost = n.startswith("__arg") or (n != bare and (n == "_" or n[:1].isupper() or "::" in n))
+        binds = [b for b in re.findall(r"(?<![\w:'#])(?:r#)?([^\W\dA-Z]\w*)\b(?!#|\s*(?:::|\(|\{|:(?!:)))", w) if b not in ("mut", "ref", "_")]
+        out.append((w if lost else n, t, binds + ([n] if n not in binds and n != "_" and not n.startswith("__arg") else []), w))
+    return out
+
+
+def described(
+    shown: str,  # A parameter's name as the page shows it, such as `x` or `State(state)`
+    binds: list[str],  # The names its pattern binds, such as `state`
+    said: dict[str, str],  # The comment after each parameter, by its shown name
+    args: dict[str, str],  # The descriptions of the `# Arguments` list
+) -> str:  # Its description; empty when there is none
+    "Find a parameter's description: the comment after it, or its `# Arguments` entry under its name, or the entries of the names its pattern binds."
+    return said.get(shown) or args.get(shown) or "; ".join(dict.fromkeys(args[b] for b in binds if b in args))
+
+
 def param_pattern(
     name: str,  # A parameter as rustdoc names it: `a`, or a pattern such as `(b, c)`
 ) -> str:  # A regular expression that finds it before its `:` in the source
@@ -476,8 +594,8 @@ def param_comments(
 ) -> tuple[dict[str, str], str]:  # The comment after each parameter, under its name, and the comment on the return
     "Read the docments of a function: the `//` comment on a parameter's line, and the one on the line of `->` or of the `{`."
     sig = signature_lines(lines, item, name)
-    names = [n for n, _ in item["inner"]["function"]["sig"]["inputs"] if n != "self"]
-    found = {n: next((i for i, (code, *_) in enumerate(sig) if re.search(param_pattern(n), code)), None) for n in names}
+    names = [(n, w) for n, _, _, w in param_names(lines, item, name)]
+    found = {n: next((i for i, (code, *_) in enumerate(sig) if re.search(param_pattern(w), code)), None) for n, w in names}
     out, returns = {}, ""
     for i, (_, said, arrow, body) in enumerate(sig):
         if not said:
@@ -1087,7 +1205,7 @@ def fn_table(
     "Describe a function by its parameters and its return: the type and the comment of each."
     said, returns = param_comments(crate.source(item), item, item["name"])  # the name in the source, not one that a `pub use ... as` gives
     sig = item["inner"]["function"]["sig"]
-    rows = [[f"`{n}`", type_cell(type_text(t)), said.get(n) or args.get(n, "")] for n, t in sig["inputs"] if n != "self"]
+    rows = [[f"`{n}`", type_cell(type_text(t)), described(n, binds, said, args)] for n, t, binds, _ in param_names(crate.source(item), item, item["name"])]
     if sig.get("output"):
         rows.append(["returns", type_cell(type_text(sig["output"])), returns or escape_angles(link_docs(gives, item.get("links") or {}, crate))])
     return table(rows, ["Parameter", "Type", "Description"])
@@ -1289,7 +1407,7 @@ def entry_parts(
         args, docs = arguments_section(docs)
         if item["inner"]["function"]["sig"].get("output"):
             gives, docs = returns_section(docs)  # a function that returns `()` keeps the section as it is
-        parts.append(code(fn_signature(item, name, here, here == str(crate.data["root"])) + (";" if e.level == 3 and not item["inner"]["function"]["has_body"] else "")))
+        parts.append(code(fn_signature(item, name, here, here == str(crate.data["root"]), crate.source(item)) + (";" if e.level == 3 and not item["inner"]["function"]["has_body"] else "")))
     else:
         parts.append(code(item_signature(crate, item, name, here)))
     parts.append(tidy_docs(link_docs(docs.strip(), item.get("links") or {}, crate), e.level + 1))
@@ -1397,7 +1515,7 @@ def entry_gaps(
         gives, _ = returns_section(docs)
         said, returns = param_comments(crate.source(item), item, item["name"])
         sig = item["inner"]["function"]["sig"]
-        out += [f"{name}({n}): no docment" for n, _ in sig["inputs"] if n != "self" and not (said.get(n) or args.get(n))]
+        out += [f"{name}({n}): no docment" for n, _, binds, _ in param_names(crate.source(item), item, item["name"]) if not described(n, binds, said, args)]
         if sig.get("output") and not (returns or gives):
             out.append(f"{name}: no return docment; write a `# Returns` section in its doc comment")
     elif kind in ("struct", "union") and "plain" in (item["inner"][kind].get("kind") or {"plain": 1}):
