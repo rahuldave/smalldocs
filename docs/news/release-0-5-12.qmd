@@ -1,0 +1,23 @@
+---
+title: smalldocs 0.5.12
+subtitle: The module comment of one TypeScript entry point
+date: 2026-11-16
+author: Rahul Dave
+categories: [release]
+image: ../images/mark.svg
+---
+
+A TypeScript file can start with a `/** */` comment and then an `import`. Such a comment is the
+description of the file, and it needs no `@module` tag. smalldocs read it when TypeDoc had several
+files to read. When TypeDoc had one file, smalldocs did not read it, so `smalldocs api check` reported
+"no module comment". TypeDoc has one file when `entry` names one file, or a folder that holds one file.
+
+The cause: with one file, the JSON from TypeDoc names the file in another place. smalldocs 0.5.12 reads
+it from there, so one file works as several do.
+
+## What changes for a site that uses none of it
+
+Only a site whose TypeDoc reads one file changes, when that file starts with such a comment. The
+reference page of that file now has the description, and so does its row in the table of the API index
+page. `api check` no longer reports it. Other pages are the same, apart from the version in the tag
+`<meta name="generator">`.

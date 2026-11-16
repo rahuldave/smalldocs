@@ -1069,3 +1069,19 @@ def test_a_union_of_primitives_is_no_props_object() -> None:
     jsx = {"type": "reference", "name": "Element", "qualifiedName": "JSX.Element"}
     union = {"type": "union", "types": [{"type": "intrinsic", "name": "string"}, {"type": "intrinsic", "name": "number"}]}
     assert not api_ts.component("Label", {"parameters": [{"name": "text", "type": union}], "type": jsx})
+
+
+def test_one_entry_point_reads_its_opening_comment(tmp_path: Path) -> None:
+    "With one entry point, TypeDoc's JSON is the project, with no sources; its opening comment before an import is still the module's."
+    (tmp_path / "src").mkdir()
+    (tmp_path / "src" / "b.ts").write_text('/** Helpers for words. */\nimport { add } from "./a.js";\n\n/** Say. */\nexport const say = 1;\n', encoding="utf-8")
+    data = {"id": 0, "name": "tsmod", "kind": 1, "children": [], "files": {"entries": {"1": "src/b.ts"}, "reflections": {"1": 0}}}
+    [mod] = api_ts.modules(data, api_ts.Sources(tmp_path))
+    assert mod.summary().strip() == "Helpers for words."
+    data["files"]["reflections"] = {"1": 5}  # an entry that is not this node is not read
+    assert api_ts.modules(data, api_ts.Sources(tmp_path))[0].summary() == ""
+    data["files"] = {"entries": {"1": "src/missing.ts"}, "reflections": {"1": 0}}
+    assert api_ts.modules(data, api_ts.Sources(tmp_path))[0].summary() == ""
+    (tmp_path / "src" / "latin.ts").write_bytes(b'/** Caf\xe9 helpers. */\nimport { add } from "./a.js";\n')
+    data["files"] = {"entries": {"1": "src/latin.ts"}, "reflections": {"1": 0}}
+    assert api_ts.modules(data, api_ts.Sources(tmp_path))[0].summary() == ""  # a file that is not UTF-8 stops no build

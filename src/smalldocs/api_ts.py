@@ -827,12 +827,14 @@ class Module:
     def summary(self) -> str:  # The module's comment; its opening comment when TypeDoc has none
         "Read the module's comment."
         said = doc(self.node)
-        if said or not self.node.get("sources"):
+        files = self.node.get("files") or {}  # with one entry point, the node is the project, and names its file only here
+        mine = [files.get("entries", {}).get(k) for k, v in (files.get("reflections") or {}).items() if v == self.node.get("id")]
+        name = self.node["sources"][0]["fileName"] if self.node.get("sources") else next((m for m in mine if m), "")
+        if said or not name:
             return said
-        name = self.node["sources"][0]["fileName"]
         try:
             return header_comment((self.src.project / name).read_text(encoding="utf-8"))
-        except OSError:
+        except (OSError, UnicodeDecodeError):  # a file that is gone, or not UTF-8, has no comment to read
             return ""
 
     def items(self) -> list[tuple[dict, str, int]]:  # Each item, its name on the page, and its heading level
