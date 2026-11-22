@@ -107,6 +107,10 @@ smalldocs documents all of its items, the private ones too.
 rustdoc writes its output into a folder that only you can write, in the temporary folder of the computer. If cargo
 changes the `Cargo.lock` of the project, smalldocs puts the file back as it was.
 
+That folder holds one folder for each `Cargo.toml`, with the crates that the build compiled, up to about
+350 MB each. So once a day, a build removes the folders of the others when their `Cargo.toml` is gone, as
+with a removed worktree, or when no build has used them for 14 days.
+
 ### Write the doc comments
 
 A doc comment is a comment that the doc tool of a language reads. In Rust it starts with `///`, or with

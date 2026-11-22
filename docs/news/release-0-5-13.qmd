@@ -1,0 +1,27 @@
+---
+title: smalldocs 0.5.13
+subtitle: The rustdoc cache cleans itself
+date: 2026-11-22
+author: Rahul Dave
+categories: [release]
+image: ../images/mark.svg
+---
+
+For a Rust reference, smalldocs runs rustdoc in a cache folder, in the temporary folder of the computer.
+The cache holds one folder for each `Cargo.toml`, with the crates that the build compiled, up to about
+350 MB each. A worktree has its own `Cargo.toml`, so each worktree got its own folder. Before, smalldocs
+never removed one. On one computer with many worktrees, the cache grew to 6 GB.
+
+smalldocs 0.5.13 now marks each folder with the path of its `Cargo.toml`. Once a day, a build removes
+the folders of other crates:
+
+- a folder whose `Cargo.toml` is gone, as with a removed worktree
+- a folder that no build has used for 14 days
+
+A folder from 0.5.12 or older has no mark, so only its age counts. Each build writes the output of
+rustdoc in it, so a folder that 0.5.12 still uses is kept.
+
+## What changes for a site that uses none of it
+
+No page changes, apart from the version in the tag `<meta name="generator">`. The first build of a
+removed folder's crate compiles its crates again, as a first build always does.
