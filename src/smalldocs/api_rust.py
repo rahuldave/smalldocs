@@ -12,6 +12,7 @@ rustdoc writes what it knows of the crate as JSON. It does not keep the comment 
 that comment is read from the source, by the lines that the JSON gives. Only the standard library is used.
 """
 
+import contextlib
 import contextvars
 import hashlib
 import json
@@ -21,6 +22,7 @@ import shutil
 import subprocess
 import sys
 import tempfile
+import time
 from dataclasses import dataclass, field
 from pathlib import Path
 
@@ -113,6 +115,67 @@ def cache_folder() -> Path:  # The user's own folder for rustdoc's output, in th
     return folder
 
 
+UNUSED_DAYS = 14  # A crate's folder in the cache that no build has used for this long is removed
+
+
+def last_use(
+    work: Path,  # A crate's folder in the cache
+) -> float:  # The newest time of its parts that each build writes; 0 when none is there
+    "Tell when a build last used a crate's folder: rustdoc writes `target/doc` each time, and smalldocs 0.5.13 writes `manifest`."
+    times = []
+    for p in (work / "manifest", work / "Cargo.lock", work / "target" / "doc", work):
+        with contextlib.suppress(OSError):
+            times.append(p.stat().st_mtime)
+    return max(times, default=0.0)
+
+
+def gone(
+    work: Path,  # A crate's folder in the cache
+) -> bool:  # Whether its mark names a Cargo.toml that is not there; no mark, or one that cannot be read, is never gone
+    "Tell whether the crate of a folder in the cache is gone, as with a removed worktree."
+    try:
+        named = (work / "manifest").read_text(encoding="utf-8")
+    except (OSError, UnicodeDecodeError):
+        return False
+    if not named.strip():
+        return False
+    try:
+        os.stat(named)
+    except FileNotFoundError:
+        return True
+    except (OSError, ValueError):
+        return False  # a folder that cannot be read, or a volume that is not there, may come back
+    return False
+
+
+def prune_cache(
+    folder: Path,  # The cache, as `cache_folder` gives it
+    keep: Path,  # The folder of the crate that is being built, which is never removed
+) -> None:
+    "Once a day, remove the folders of the cache whose `Cargo.toml` is gone, and those that no build has used for `UNUSED_DAYS`."
+    stamp, now = folder / "pruned", time.time()
+    with contextlib.suppress(OSError):
+        if now - stamp.stat().st_mtime < 86400:
+            return
+    stamp.touch()
+    for work in folder.iterdir():
+        if re.fullmatch(r"[0-9a-f]{16}\.gone-\d+", work.name) and not work.is_symlink():
+            shutil.rmtree(work, ignore_errors=True)  # what an earlier prune left half removed
+            continue
+        if work == keep or work.is_symlink() or not work.is_dir() or not re.fullmatch(r"[0-9a-f]{16}", work.name):
+            continue
+        if not gone(work) and last_use(work) >= now - UNUSED_DAYS * 86400:
+            continue
+        if last_use(work) > now - 60:
+            continue  # a build began in it while this one looked
+        trash = work.with_name(f"{work.name}.gone-{os.getpid()}")
+        try:
+            work.rename(trash)  # at once, so a build that starts now makes a new folder
+        except OSError:
+            continue
+        shutil.rmtree(trash, ignore_errors=True)
+
+
 def rustdoc(
     s: Settings,  # The settings
     private: bool = False,  # Document private items too
@@ -123,6 +186,10 @@ def rustdoc(
         raise ValueError(f"the api settings: there is no Cargo.toml at {manifest}; set manifest to the crate's Cargo.toml, from the site's folder")
     work = cache_folder() / hashlib.sha256(str(manifest).encode()).hexdigest()[:16]
     work.mkdir(exist_ok=True)
+    mark = work / f"manifest.{os.getpid()}"
+    mark.write_text(str(manifest), encoding="utf-8")
+    os.replace(mark, work / "manifest")  # whole, so that a prune never reads half of it; it names the crate, and its time is the last use
+    prune_cache(work.parent, work)
     lock = work / "Cargo.lock"
     here = manifest.parent  # cargo reads `.cargo/config.toml` from the folder it runs in, so it runs in the crate's
     meta = json.loads(cargo(["metadata", "--no-deps", "--format-version", "1", "--manifest-path", str(manifest)], s, cwd=here))

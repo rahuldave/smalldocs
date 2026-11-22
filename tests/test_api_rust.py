@@ -1,5 +1,6 @@
 "Tests of the API pages of a Rust crate, from the rustdoc JSON in tests/fixtures/rust; only the last test needs Rust."
 
+import hashlib
 import json
 import os
 import re
@@ -7,6 +8,7 @@ import shutil
 import subprocess
 import sys
 import tempfile
+import time
 from pathlib import Path
 
 import pytest
@@ -512,6 +514,53 @@ def fake_rustdoc(
     (s / "_smalldocs.yml").write_text(f"project:\n  type: website\napi:\n  language: rust\n  manifest: {crate / 'Cargo.toml'}\n")
     (s / "index.qmd").write_text("# Tiny\n")
     return s, crate
+
+
+def test_cache_keeps_only_live_crates(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    "A build marks its crate's folder in the cache, and removes the folders whose Cargo.toml is gone or that no build has used for two weeks."
+    write_json = f'mkdir -p "$CARGO_TARGET_DIR/doc"; cp {tmp_path / "doc.json"} "$CARGO_TARGET_DIR/doc/tinycrate.json"'
+    s, crate = fake_rustdoc(tmp_path, monkeypatch, write_json)
+    cache = api_rust.cache_folder()
+    live = tmp_path / "live" / "Cargo.toml"
+    live.parent.mkdir()
+    live.write_text("")
+    names = [("gone", "a"), ("live", "b"), ("old", "c"), ("unmarked", "d"), ("unmarked_old", "e"), ("unmarked_used", "1"), ("empty", "2")]
+    folders = {k: cache / (c * 16) for k, c in names}
+    for f in folders.values():
+        (f / "target").mkdir(parents=True)
+    (folders["gone"] / "manifest").write_text(str(tmp_path / "removed" / "Cargo.toml"))
+    (folders["live"] / "manifest").write_text(str(live))
+    (folders["old"] / "manifest").write_text(str(live))
+    (folders["empty"] / "manifest").write_text("")  # a mark that is half written names nothing, so it is kept
+    (folders["unmarked_used"] / "target" / "doc").mkdir()  # 0.5.12 left no mark, but rustdoc wrote here just now
+    weeks = time.time() - 15 * 86400
+    for k in ("old", "unmarked_old", "unmarked_used"):
+        for p in (folders[k], folders[k] / "manifest", folders[k] / "target"):
+            if p.exists():
+                os.utime(p, (weeks, weeks))
+    for p in (folders["gone"], folders["gone"] / "manifest", folders["gone"] / "target"):
+        os.utime(p, (time.time() - 120, time.time() - 120))  # a folder used in the last minute may have a build starting in it
+    half = cache / ("9" * 16 + ".gone-123")  # what an earlier prune left half removed
+    (half / "target").mkdir(parents=True)
+    other = cache / "notes"  # a name smalldocs does not make is left alone
+    other.mkdir()
+    link = cache / ("f" * 16)  # a link is never followed
+    link.symlink_to(tmp_path / "live")
+    assert main(["api", "build", "--dir", str(s)]) == 0
+    left = {p.name for p in cache.iterdir()}
+    mine = cache / hashlib.sha256(str((crate / "Cargo.toml").resolve()).encode()).hexdigest()[:16]
+    kept = {folders[k].name for k in ("live", "unmarked", "unmarked_used", "empty")}
+    assert left == {mine.name, *kept, "notes", link.name, "pruned"}
+    assert (mine / "manifest").read_text() == str((crate / "Cargo.toml").resolve())
+    assert (tmp_path / "live" / "Cargo.toml").exists()
+    (folders["live"] / "manifest").write_text(str(tmp_path / "removed" / "Cargo.toml"))
+    for p in (folders["live"], folders["live"] / "manifest", folders["live"] / "target"):
+        os.utime(p, (time.time() - 120, time.time() - 120))
+    assert main(["api", "build", "--dir", str(s)]) == 0
+    assert folders["live"].exists()  # the cache is pruned at most once a day
+    os.utime(cache / "pruned", (weeks, weeks))
+    assert main(["api", "build", "--dir", str(s)]) == 0
+    assert not folders["live"].exists()
 
 
 def test_lock_file_put_back(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:

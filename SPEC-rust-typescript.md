@@ -121,6 +121,8 @@ The rustdoc JSON format changes between nightly releases. smalldocs reads the fo
 
 Nothing. TypeDoc writes its JSON into a temporary folder. rustdoc writes into the user's own cache
 folder, in the temporary folder. If cargo changes the project's `Cargo.lock`, smalldocs puts it back.
+Once a day, a build removes the cache's folders of other crates whose `Cargo.toml` is gone, and those
+unused for 14 days.
 
 ### No new dependency
 
